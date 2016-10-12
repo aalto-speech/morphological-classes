@@ -1,4 +1,4 @@
-This project contains software for training a class n-gram model, which allows multiple classes per word.
+This project contains software for training a category n-gram model using Expectation-Maximization procedure
 
 The form of the model is:
 P(w| w-2 .. w-1) = sum_j P(w|c_j) P( c_j| w-2 .. w-1),
@@ -37,7 +37,7 @@ EXECUTABLES
 -----------
 train         trains the model
 train2        trains the model, forces one class per word towards end of the training
-classseq      prints 1 or more most probable class sequences from a training corpus
+catstats      -
 classppl      computes class lm perplexity with an ARPA n-gram
 catppl        computes category lm perplexity using the trigram model given by train (model.ngram.gz)
 catppl2       computes category lm perplexity with an ARPA n-gram

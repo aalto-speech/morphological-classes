@@ -101,67 +101,6 @@ public:
 };
 
 
-class Unigram : public ClassNgram
-{
-public:
-    Unigram() { };
-    Unigram(int num_classes);
-    ~Unigram() { };
-    const NgramCtxt* get_context(int c2, int c1) const;
-    flt_type log_likelihood(const NgramCtxt *ctxt, int c) const;
-    void accumulate(std::vector<int> &classes, flt_type weight);
-    void accumulate(const ClassNgram *acc);
-    void estimate_model(bool discard_unks=false);
-    void write_model(std::string fname) const;
-    void read_model(std::string fname);
-    bool assert_model();
-    int num_grams() const;
-    ClassNgram* get_new() const;
-
-    NgramCtxt m_unigrams;
-};
-
-
-class Bigram : public ClassNgram
-{
-public:
-    Bigram() { };
-    ~Bigram() { };
-    const NgramCtxt* get_context(int c2, int c1) const;
-    flt_type log_likelihood(const NgramCtxt *ctxt, int c) const;
-    void accumulate(std::vector<int> &classes, flt_type weight);
-    void accumulate(const ClassNgram *acc);
-    void estimate_model(bool discard_unks=false);
-    void write_model(std::string fname) const;
-    void read_model(std::string fname);
-    bool assert_model();
-    int num_grams() const;
-    ClassNgram* get_new() const;
-
-    std::map<int, NgramCtxt> m_bigrams;
-};
-
-
-class Trigram : public ClassNgram
-{
-public:
-    Trigram() { };
-    ~Trigram() { };
-    const NgramCtxt* get_context(int c2, int c1) const;
-    flt_type log_likelihood(const NgramCtxt *ctxt, int c) const;
-    void accumulate(std::vector<int> &classes, flt_type weight);
-    void accumulate(const ClassNgram *acc);
-    void estimate_model(bool discard_unks=false);
-    void write_model(std::string fname) const;
-    void read_model(std::string fname);
-    bool assert_model();
-    int num_grams() const;
-    ClassNgram* get_new() const;
-
-    std::map<int, std::map<int, NgramCtxt> > m_trigrams;
-};
-
-
 int get_word_counts(std::string corpusfname,
                     std::map<std::string, int> &counts);
 
