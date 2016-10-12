@@ -6,7 +6,7 @@
 #include "defs.hh"
 #include "io.hh"
 #include "conf.hh"
-#include "Classes.hh"
+#include "Categories.hh"
 #include "Ngram.hh"
 
 using namespace std;

@@ -3,10 +3,10 @@ cxxflags = -O3 -DNDEBUG -std=gnu++0x -Wall -Wno-unused-function -m64 -Lc:\lib64 
 
 ##################################################
 
-progs = train train2 ngramppl dngramppl classppl classintppl catppl catppl2 catintppl catintppl2 dngramintppl check check2 check3 check4 classseq exchange merge split
+progs = catstats ngramppl classppl classintppl catppl catintppl catintppl2 exchange merge split
 progs_srcs = $(progs:=.cc)
 progs_objs = $(progs:=.o)
-srcs = conf.cc io.cc Classes.cc Ngram.cc ClassPerplexity.cc ExchangeAlgorithm.cc
+srcs = conf.cc io.cc Categories.cc Ngram.cc ClassPerplexity.cc ExchangeAlgorithm.cc
 objs = $(srcs:.cc=.o)
 
 test_progs = runtests

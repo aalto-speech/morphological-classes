@@ -5,7 +5,7 @@
 #include "defs.hh"
 #include "io.hh"
 #include "conf.hh"
-#include "Classes.hh"
+#include "Categories.hh"
 
 using namespace std;
 
@@ -13,7 +13,7 @@ using namespace std;
 int main(int argc, char* argv[]) {
 
     conf::Config config;
-    config("usage: classseq [OPTION...] CLASS_NGRAM CLASS_PROBS WORD_PROBS INPUT OUTPUT\n")
+    config("usage: classseq [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT OUTPUT\n")
     ('p', "max-parses=INT", "arg", "10", "Maximum number of parses per sentence")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
@@ -34,8 +34,8 @@ int main(int argc, char* argv[]) {
     wcs.read_word_probs(wordpfname);
 
     cerr << "Reading class trigram model.." << endl;
-    Trigram tg;
-    tg.read_model(ngramfname);
+//  Trigram tg;
+//  tg.read_model(ngramfname);
 
     set<string> vocab; wcs.get_words(vocab, false);
 
@@ -64,9 +64,9 @@ int main(int argc, char* argv[]) {
 
         sent.push_back(words);
 
-        print_class_seqs(outf,
-                         sent, &tg, &wcs,
-                         100, 10.0, max_parses);
+//        print_class_seqs(outf,
+//                         sent, &tg, &wcs,
+//                         100, 10.0, max_parses);
     }
 
     outf.close();

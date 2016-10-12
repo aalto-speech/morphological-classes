@@ -5,7 +5,7 @@
 #include <string>
 
 #include "Ngram.hh"
-#include "Classes.hh"
+#include "Categories.hh"
 
 
 void score(const std::vector<WordClassProbs*> &probs,
