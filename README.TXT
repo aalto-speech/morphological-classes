@@ -35,12 +35,9 @@ See train.cc for how the training proceeds.
 
 EXECUTABLES
 -----------
-train         trains the model
-train2        trains the model, forces one class per word towards end of the training
 catstats      -
 classppl      computes class lm perplexity with an ARPA n-gram
-catppl        computes category lm perplexity using the trigram model given by train (model.ngram.gz)
-catppl2       computes category lm perplexity with an ARPA n-gram
+catppl        computes category lm perplexity
 catintppl     linearly interpolated perplexity (word n-gram and a category n-gram model)
 catintppl2    linearly interpolated perplexity (word n-gram and two category n-gram models)
 ngramppl      normal word n-gram perplexity
