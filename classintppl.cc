@@ -7,7 +7,7 @@
 #include "defs.hh"
 #include "conf.hh"
 #include "Ngram.hh"
-#include "ClassPerplexity.hh"
+#include "CatPerplexity.hh"
 
 using namespace std;
 

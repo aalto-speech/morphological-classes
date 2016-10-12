@@ -5,7 +5,7 @@
 #include <string>
 
 #define private public
-#include "ClassPerplexity.hh"
+#include "CatPerplexity.hh"
 #undef private
 
 using namespace std;

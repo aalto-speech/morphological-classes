@@ -1,6 +1,6 @@
 #include <cfloat>
 
-#include "ClassPerplexity.hh"
+#include "CatPerplexity.hh"
 
 using namespace std;
 
