@@ -29,10 +29,10 @@ int main(int argc, char* argv[]) {
 
     WordClasses wcs;
     cerr << "Reading word probs.." << endl;
-    wcs.read_word_probs(wordpfname);
+    wcs.read_class_mem_probs(wordpfname);
 
     cerr << "Asserting class membership probabilities.." << endl;
-    if (!wcs.assert_word_probs()) {
+    if (!wcs.assert_class_mem_probs()) {
         cerr << "Problem in class membership probabilities" << endl;
         //exit(1);
     }
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
         while (ss >> word) {
             if (word == "<s>") continue;
             if (word == "</s>") continue;
-            if (wcs.m_class_memberships.find(word) == wcs.m_class_memberships.end()
+            if (wcs.m_class_mem_probs.find(word) == wcs.m_class_mem_probs.end()
                 || word == "<unk>"  || word == "<UNK>")
             {
                 words.push_back(unk);
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            const WordClassProbs &wcp = wcs.m_class_memberships.at(words[i]);
+            const WordClassProbs &wcp = wcs.m_class_mem_probs.at(words[i]);
             assert(wcp.size() == 1);
             sent_ll += wcp.begin()->second;
             double ngram_score = 0.0;

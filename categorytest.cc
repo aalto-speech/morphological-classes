@@ -55,7 +55,7 @@ void set_wcs_fixture(WordClasses &wcs)
     for (auto wit=words.begin(); wit != words.end(); ++wit) {
         for (auto cit=wit->second.second.begin(); cit != wit->second.second.end(); ++cit) {
             double freq = wit->second.first * cit->second;
-            wcs.m_class_memberships[wit->first][cit->first] =
+            wcs.m_class_mem_probs[wit->first][cit->first] =
                     log(freq) - log(class_totals[cit->first]);
         }
     }
@@ -67,8 +67,8 @@ BOOST_AUTO_TEST_CASE(CategoryTest1)
 {
     WordClasses wcs;
     set_wcs_fixture(wcs);
-    wcs.assert_class_probs();
-    wcs.assert_word_probs();
+    wcs.assert_class_gen_probs();
+    wcs.assert_class_mem_probs();
 
     vector<vector<string> > sents;
     int num_unk_tokens, num_unk_types, num_word_tokens, num_word_types;

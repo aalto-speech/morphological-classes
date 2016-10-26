@@ -13,15 +13,15 @@ using namespace std;
 int main(int argc, char* argv[]) {
 
     conf::Config config;
-    config("usage: classseq [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT OUTPUT\n")
+    config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT OUTPUT\n")
     ('p', "max-parses=INT", "arg", "10", "Maximum number of parses per sentence")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 5) config.print_help(stderr, 1);
 
     string ngramfname = config.arguments[0];
-    string classpfname = config.arguments[1];
-    string wordpfname = config.arguments[2];
+    string cgenpfname = config.arguments[1];
+    string cmempfname = config.arguments[2];
     string infname = config.arguments[3];
     string outfname = config.arguments[4];
 
@@ -29,9 +29,9 @@ int main(int argc, char* argv[]) {
 
     WordClasses wcs;
     cerr << "Reading class probs.." << endl;
-    wcs.read_class_probs(classpfname);
+    wcs.read_class_gen_probs(cgenpfname);
     cerr << "Reading word probs.." << endl;
-    wcs.read_word_probs(wordpfname);
+    wcs.read_class_mem_probs(cmempfname);
 
     cerr << "Reading class trigram model.." << endl;
 //  Trigram tg;

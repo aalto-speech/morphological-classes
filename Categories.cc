@@ -90,7 +90,7 @@ void
 WordClasses::estimate_model()
 {
     m_class_gen_probs.clear();
-    m_class_memberships.clear();
+    m_class_mem_probs.clear();
     vector<flt_type> class_totals(m_num_classes, 0.0);
     map<string, flt_type> word_totals;
 
@@ -113,7 +113,7 @@ WordClasses::estimate_model()
 
         // Keep words without analyses in the vocabulary
         m_class_gen_probs[wit->first] = WordClassProbs();
-        m_class_memberships[wit->first] = WordClassProbs();
+        m_class_mem_probs[wit->first] = WordClassProbs();
 
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit) {
             flt_type wlp = log(clit->second) - class_totals[clit->first];
@@ -122,7 +122,7 @@ WordClasses::estimate_model()
                 && clp > LP_PRUNE_LIMIT && !std::isinf(clp))
             {
                 m_class_gen_probs[wit->first][clit->first] = clp;
-                m_class_memberships[wit->first][clit->first] = wlp;
+                m_class_mem_probs[wit->first][clit->first] = wlp;
             }
         }
     }
@@ -134,7 +134,7 @@ WordClasses::estimate_model()
 int
 WordClasses::num_words() const
 {
-    if (m_class_memberships.size() > 0) return m_class_memberships.size();
+    if (m_class_mem_probs.size() > 0) return m_class_mem_probs.size();
     else return m_stats.size();
 }
 
@@ -142,8 +142,8 @@ int
 WordClasses::num_words_with_classes() const
 {
     int words = 0;
-    if (m_class_memberships.size() > 0) {
-        for (auto wit = m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit)
+    if (m_class_mem_probs.size() > 0) {
+        for (auto wit = m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
             if (wit->second.size() > 0) words++;
     }
     else {
@@ -164,7 +164,7 @@ int
 WordClasses::num_observed_classes() const
 {
     set<int> classes;
-    for (auto wit=m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit)
+    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit)
             classes.insert(clit->first);
     return classes.size();
@@ -172,7 +172,7 @@ WordClasses::num_observed_classes() const
 
 
 int
-WordClasses::num_class_probs() const
+WordClasses::num_class_gen_probs() const
 {
     int num_class_probs = 0;
     for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
@@ -182,10 +182,10 @@ WordClasses::num_class_probs() const
 
 
 int
-WordClasses::num_word_probs() const
+WordClasses::num_class_mem_probs() const
 {
     int num_word_probs = 0;
-    for (auto wit=m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit)
+    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
         num_word_probs += wit->second.size();
     return num_word_probs;
 }
@@ -206,7 +206,7 @@ WordClasses::get_words(set<string> &words,
                        bool get_unanalyzed)
 {
     words.clear();
-    for (auto wit=m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit)
+    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
         if (wit->second.size() > 0 || get_unanalyzed)
             words.insert(wit->first);
 }
@@ -216,7 +216,7 @@ void
 WordClasses::get_unanalyzed_words(set<string> &words)
 {
     words.clear();
-    for (auto wit=m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit)
+    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
         if (wit->second.size() == 0)
             words.insert(wit->first);
 }
@@ -225,7 +225,7 @@ void
 WordClasses::get_unanalyzed_words(map<string, flt_type> &words)
 {
     words.clear();
-    for (auto wit=m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit)
+    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
         if (wit->second.size() == 0)
             words.insert(make_pair(wit->first, 0.0));
 }
@@ -233,8 +233,8 @@ WordClasses::get_unanalyzed_words(map<string, flt_type> &words)
 flt_type
 WordClasses::log_likelihood(int c, std::string word) const
 {
-    auto wit = m_class_memberships.find(word);
-    if (wit == m_class_memberships.end()) return MIN_LOG_PROB;
+    auto wit = m_class_mem_probs.find(word);
+    if (wit == m_class_mem_probs.end()) return MIN_LOG_PROB;
     auto prit = wit->second.find(c);
     if (prit == wit->second.end()) return MIN_LOG_PROB;
     return prit->second;
@@ -252,16 +252,16 @@ WordClasses::log_likelihood(int c, const WordClassProbs *wcp) const
 
 
 const WordClassProbs*
-WordClasses::get_word_probs(std::string word) const
+WordClasses::get_class_mem_probs(std::string word) const
 {
-    auto wit = m_class_memberships.find(word);
-    if (wit == m_class_memberships.end()) return nullptr;
+    auto wit = m_class_mem_probs.find(word);
+    if (wit == m_class_mem_probs.end()) return nullptr;
     return &(wit->second);
 }
 
 
 const WordClassProbs*
-WordClasses::get_class_probs(std::string word) const
+WordClasses::get_class_gen_probs(std::string word) const
 {
     auto wit = m_class_gen_probs.find(word);
     if (wit == m_class_gen_probs.end()) return nullptr;
@@ -270,17 +270,17 @@ WordClasses::get_class_probs(std::string word) const
 
 
 void
-WordClasses::get_all_word_probs(vector<map<string, flt_type> > &word_probs) const
+WordClasses::get_all_class_mem_probs(vector<map<string, flt_type> > &word_probs) const
 {
     word_probs.resize(num_classes());
-    for (auto wit=m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit)
+    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
         for (auto pit=wit->second.begin(); pit != wit->second.end(); ++pit)
             word_probs[pit->first][wit->first] = pit->second;
 }
 
 
 bool
-WordClasses::assert_class_probs() const
+WordClasses::assert_class_gen_probs() const
 {
     std::map<string, flt_type> word_totals;
     for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
@@ -303,10 +303,10 @@ WordClasses::assert_class_probs() const
 }
 
 bool
-WordClasses::assert_word_probs() const
+WordClasses::assert_class_mem_probs() const
 {
     vector<flt_type> class_totals(m_num_classes, MIN_LOG_PROB);
-    for (auto wit=m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit)
+    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit)
             class_totals[clit->first] = add_log_domain_probs(class_totals[clit->first], clit->second);
 
@@ -323,7 +323,7 @@ WordClasses::assert_word_probs() const
 }
 
 void
-WordClasses::write_class_probs(string fname) const
+WordClasses::write_class_gen_probs(string fname) const
 {
     SimpleFileOutput wcf(fname);
 
@@ -340,11 +340,11 @@ WordClasses::write_class_probs(string fname) const
 }
 
 void
-WordClasses::write_word_probs(string fname) const
+WordClasses::write_class_mem_probs(string fname) const
 {
     SimpleFileOutput wcf(fname);
 
-    for (auto wit=m_class_memberships.begin(); wit != m_class_memberships.end(); ++wit) {
+    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit) {
         wcf << wit->first << "\t";
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit) {
             if (clit != wit->second.begin()) wcf << " ";
@@ -357,7 +357,7 @@ WordClasses::write_word_probs(string fname) const
 }
 
 void
-WordClasses::read_class_probs(string fname)
+WordClasses::read_class_gen_probs(string fname)
 {
     SimpleFileInput wcf(fname);
 
@@ -381,7 +381,7 @@ WordClasses::read_class_probs(string fname)
 }
 
 void
-WordClasses::read_word_probs(string fname)
+WordClasses::read_class_mem_probs(string fname)
 {
     SimpleFileInput wcf(fname);
 
@@ -394,10 +394,10 @@ WordClasses::read_word_probs(string fname)
         flt_type prob;
         ss >> word;
         // Keep words without classes in the model
-        m_class_memberships[word] = WordClassProbs();
+        m_class_mem_probs[word] = WordClassProbs();
         while (ss >> clss) {
             ss >> prob;
-            m_class_memberships[word][clss] = prob;
+            m_class_mem_probs[word][clss] = prob;
             max_class = max(max_class, clss);
         }
     }
@@ -512,9 +512,9 @@ segment_sent(const std::vector<std::string> &words,
 
     for (unsigned int i=2; i<words.size(); i++) {
 
-        const WordClassProbs *wcp = word_classes->get_word_probs(words[i]);
-        const WordClassProbs *c2p = word_classes->get_class_probs(words[i-2]);
-        const WordClassProbs *c1p = word_classes->get_class_probs(words[i-1]);
+        const WordClassProbs *wcp = word_classes->get_class_mem_probs(words[i]);
+        const WordClassProbs *c2p = word_classes->get_class_gen_probs(words[i-2]);
+        const WordClassProbs *c1p = word_classes->get_class_gen_probs(words[i-1]);
 
         vector<Token*> &curr_tokens = tokens[i-1];
         flt_type best_score = -FLT_MAX;

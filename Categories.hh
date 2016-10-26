@@ -52,23 +52,23 @@ public:
     int num_words_with_classes() const;
     int num_classes() const;
     int num_observed_classes() const;
-    int num_class_probs() const;
-    int num_word_probs() const;
+    int num_class_gen_probs() const;
+    int num_class_mem_probs() const;
     int num_stats() const;
     void get_words(std::set<std::string> &words, bool get_unanalyzed=true);
     void get_unanalyzed_words(std::set<std::string> &words);
     void get_unanalyzed_words(std::map<std::string, flt_type> &words);
     flt_type log_likelihood(int c, std::string word) const;
     flt_type log_likelihood(int c, const WordClassProbs *wcp) const;
-    const WordClassProbs* get_word_probs(std::string word) const;
-    const WordClassProbs* get_class_probs(std::string word) const;
-    void get_all_word_probs(std::vector<std::map<std::string, flt_type> > &word_probs) const;
-    bool assert_class_probs() const;
-    bool assert_word_probs() const;
-    void write_class_probs(std::string fname) const;
-    void write_word_probs(std::string fname) const;
-    void read_class_probs(std::string fname);
-    void read_word_probs(std::string fname);
+    const WordClassProbs* get_class_mem_probs(std::string word) const;
+    const WordClassProbs* get_class_gen_probs(std::string word) const;
+    void get_all_class_mem_probs(std::vector<std::map<std::string, flt_type> > &word_probs) const;
+    bool assert_class_gen_probs() const;
+    bool assert_class_mem_probs() const;
+    void write_class_gen_probs(std::string fname) const;
+    void write_class_mem_probs(std::string fname) const;
+    void read_class_gen_probs(std::string fname);
+    void read_class_mem_probs(std::string fname);
 
     int m_num_classes;
 
@@ -78,7 +78,7 @@ public:
     // Final model p(c|w)
     std::map<std::string, WordClassProbs> m_class_gen_probs;
     // Final model p(w|c)
-    std::map<std::string, WordClassProbs> m_class_memberships;
+    std::map<std::string, WordClassProbs> m_class_mem_probs;
 };
 
 

@@ -107,7 +107,7 @@ likelihood(string &sent,
         std::vector<WordClassProbs*> probs;
         for (int ctxi = max(0, i-order+1); ctxi<i; ctxi++)
             probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
-        probs.push_back(&(wcs.m_class_memberships.at(words[i])));
+        probs.push_back(&(wcs.m_class_mem_probs.at(words[i])));
         flt_type word_ll = -1000;
         score(probs, ngram, indexmap, start_node, false, word_ll, ngram_unk_states);
         sent_ll += word_ll;
@@ -117,7 +117,7 @@ likelihood(string &sent,
     std::vector<WordClassProbs*> probs;
     for (int ctxi = max(0, (int)words.size()-order+1); ctxi<(int)words.size(); ctxi++)
         probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
-    probs.push_back(&(wcs.m_class_memberships.at("<s>")));
+    probs.push_back(&(wcs.m_class_mem_probs.at("<s>")));
     flt_type word_ll = -1000;
     score(probs, ngram, indexmap, start_node, true, word_ll, ngram_unk_states);
     sent_ll += word_ll;
