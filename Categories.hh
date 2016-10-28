@@ -9,6 +9,7 @@
 
 #include "io.hh"
 #include "defs.hh"
+#include "Ngram.hh"
 
 
 class Token {
@@ -82,25 +83,6 @@ public:
 };
 
 
-typedef std::map<int, flt_type> NgramCtxt;
-
-class ClassNgram
-{
-public:
-    virtual ~ClassNgram() { };
-    virtual const NgramCtxt* get_context(int c2, int c1) const = 0;
-    virtual flt_type log_likelihood(const NgramCtxt *ctxt, int c) const = 0;
-    virtual void accumulate(std::vector<int> &classes, flt_type weight) = 0;
-    virtual void accumulate(const ClassNgram *acc) = 0;
-    virtual void estimate_model(bool discard_unks=false) = 0;
-    virtual void write_model(std::string fname) const = 0;
-    virtual void read_model(std::string fname) = 0;
-    virtual bool assert_model() = 0;
-    virtual int num_grams() const = 0;
-    virtual ClassNgram* get_new() const = 0;
-};
-
-
 int get_word_counts(std::string corpusfname,
                     std::map<std::string, int> &counts);
 
@@ -114,8 +96,8 @@ int read_sents(std::string corpusfname,
                int *num_unk_types=nullptr);
 
 void segment_sent(const std::vector<std::string> &sent,
-                  const ClassNgram *ngram,
-                  const Categories *word_classes,
+                  const Ngram *ngram,
+                  const Categories *categories,
                   flt_type prob_beam,
                   unsigned int max_tokens,
                   unsigned int max_final_tokens,
@@ -125,10 +107,9 @@ void segment_sent(const std::vector<std::string> &sent,
                   std::vector<Token*> &pointers);
 
 flt_type collect_stats(const std::vector<std::vector<std::string> > &sents,
-                       const ClassNgram *ngram,
-                       const Categories *word_classes,
-                       ClassNgram *ngram_stats,
-                       Categories *word_stats,
+                       const Ngram *ngram,
+                       const Categories *categories,
+                       Categories *stats,
                        unsigned int max_tokens=100,
                        unsigned int max_final_tokens=10,
                        unsigned int num_threads=0,
@@ -139,10 +120,9 @@ flt_type collect_stats(const std::vector<std::vector<std::string> > &sents,
                        bool verbose=false);
 
 flt_type collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
-                           const ClassNgram *ngram,
-                           const Categories *word_classes,
-                           ClassNgram *ngram_stats,
-                           Categories *word_stats,
+                           const Ngram *ngram,
+                           const Categories *categories,
+                           Categories *stats,
                            unsigned int num_threads,
                            unsigned int max_tokens=100,
                            unsigned int max_final_tokens=10,
@@ -151,16 +131,16 @@ flt_type collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
 
 void print_class_seqs(std::string &fname,
                       const std::vector<std::vector<std::string> > &sents,
-                      const ClassNgram *ngram,
-                      const Categories *word_classes,
+                      const Ngram *ngram,
+                      const Categories *categories,
                       unsigned int max_tokens=100,
                       flt_type prob_beam=100.0,
                       unsigned int max_parses=10);
 
 void print_class_seqs(SimpleFileOutput &seqf,
                       const std::vector<std::vector<std::string> > &sents,
-                      const ClassNgram *ngram,
-                      const Categories *word_classes,
+                      const Ngram *ngram,
+                      const Categories *categories,
                       unsigned int max_tokens=100,
                       flt_type prob_beam=100.0,
                       unsigned int max_parses=10);

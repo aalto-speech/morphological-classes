@@ -487,8 +487,8 @@ read_sents(string corpusfname,
 
 void
 segment_sent(const std::vector<std::string> &words,
-             const ClassNgram *ngram,
-             const Categories *word_classes,
+             const Ngram *ngram,
+             const Categories *categories,
              flt_type prob_beam,
              unsigned int max_tokens,
              unsigned int max_final_tokens,
@@ -512,9 +512,9 @@ segment_sent(const std::vector<std::string> &words,
 
     for (unsigned int i=2; i<words.size(); i++) {
 
-        const CategoryProbs *wcp = word_classes->get_class_mem_probs(words[i]);
-        const CategoryProbs *c2p = word_classes->get_class_gen_probs(words[i-2]);
-        const CategoryProbs *c1p = word_classes->get_class_gen_probs(words[i-1]);
+        const CategoryProbs *wcp = categories->get_class_mem_probs(words[i]);
+        const CategoryProbs *c2p = categories->get_class_gen_probs(words[i-2]);
+        const CategoryProbs *c1p = categories->get_class_gen_probs(words[i-1]);
 
         vector<Token*> &curr_tokens = tokens[i-1];
         flt_type best_score = -FLT_MAX;
@@ -523,7 +523,8 @@ segment_sent(const std::vector<std::string> &words,
 
             Token &tok = *(*tit);
 
-            const NgramCtxt *ctxt = ngram->get_context(tok.m_prev_token->m_class, tok.m_class);
+            // FIXME: implementation required
+            //const NgramCtxt *ctxt = ngram->get_context(tok.m_prev_token->m_class, tok.m_class);
             // Allow all n-grams with the MIN_NGRAM_PROB probability
             //if (ctxt == nullptr) continue;
 
@@ -545,7 +546,7 @@ segment_sent(const std::vector<std::string> &words,
 
                     flt_type curr_score = tok.m_score;
                     curr_score += class_gen_score;
-                    curr_score += ngram->log_likelihood(ctxt, c);
+                    //curr_score += ngram->log_likelihood(ctxt, c);
                     curr_score += cit->second;
 
                     if ((curr_score+prob_beam) < best_score) {
@@ -563,6 +564,8 @@ segment_sent(const std::vector<std::string> &words,
                 }
             }
             // No classes defined, handles initial pass for words without a class
+            // FIXME: implementation required
+            /*
             else {
                 for (auto ngramit = ctxt->cbegin(); ngramit != ctxt->cend(); ++ngramit) {
                     int c = ngramit->first;
@@ -589,6 +592,7 @@ segment_sent(const std::vector<std::string> &words,
                     pointers.push_back(new_tok);
                 }
             }
+            */
         }
 
         if (i<words.size()-1)
@@ -602,10 +606,9 @@ segment_sent(const std::vector<std::string> &words,
 
 flt_type
 collect_stats(const vector<vector<string> > &sents,
-              const ClassNgram *ngram,
-              const Categories *word_classes,
-              ClassNgram *ngram_stats,
-              Categories *word_stats,
+              const Ngram *ngram,
+              const Categories *categories,
+              Categories *stats,
               unsigned int max_tokens,
               unsigned int max_final_tokens,
               unsigned int num_threads,
@@ -626,8 +629,7 @@ collect_stats(const vector<vector<string> > &sents,
 
         if (verbose && senti > 0 && senti % 10000 == 0) {
             cerr << "thread " << thread_index << "\tline " << senti
-                 << "\tn-grams: " << ngram_stats->num_grams()
-                 << "\t(class,word) freqs: " << word_stats->num_stats() << endl;
+                 << "\t(class,word) freqs: " << stats->num_stats() << endl;
             cerr << "pruning percentage: " << float(pruned)/float(pruned+unpruned) << endl;
         }
 
@@ -637,7 +639,7 @@ collect_stats(const vector<vector<string> > &sents,
 
         vector<vector<Token*> > tokens;
         vector<Token*> pointers;
-        segment_sent(words, ngram, word_classes,
+        segment_sent(words, ngram, categories,
                      prob_beam, max_tokens, max_final_tokens,
                      unpruned, pruned, tokens, pointers);
 
@@ -677,8 +679,7 @@ collect_stats(const vector<vector<string> > &sents,
 
             flt_type weight = exp(prob);
             for (unsigned int i=1; i<classes.size(); i++)
-                word_stats->accumulate(words[i], classes[i], weight);
-            ngram_stats->accumulate(classes, weight);
+                stats->accumulate(words[i], classes[i], weight);
         }
 
         sent_count++;
@@ -698,10 +699,9 @@ collect_stats(const vector<vector<string> > &sents,
 
 flt_type
 collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
-                  const ClassNgram *ngram,
-                  const Categories *word_classes,
-                  ClassNgram *ngram_stats,
-                  Categories *word_stats,
+                  const Ngram *ngram,
+                  const Categories *categories,
+                  Categories *stats,
                   unsigned int num_threads,
                   unsigned int max_tokens,
                   unsigned int max_final_tokens,
@@ -709,20 +709,17 @@ collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
                   bool verbose)
 {
     vector<std::thread*> workers;
-    vector<ClassNgram*> thr_ngram_stats(num_threads, nullptr);
-    vector<Categories*> thr_word_stats(num_threads, nullptr);
+    vector<Categories*> thr_stats(num_threads, nullptr);
     vector<flt_type> lls(num_threads, 0.0);
     vector<int> skipped_sents(num_threads, 0);
 
     for (unsigned int thri=0; thri<num_threads; thri++) {
-        thr_ngram_stats[thri] = ngram_stats->get_new();
-        thr_word_stats[thri] = new Categories(word_classes->num_classes());
+        thr_stats[thri] = new Categories(categories->num_classes());
         std::thread *thr = new std::thread(collect_stats,
                                            std::cref(sents),
                                            ngram,
-                                           word_classes,
-                                           thr_ngram_stats[thri],
-                                           thr_word_stats[thri],
+                                           categories,
+                                           thr_stats[thri],
                                            max_tokens,
                                            max_final_tokens,
                                            num_threads,
@@ -740,10 +737,8 @@ collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
         workers[thri]->join();
         total_ll += lls[thri];
         skipped += skipped_sents[thri];
-        ngram_stats->accumulate(thr_ngram_stats[thri]);
-        word_stats->accumulate(*(thr_word_stats[thri]));
-        delete thr_ngram_stats[thri];
-        delete thr_word_stats[thri];
+        stats->accumulate(*(thr_stats[thri]));
+        delete thr_stats[thri];
         delete workers[thri];
     }
 
@@ -762,14 +757,14 @@ bool descending_token_sort(Token *a, Token *b)
 void
 print_class_seqs(string &fname,
                  const vector<vector<string> > &sents,
-                 const ClassNgram *ngram,
-                 const Categories *word_classes,
+                 const Ngram *ngram,
+                 const Categories *categories,
                  unsigned int max_tokens,
                  flt_type prob_beam,
                  unsigned int max_parses)
 {
     SimpleFileOutput seqf(fname);
-    print_class_seqs(seqf, sents, ngram, word_classes,
+    print_class_seqs(seqf, sents, ngram, categories,
                      max_tokens, prob_beam, max_parses);
     seqf.close();
 }
@@ -778,8 +773,8 @@ print_class_seqs(string &fname,
 void
 print_class_seqs(SimpleFileOutput &seqf,
                  const vector<vector<string> > &sents,
-                 const ClassNgram *ngram,
-                 const Categories *word_classes,
+                 const Ngram *ngram,
+                 const Categories *categories,
                  unsigned int max_tokens,
                  flt_type prob_beam,
                  unsigned int max_parses)
@@ -792,7 +787,7 @@ print_class_seqs(SimpleFileOutput &seqf,
         unsigned long int pruned;
         vector<vector<Token*> > tokens;
         vector<Token*> pointers;
-        segment_sent(words, ngram, word_classes,
+        segment_sent(words, ngram, categories,
                      prob_beam, max_tokens, max_tokens,
                      unpruned, pruned, tokens, pointers);
 
