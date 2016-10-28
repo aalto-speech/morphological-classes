@@ -14,7 +14,7 @@ using namespace std;
 
 
 void preprocess_sent(string line,
-                     const WordClasses &wcs,
+                     const Categories &wcs,
                      string unk_symbol,
                      vector<string> &words,
                      long int &num_words,
@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    WordClasses wcs;
+    Categories wcs;
     cerr << "Reading word probs.." << endl;
     wcs.read_class_mem_probs(wordpfname);
     cerr << "Asserting class membership probabilities.." << endl;
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
             ngram_score *= log(10.0);
             ngram_score += word_iw;
 
-            const WordClassProbs &wcp = wcs.m_class_mem_probs.at(words[i]);
+            const CategoryProbs &wcp = wcs.m_class_mem_probs.at(words[i]);
             assert(wcp.size() == 1);
             double class_score = 0.0;
             curr_class_lm_node = class_ng.score(curr_class_lm_node, indexmap[wcp.begin()->first], class_score);

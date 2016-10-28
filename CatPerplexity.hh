@@ -8,7 +8,7 @@
 #include "Categories.hh"
 
 
-void score(const std::vector<WordClassProbs*> &probs,
+void score(const std::vector<CategoryProbs*> &probs,
            const Ngram &ngram,
            const std::vector<int> &indexmap,
            int ngram_node,
@@ -19,7 +19,7 @@ void score(const std::vector<WordClassProbs*> &probs,
 
 flt_type likelihood(std::string &sent,
                     Ngram &ngram,
-                    WordClasses &wcs,
+                    Categories &wcs,
                     std::vector<int> &intmap,
                     int &num_words,
                     int &num_oovs,
@@ -27,7 +27,7 @@ flt_type likelihood(std::string &sent,
 
 flt_type likelihood(std::string &sent,
                     Ngram &ngram,
-                    WordClasses &wcs,
+                    Categories &wcs,
                     std::vector<int> &intmap,
                     std::vector<flt_type> &word_lls,
                     int &num_words,

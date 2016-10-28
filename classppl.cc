@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
 
     bool root_unk_states = config["use-root-node"].specified;
 
-    WordClasses wcs;
+    Categories wcs;
     cerr << "Reading word probs.." << endl;
     wcs.read_class_mem_probs(wordpfname);
 
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            const WordClassProbs &wcp = wcs.m_class_mem_probs.at(words[i]);
+            const CategoryProbs &wcp = wcs.m_class_mem_probs.at(words[i]);
             assert(wcp.size() == 1);
             sent_ll += wcp.begin()->second;
             double ngram_score = 0.0;

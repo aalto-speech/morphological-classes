@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    WordClasses wcs;
+    Categories wcs;
     cerr << "Reading class probs.." << endl;
     wcs.read_class_gen_probs(classpfname);
     cerr << "Reading word probs.." << endl;

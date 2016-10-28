@@ -10,7 +10,7 @@
 using namespace std;
 
 
-void read_class_model(WordClasses &wcs,
+void read_class_model(Categories &wcs,
                       Ngram &ng,
                       vector<int> &indexmap,
                       string arpafname,
@@ -92,10 +92,10 @@ flt_type word_likelihoods(Ngram &lm,
 
 
 void evaluate(Ngram &lm,
-              WordClasses &wcs,
+              Categories &wcs,
               Ngram &class_ng,
               vector<int> &indexmap,
-              WordClasses &wcs2,
+              Categories &wcs2,
               Ngram &class_ng2,
               vector<int> &indexmap2,
               string infname,
@@ -231,13 +231,13 @@ int main(int argc, char* argv[]) {
     Ngram lm;
     lm.read_arpa(arpafname);
 
-    WordClasses wcs;
+    Categories wcs;
     Ngram class_ng;
     vector<int> indexmap;
     read_class_model(wcs, class_ng, indexmap,
                      classngramfname, classpfname, wordpfname);
 
-    WordClasses wcs2;
+    Categories wcs2;
     Ngram class_ng2;
     vector<int> indexmap2;
     read_class_model(wcs2, class_ng2, indexmap2,

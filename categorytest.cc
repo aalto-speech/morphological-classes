@@ -22,7 +22,7 @@ struct AddValues
 };
 
 
-void set_wcs_fixture(WordClasses &wcs)
+void set_wcs_fixture(Categories &wcs)
 {
     wcs.m_num_classes = 5;
 
@@ -65,7 +65,7 @@ void set_wcs_fixture(WordClasses &wcs)
 // Category model corpus reading
 BOOST_AUTO_TEST_CASE(CategoryTest1)
 {
-    WordClasses wcs;
+    Categories wcs;
     set_wcs_fixture(wcs);
     wcs.assert_class_gen_probs();
     wcs.assert_class_mem_probs();

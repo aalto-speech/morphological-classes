@@ -18,7 +18,7 @@ double DBL_ACCURACY = 0.0001;
 BOOST_AUTO_TEST_CASE(PerplexityTest1)
 {
     cerr << endl;
-    WordClasses wcs;
+    Categories wcs;
     wcs.read_class_gen_probs("data/cprobs1.txt");
     wcs.read_class_mem_probs("data/wprobs1.txt");
 
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest1)
 BOOST_AUTO_TEST_CASE(PerplexityTest2)
 {
     cerr << endl;
-    WordClasses wcs;
+    Categories wcs;
     wcs.read_class_gen_probs("data/cprobs1.txt");
     wcs.read_class_mem_probs("data/wprobs1.txt");
 
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest2)
 BOOST_AUTO_TEST_CASE(PerplexityTest3)
 {
     cerr << endl;
-    WordClasses wcs;
+    Categories wcs;
     wcs.read_class_gen_probs("data/cprobs1.txt");
     wcs.read_class_mem_probs("data/wprobs1.txt");
 
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest3)
 BOOST_AUTO_TEST_CASE(PerplexityTest4)
 {
     cerr << endl;
-    WordClasses wcs;
+    Categories wcs;
     wcs.read_class_gen_probs("data/cprobs1.txt");
     wcs.read_class_mem_probs("data/wprobs1.txt");
 
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest4)
 BOOST_AUTO_TEST_CASE(PerplexityTest5)
 {
     cerr << endl;
-    WordClasses wcs;
+    Categories wcs;
     wcs.read_class_gen_probs("data/cprobs2.txt");
     wcs.read_class_mem_probs("data/wprobs2.txt");
 

@@ -12,12 +12,12 @@ using namespace std;
 #define MIN_NGRAM_PROB -20.0
 
 
-WordClasses::WordClasses(int num_classes)
+Categories::Categories(int num_classes)
 {
     m_num_classes = num_classes;
 }
 
-WordClasses::WordClasses(std::string filename,
+Categories::Categories(std::string filename,
                          const map<string, int> &counts,
                          int top_word_classes)
 {
@@ -65,20 +65,20 @@ WordClasses::WordClasses(std::string filename,
     // Keep words with no class information in the stats
     for (auto wit=words.begin(); wit != words.end(); ++wit) {
         if (m_stats.find(*wit) != m_stats.end()) continue;
-        m_stats[*wit] = WordClassProbs();
+        m_stats[*wit] = CategoryProbs();
     }
 
     estimate_model();
 }
 
 void
-WordClasses::accumulate(std::string word, int c, flt_type weight)
+Categories::accumulate(std::string word, int c, flt_type weight)
 {
     m_stats[word][c] += weight;
 }
 
 void
-WordClasses::accumulate(WordClasses &acc)
+Categories::accumulate(Categories &acc)
 {
     for (auto wit=acc.m_stats.begin(); wit != acc.m_stats.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit)
@@ -87,7 +87,7 @@ WordClasses::accumulate(WordClasses &acc)
 
 
 void
-WordClasses::estimate_model()
+Categories::estimate_model()
 {
     m_class_gen_probs.clear();
     m_class_mem_probs.clear();
@@ -112,8 +112,8 @@ WordClasses::estimate_model()
     for (auto wit=m_stats.begin(); wit != m_stats.end(); ++wit) {
 
         // Keep words without analyses in the vocabulary
-        m_class_gen_probs[wit->first] = WordClassProbs();
-        m_class_mem_probs[wit->first] = WordClassProbs();
+        m_class_gen_probs[wit->first] = CategoryProbs();
+        m_class_mem_probs[wit->first] = CategoryProbs();
 
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit) {
             flt_type wlp = log(clit->second) - class_totals[clit->first];
@@ -132,14 +132,14 @@ WordClasses::estimate_model()
 
 
 int
-WordClasses::num_words() const
+Categories::num_words() const
 {
     if (m_class_mem_probs.size() > 0) return m_class_mem_probs.size();
     else return m_stats.size();
 }
 
 int
-WordClasses::num_words_with_classes() const
+Categories::num_words_with_classes() const
 {
     int words = 0;
     if (m_class_mem_probs.size() > 0) {
@@ -154,14 +154,14 @@ WordClasses::num_words_with_classes() const
 }
 
 int
-WordClasses::num_classes() const
+Categories::num_classes() const
 {
     return m_num_classes;
 }
 
 
 int
-WordClasses::num_observed_classes() const
+Categories::num_observed_classes() const
 {
     set<int> classes;
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -172,7 +172,7 @@ WordClasses::num_observed_classes() const
 
 
 int
-WordClasses::num_class_gen_probs() const
+Categories::num_class_gen_probs() const
 {
     int num_class_probs = 0;
     for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
@@ -182,7 +182,7 @@ WordClasses::num_class_gen_probs() const
 
 
 int
-WordClasses::num_class_mem_probs() const
+Categories::num_class_mem_probs() const
 {
     int num_word_probs = 0;
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -192,7 +192,7 @@ WordClasses::num_class_mem_probs() const
 
 
 int
-WordClasses::num_stats() const
+Categories::num_stats() const
 {
     int num_stats = 0;
     for (auto wit=m_stats.begin(); wit != m_stats.end(); ++wit)
@@ -202,7 +202,7 @@ WordClasses::num_stats() const
 
 
 void
-WordClasses::get_words(set<string> &words,
+Categories::get_words(set<string> &words,
                        bool get_unanalyzed)
 {
     words.clear();
@@ -213,7 +213,7 @@ WordClasses::get_words(set<string> &words,
 
 
 void
-WordClasses::get_unanalyzed_words(set<string> &words)
+Categories::get_unanalyzed_words(set<string> &words)
 {
     words.clear();
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -222,7 +222,7 @@ WordClasses::get_unanalyzed_words(set<string> &words)
 }
 
 void
-WordClasses::get_unanalyzed_words(map<string, flt_type> &words)
+Categories::get_unanalyzed_words(map<string, flt_type> &words)
 {
     words.clear();
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -231,7 +231,7 @@ WordClasses::get_unanalyzed_words(map<string, flt_type> &words)
 }
 
 flt_type
-WordClasses::log_likelihood(int c, std::string word) const
+Categories::log_likelihood(int c, std::string word) const
 {
     auto wit = m_class_mem_probs.find(word);
     if (wit == m_class_mem_probs.end()) return MIN_LOG_PROB;
@@ -242,7 +242,7 @@ WordClasses::log_likelihood(int c, std::string word) const
 
 
 flt_type
-WordClasses::log_likelihood(int c, const WordClassProbs *wcp) const
+Categories::log_likelihood(int c, const CategoryProbs *wcp) const
 {
     if (wcp == nullptr) return MIN_LOG_PROB;
     auto prit = wcp->find(c);
@@ -251,8 +251,8 @@ WordClasses::log_likelihood(int c, const WordClassProbs *wcp) const
 }
 
 
-const WordClassProbs*
-WordClasses::get_class_mem_probs(std::string word) const
+const CategoryProbs*
+Categories::get_class_mem_probs(std::string word) const
 {
     auto wit = m_class_mem_probs.find(word);
     if (wit == m_class_mem_probs.end()) return nullptr;
@@ -260,8 +260,8 @@ WordClasses::get_class_mem_probs(std::string word) const
 }
 
 
-const WordClassProbs*
-WordClasses::get_class_gen_probs(std::string word) const
+const CategoryProbs*
+Categories::get_class_gen_probs(std::string word) const
 {
     auto wit = m_class_gen_probs.find(word);
     if (wit == m_class_gen_probs.end()) return nullptr;
@@ -270,7 +270,7 @@ WordClasses::get_class_gen_probs(std::string word) const
 
 
 void
-WordClasses::get_all_class_mem_probs(vector<map<string, flt_type> > &word_probs) const
+Categories::get_all_class_mem_probs(vector<map<string, flt_type> > &word_probs) const
 {
     word_probs.resize(num_classes());
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -280,7 +280,7 @@ WordClasses::get_all_class_mem_probs(vector<map<string, flt_type> > &word_probs)
 
 
 bool
-WordClasses::assert_class_gen_probs() const
+Categories::assert_class_gen_probs() const
 {
     std::map<string, flt_type> word_totals;
     for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
@@ -303,7 +303,7 @@ WordClasses::assert_class_gen_probs() const
 }
 
 bool
-WordClasses::assert_class_mem_probs() const
+Categories::assert_class_mem_probs() const
 {
     vector<flt_type> class_totals(m_num_classes, MIN_LOG_PROB);
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -323,7 +323,7 @@ WordClasses::assert_class_mem_probs() const
 }
 
 void
-WordClasses::write_class_gen_probs(string fname) const
+Categories::write_class_gen_probs(string fname) const
 {
     SimpleFileOutput wcf(fname);
 
@@ -340,7 +340,7 @@ WordClasses::write_class_gen_probs(string fname) const
 }
 
 void
-WordClasses::write_class_mem_probs(string fname) const
+Categories::write_class_mem_probs(string fname) const
 {
     SimpleFileOutput wcf(fname);
 
@@ -357,7 +357,7 @@ WordClasses::write_class_mem_probs(string fname) const
 }
 
 void
-WordClasses::read_class_gen_probs(string fname)
+Categories::read_class_gen_probs(string fname)
 {
     SimpleFileInput wcf(fname);
 
@@ -370,7 +370,7 @@ WordClasses::read_class_gen_probs(string fname)
         flt_type prob;
         ss >> word;
         // Keep words without classes in the model
-        m_class_gen_probs[word] = WordClassProbs();
+        m_class_gen_probs[word] = CategoryProbs();
         while (ss >> clss) {
             ss >> prob;
             m_class_gen_probs[word][clss] = prob;
@@ -381,7 +381,7 @@ WordClasses::read_class_gen_probs(string fname)
 }
 
 void
-WordClasses::read_class_mem_probs(string fname)
+Categories::read_class_mem_probs(string fname)
 {
     SimpleFileInput wcf(fname);
 
@@ -394,7 +394,7 @@ WordClasses::read_class_mem_probs(string fname)
         flt_type prob;
         ss >> word;
         // Keep words without classes in the model
-        m_class_mem_probs[word] = WordClassProbs();
+        m_class_mem_probs[word] = CategoryProbs();
         while (ss >> clss) {
             ss >> prob;
             m_class_mem_probs[word][clss] = prob;
@@ -488,7 +488,7 @@ read_sents(string corpusfname,
 void
 segment_sent(const std::vector<std::string> &words,
              const ClassNgram *ngram,
-             const WordClasses *word_classes,
+             const Categories *word_classes,
              flt_type prob_beam,
              unsigned int max_tokens,
              unsigned int max_final_tokens,
@@ -512,9 +512,9 @@ segment_sent(const std::vector<std::string> &words,
 
     for (unsigned int i=2; i<words.size(); i++) {
 
-        const WordClassProbs *wcp = word_classes->get_class_mem_probs(words[i]);
-        const WordClassProbs *c2p = word_classes->get_class_gen_probs(words[i-2]);
-        const WordClassProbs *c1p = word_classes->get_class_gen_probs(words[i-1]);
+        const CategoryProbs *wcp = word_classes->get_class_mem_probs(words[i]);
+        const CategoryProbs *c2p = word_classes->get_class_gen_probs(words[i-2]);
+        const CategoryProbs *c1p = word_classes->get_class_gen_probs(words[i-1]);
 
         vector<Token*> &curr_tokens = tokens[i-1];
         flt_type best_score = -FLT_MAX;
@@ -603,9 +603,9 @@ segment_sent(const std::vector<std::string> &words,
 flt_type
 collect_stats(const vector<vector<string> > &sents,
               const ClassNgram *ngram,
-              const WordClasses *word_classes,
+              const Categories *word_classes,
               ClassNgram *ngram_stats,
-              WordClasses *word_stats,
+              Categories *word_stats,
               unsigned int max_tokens,
               unsigned int max_final_tokens,
               unsigned int num_threads,
@@ -699,9 +699,9 @@ collect_stats(const vector<vector<string> > &sents,
 flt_type
 collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
                   const ClassNgram *ngram,
-                  const WordClasses *word_classes,
+                  const Categories *word_classes,
                   ClassNgram *ngram_stats,
-                  WordClasses *word_stats,
+                  Categories *word_stats,
                   unsigned int num_threads,
                   unsigned int max_tokens,
                   unsigned int max_final_tokens,
@@ -710,13 +710,13 @@ collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
 {
     vector<std::thread*> workers;
     vector<ClassNgram*> thr_ngram_stats(num_threads, nullptr);
-    vector<WordClasses*> thr_word_stats(num_threads, nullptr);
+    vector<Categories*> thr_word_stats(num_threads, nullptr);
     vector<flt_type> lls(num_threads, 0.0);
     vector<int> skipped_sents(num_threads, 0);
 
     for (unsigned int thri=0; thri<num_threads; thri++) {
         thr_ngram_stats[thri] = ngram_stats->get_new();
-        thr_word_stats[thri] = new WordClasses(word_classes->num_classes());
+        thr_word_stats[thri] = new Categories(word_classes->num_classes());
         std::thread *thr = new std::thread(collect_stats,
                                            std::cref(sents),
                                            ngram,
@@ -763,7 +763,7 @@ void
 print_class_seqs(string &fname,
                  const vector<vector<string> > &sents,
                  const ClassNgram *ngram,
-                 const WordClasses *word_classes,
+                 const Categories *word_classes,
                  unsigned int max_tokens,
                  flt_type prob_beam,
                  unsigned int max_parses)
@@ -779,7 +779,7 @@ void
 print_class_seqs(SimpleFileOutput &seqf,
                  const vector<vector<string> > &sents,
                  const ClassNgram *ngram,
-                 const WordClasses *word_classes,
+                 const Categories *word_classes,
                  unsigned int max_tokens,
                  flt_type prob_beam,
                  unsigned int max_parses)
@@ -856,7 +856,7 @@ bool descending_int_flt_sort(const pair<int, flt_type> &i,
 }
 
 
-void limit_num_classes(map<string, WordClassProbs> &probs,
+void limit_num_classes(map<string, CategoryProbs> &probs,
                        int num_classes)
 {
     for (auto wit=probs.begin(); wit != probs.end(); ++wit) {

@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
 
     int max_parses = config["max-parses"].get_int();
 
-    WordClasses wcs;
+    Categories wcs;
     cerr << "Reading class probs.." << endl;
     wcs.read_class_gen_probs(cgenpfname);
     cerr << "Reading word probs.." << endl;

@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
     bool ngram_unk_states = config["use-ngram-unk-states"].specified;
 
-    WordClasses wcs;
+    Categories wcs;
     cerr << "Reading class probs.." << endl;
     wcs.read_class_gen_probs(classpfname);
     cerr << "Reading word probs.." << endl;

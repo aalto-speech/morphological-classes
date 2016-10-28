@@ -36,17 +36,17 @@ public:
 };
 
 
-typedef std::map<int, flt_type> WordClassProbs;
+typedef std::map<int, flt_type> CategoryProbs;
 
-class WordClasses {
+class Categories {
 public:
-    WordClasses() { m_num_classes = 0; };
-    WordClasses(int num_classes);
-    WordClasses(std::string filename,
+    Categories() { m_num_classes = 0; };
+    Categories(int num_classes);
+    Categories(std::string filename,
                 const std::map<std::string, int> &counts,
                 int top_word_classes=0);
     void accumulate(std::string word, int c, flt_type weight);
-    void accumulate(WordClasses &acc);
+    void accumulate(Categories &acc);
     void estimate_model();
     int num_words() const;
     int num_words_with_classes() const;
@@ -59,9 +59,9 @@ public:
     void get_unanalyzed_words(std::set<std::string> &words);
     void get_unanalyzed_words(std::map<std::string, flt_type> &words);
     flt_type log_likelihood(int c, std::string word) const;
-    flt_type log_likelihood(int c, const WordClassProbs *wcp) const;
-    const WordClassProbs* get_class_mem_probs(std::string word) const;
-    const WordClassProbs* get_class_gen_probs(std::string word) const;
+    flt_type log_likelihood(int c, const CategoryProbs *wcp) const;
+    const CategoryProbs* get_class_mem_probs(std::string word) const;
+    const CategoryProbs* get_class_gen_probs(std::string word) const;
     void get_all_class_mem_probs(std::vector<std::map<std::string, flt_type> > &word_probs) const;
     bool assert_class_gen_probs() const;
     bool assert_class_mem_probs() const;
@@ -73,12 +73,12 @@ public:
     int m_num_classes;
 
     // Sufficient statistics
-    std::map<std::string, WordClassProbs> m_stats;
+    std::map<std::string, CategoryProbs> m_stats;
 
     // Final model p(c|w)
-    std::map<std::string, WordClassProbs> m_class_gen_probs;
+    std::map<std::string, CategoryProbs> m_class_gen_probs;
     // Final model p(w|c)
-    std::map<std::string, WordClassProbs> m_class_mem_probs;
+    std::map<std::string, CategoryProbs> m_class_mem_probs;
 };
 
 
@@ -115,7 +115,7 @@ int read_sents(std::string corpusfname,
 
 void segment_sent(const std::vector<std::string> &sent,
                   const ClassNgram *ngram,
-                  const WordClasses *word_classes,
+                  const Categories *word_classes,
                   flt_type prob_beam,
                   unsigned int max_tokens,
                   unsigned int max_final_tokens,
@@ -126,9 +126,9 @@ void segment_sent(const std::vector<std::string> &sent,
 
 flt_type collect_stats(const std::vector<std::vector<std::string> > &sents,
                        const ClassNgram *ngram,
-                       const WordClasses *word_classes,
+                       const Categories *word_classes,
                        ClassNgram *ngram_stats,
-                       WordClasses *word_stats,
+                       Categories *word_stats,
                        unsigned int max_tokens=100,
                        unsigned int max_final_tokens=10,
                        unsigned int num_threads=0,
@@ -140,9 +140,9 @@ flt_type collect_stats(const std::vector<std::vector<std::string> > &sents,
 
 flt_type collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
                            const ClassNgram *ngram,
-                           const WordClasses *word_classes,
+                           const Categories *word_classes,
                            ClassNgram *ngram_stats,
-                           WordClasses *word_stats,
+                           Categories *word_stats,
                            unsigned int num_threads,
                            unsigned int max_tokens=100,
                            unsigned int max_final_tokens=10,
@@ -152,7 +152,7 @@ flt_type collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
 void print_class_seqs(std::string &fname,
                       const std::vector<std::vector<std::string> > &sents,
                       const ClassNgram *ngram,
-                      const WordClasses *word_classes,
+                      const Categories *word_classes,
                       unsigned int max_tokens=100,
                       flt_type prob_beam=100.0,
                       unsigned int max_parses=10);
@@ -160,12 +160,12 @@ void print_class_seqs(std::string &fname,
 void print_class_seqs(SimpleFileOutput &seqf,
                       const std::vector<std::vector<std::string> > &sents,
                       const ClassNgram *ngram,
-                      const WordClasses *word_classes,
+                      const Categories *word_classes,
                       unsigned int max_tokens=100,
                       flt_type prob_beam=100.0,
                       unsigned int max_parses=10);
 
-void limit_num_classes(std::map<std::string, WordClassProbs> &probs,
+void limit_num_classes(std::map<std::string, CategoryProbs> &probs,
                        int num_classes);
 
 void histogram_prune(std::vector<Token*> &tokens,

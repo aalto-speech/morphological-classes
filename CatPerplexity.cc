@@ -5,7 +5,7 @@
 using namespace std;
 
 
-void score(const vector<WordClassProbs*> &probs,
+void score(const vector<CategoryProbs*> &probs,
            const Ngram &ngram,
            const vector<int> &indexmap,
            int ngram_node,
@@ -32,7 +32,7 @@ void score(const vector<WordClassProbs*> &probs,
         vector<CToken> &target_tokens = tokens[i+1];
         for (auto tit=curr_tokens.begin(); tit != curr_tokens.end(); tit++) {
             if (tit->m_prob + beam < prev_best) continue;
-            WordClassProbs& pos_probs = *(probs[i]);
+            CategoryProbs& pos_probs = *(probs[i]);
             for (auto pit = pos_probs.begin(); pit != pos_probs.end(); ++pit) {
                 CToken tok;
                 tok.m_prob = tit->m_prob + pit->second;
@@ -50,7 +50,7 @@ void score(const vector<WordClassProbs*> &probs,
     vector<CToken> &curr_tokens = tokens.back();
     for (auto tit=curr_tokens.begin(); tit != curr_tokens.end(); tit++) {
         if (tit->m_prob + beam < prev_best) continue;
-        WordClassProbs& pos_probs = *(probs.back());
+        CategoryProbs& pos_probs = *(probs.back());
         for (auto pit = pos_probs.begin(); pit != pos_probs.end(); ++pit) {
             int csym;
             if (sentence_end) csym = ngram.vocabulary_lookup.at("</s>");
@@ -67,7 +67,7 @@ void score(const vector<WordClassProbs*> &probs,
 flt_type
 likelihood(string &sent,
            Ngram &ngram,
-           WordClasses &wcs,
+           Categories &wcs,
            vector<int> &indexmap,
            std::vector<flt_type> &word_lls,
            int &num_words,
@@ -104,7 +104,7 @@ likelihood(string &sent,
 
     for (int i=0; i<(int)words.size(); i++) {
         if (words[i] == "<unk>") continue;
-        std::vector<WordClassProbs*> probs;
+        std::vector<CategoryProbs*> probs;
         for (int ctxi = max(0, i-order+1); ctxi<i; ctxi++)
             probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
         probs.push_back(&(wcs.m_class_mem_probs.at(words[i])));
@@ -114,7 +114,7 @@ likelihood(string &sent,
         word_lls.push_back(word_ll);
     }
 
-    std::vector<WordClassProbs*> probs;
+    std::vector<CategoryProbs*> probs;
     for (int ctxi = max(0, (int)words.size()-order+1); ctxi<(int)words.size(); ctxi++)
         probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
     probs.push_back(&(wcs.m_class_mem_probs.at("<s>")));
@@ -130,7 +130,7 @@ likelihood(string &sent,
 flt_type
 likelihood(string &sent,
            Ngram &ngram,
-           WordClasses &wcs,
+           Categories &wcs,
            vector<int> &indexmap,
            int &num_words,
            int &num_oovs,
