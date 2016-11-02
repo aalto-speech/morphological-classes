@@ -1,5 +1,5 @@
-cxxflags = -O3 -DNDEBUG -std=gnu++0x -Wall -Wno-unused-function -m64 -Lc:\lib64 -I.
-#cxxflags = -O0 -g -std=gnu++0x -Wall -Wno-unused-function -m64 -Lc:\lib64 -I.
+cxxflags = -O3 -DNDEBUG -std=gnu++0x -Wall -Wno-unused-function
+#cxxflags = -O0 -g -std=gnu++0x -Wall -Wno-unused-function
 
 ##################################################
 
@@ -31,7 +31,7 @@ $(progs): %: %.o $(objs)
 	$(CXX) $(cxxflags) $< -o $@ $(objs)
 
 $(test_progs): %: %.o $(objs) $(test_objs)
-	$(CXX) $(cxxflags) $< -o $@ $(objs) $(test_objs) -lboost_unit_test_framework -lz
+	$(CXX) $(cxxflags) $< -o $@ $(objs) $(test_objs) -lboost_unit_test_framework -lz -pthread
 
 test_objs: $(test_srcs)
 
