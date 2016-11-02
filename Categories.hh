@@ -96,8 +96,8 @@ int read_sents(std::string corpusfname,
                int *num_unk_types=nullptr);
 
 void segment_sent(const std::vector<std::string> &sent,
-                  const Ngram *ngram,
-                  const Categories *categories,
+                  const Ngram &ngram,
+                  const Categories &categories,
                   flt_type prob_beam,
                   unsigned int max_tokens,
                   unsigned int max_final_tokens,
@@ -107,9 +107,10 @@ void segment_sent(const std::vector<std::string> &sent,
                   std::vector<Token*> &pointers);
 
 flt_type collect_stats(const std::vector<std::vector<std::string> > &sents,
-                       const Ngram *ngram,
-                       const Categories *categories,
+                       const Ngram &ngram,
+                       const Categories &categories,
                        Categories *stats,
+                       std::string seqfname,
                        unsigned int max_tokens=100,
                        unsigned int max_final_tokens=10,
                        unsigned int num_threads=0,
@@ -120,15 +121,17 @@ flt_type collect_stats(const std::vector<std::vector<std::string> > &sents,
                        bool verbose=false);
 
 flt_type collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
-                           const Ngram *ngram,
-                           const Categories *categories,
-                           Categories *stats,
+                           const Ngram &ngram,
+                           const Categories &categories,
+                           Categories &stats,
+                           std::string seqfname,
                            unsigned int num_threads,
                            unsigned int max_tokens=100,
                            unsigned int max_final_tokens=10,
                            flt_type prob_beam=10.0,
                            bool verbose=false);
 
+/*
 void print_class_seqs(std::string &fname,
                       const std::vector<std::vector<std::string> > &sents,
                       const Ngram *ngram,
@@ -144,6 +147,7 @@ void print_class_seqs(SimpleFileOutput &seqf,
                       unsigned int max_tokens=100,
                       flt_type prob_beam=100.0,
                       unsigned int max_parses=10);
+*/
 
 void limit_num_classes(std::map<std::string, CategoryProbs> &probs,
                        int num_classes);

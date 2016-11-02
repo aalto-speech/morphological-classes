@@ -487,8 +487,8 @@ read_sents(string corpusfname,
 
 void
 segment_sent(const std::vector<std::string> &words,
-             const Ngram *ngram,
-             const Categories *categories,
+             const Ngram &ngram,
+             const Categories &categories,
              flt_type prob_beam,
              unsigned int max_tokens,
              unsigned int max_final_tokens,
@@ -512,9 +512,9 @@ segment_sent(const std::vector<std::string> &words,
 
     for (unsigned int i=2; i<words.size(); i++) {
 
-        const CategoryProbs *wcp = categories->get_class_mem_probs(words[i]);
-        const CategoryProbs *c2p = categories->get_class_gen_probs(words[i-2]);
-        const CategoryProbs *c1p = categories->get_class_gen_probs(words[i-1]);
+        const CategoryProbs *wcp = categories.get_class_mem_probs(words[i]);
+        const CategoryProbs *c2p = categories.get_class_gen_probs(words[i-2]);
+        const CategoryProbs *c1p = categories.get_class_gen_probs(words[i-1]);
 
         vector<Token*> &curr_tokens = tokens[i-1];
         flt_type best_score = -FLT_MAX;
@@ -606,9 +606,10 @@ segment_sent(const std::vector<std::string> &words,
 
 flt_type
 collect_stats(const vector<vector<string> > &sents,
-              const Ngram *ngram,
-              const Categories *categories,
+              const Ngram &ngram,
+              const Categories &categories,
               Categories *stats,
+              string seqfname,
               unsigned int max_tokens,
               unsigned int max_final_tokens,
               unsigned int num_threads,
@@ -699,9 +700,10 @@ collect_stats(const vector<vector<string> > &sents,
 
 flt_type
 collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
-                  const Ngram *ngram,
-                  const Categories *categories,
-                  Categories *stats,
+                  const Ngram &ngram,
+                  const Categories &categories,
+                  Categories &stats,
+                  string seqfname,
                   unsigned int num_threads,
                   unsigned int max_tokens,
                   unsigned int max_final_tokens,
@@ -714,12 +716,13 @@ collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
     vector<int> skipped_sents(num_threads, 0);
 
     for (unsigned int thri=0; thri<num_threads; thri++) {
-        thr_stats[thri] = new Categories(categories->num_classes());
+        thr_stats[thri] = new Categories(categories.num_classes());
         std::thread *thr = new std::thread(collect_stats,
                                            std::cref(sents),
-                                           ngram,
-                                           categories,
+                                           std::cref(ngram),
+                                           std::cref(categories),
                                            thr_stats[thri],
+                                           seqfname,
                                            max_tokens,
                                            max_final_tokens,
                                            num_threads,
@@ -737,7 +740,7 @@ collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
         workers[thri]->join();
         total_ll += lls[thri];
         skipped += skipped_sents[thri];
-        stats->accumulate(*(thr_stats[thri]));
+        stats.accumulate(*(thr_stats[thri]));
         delete thr_stats[thri];
         delete workers[thri];
     }
@@ -754,6 +757,7 @@ bool descending_token_sort(Token *a, Token *b)
 }
 
 
+/*
 void
 print_class_seqs(string &fname,
                  const vector<vector<string> > &sents,
@@ -774,7 +778,7 @@ void
 print_class_seqs(SimpleFileOutput &seqf,
                  const vector<vector<string> > &sents,
                  const Ngram *ngram,
-                 const Categories *categories,
+                 const Categories &categories,
                  unsigned int max_tokens,
                  flt_type prob_beam,
                  unsigned int max_parses)
@@ -842,6 +846,7 @@ print_class_seqs(SimpleFileOutput &seqf,
             delete *pit;
     }
 }
+*/
 
 
 bool descending_int_flt_sort(const pair<int, flt_type> &i,
