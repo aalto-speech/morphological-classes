@@ -6,6 +6,7 @@
 #include "io.hh"
 #include "conf.hh"
 #include "Categories.hh"
+#include "Ngram.hh"
 
 using namespace std;
 
@@ -19,7 +20,7 @@ int main(int argc, char* argv[]) {
     config.default_parse(argc, argv);
     if (config.arguments.size() != 5) config.print_help(stderr, 1);
 
-    string ngramfname = config.arguments[0];
+    string cngramfname = config.arguments[0];
     string cgenpfname = config.arguments[1];
     string cmempfname = config.arguments[2];
     string infname = config.arguments[3];
@@ -28,14 +29,14 @@ int main(int argc, char* argv[]) {
     int max_parses = config["max-parses"].get_int();
 
     Categories wcs;
-    cerr << "Reading class probs.." << endl;
+    cerr << "Reading class generation probs.." << endl;
     wcs.read_class_gen_probs(cgenpfname);
-    cerr << "Reading word probs.." << endl;
+    cerr << "Reading class membership probs.." << endl;
     wcs.read_class_mem_probs(cmempfname);
 
-    cerr << "Reading class trigram model.." << endl;
-//  Trigram tg;
-//  tg.read_model(ngramfname);
+    cerr << "Reading class n-gram model.." << endl;
+    Ngram cngram;
+    cngram.read_arpa(cngramfname);
 
     set<string> vocab; wcs.get_words(vocab, false);
 
@@ -47,12 +48,12 @@ int main(int argc, char* argv[]) {
         vector<vector<string> > sent;
         stringstream ss(line);
         string word;
-        vector<string> words = { "<s>", "<s>" };
+        vector<string> words;
         while (ss >> word) {
             if (word == "<s>" || word == "</s>") continue;
             words.push_back(word);
         }
-        words.push_back("<s>");
+        words.push_back("</s>");
         if ((int)words.size() > 100+3) continue;
         if ((int)words.size() == 3) continue;
 
