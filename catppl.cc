@@ -49,7 +49,6 @@ int main(int argc, char* argv[]) {
     cerr << "Reading class n-gram model.." << endl;
     Ngram ng;
     ng.read_arpa(ngramfname);
-    int order = ng.order();
 
     // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(wcs.num_classes());
