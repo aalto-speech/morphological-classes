@@ -608,7 +608,7 @@ flt_type
 collect_stats(const vector<vector<string> > &sents,
               const Ngram &ngram,
               const Categories &categories,
-              Categories *stats,
+              Categories &stats,
               string seqfname,
               unsigned int max_tokens,
               unsigned int max_final_tokens,
@@ -630,7 +630,7 @@ collect_stats(const vector<vector<string> > &sents,
 
         if (verbose && senti > 0 && senti % 10000 == 0) {
             cerr << "thread " << thread_index << "\tline " << senti
-                 << "\t(class,word) freqs: " << stats->num_stats() << endl;
+                 << "\t(class,word) freqs: " << stats.num_stats() << endl;
             cerr << "pruning percentage: " << float(pruned)/float(pruned+unpruned) << endl;
         }
 
@@ -680,7 +680,7 @@ collect_stats(const vector<vector<string> > &sents,
 
             flt_type weight = exp(prob);
             for (unsigned int i=1; i<classes.size(); i++)
-                stats->accumulate(words[i], classes[i], weight);
+                stats.accumulate(words[i], classes[i], weight);
         }
 
         sent_count++;
@@ -721,7 +721,7 @@ collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
                                            std::cref(sents),
                                            std::cref(ngram),
                                            std::cref(categories),
-                                           thr_stats[thri],
+                                           std::ref(*thr_stats[thri]),
                                            seqfname,
                                            max_tokens,
                                            max_final_tokens,
