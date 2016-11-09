@@ -19,8 +19,8 @@ BOOST_AUTO_TEST_CASE(PerplexityTest1)
 {
     cerr << endl;
     Categories wcs;
-    wcs.read_class_gen_probs("data/cprobs1.txt");
-    wcs.read_class_mem_probs("data/wprobs1.txt");
+    wcs.read_category_gen_probs("data/cprobs1.txt");
+    wcs.read_category_mem_probs("data/wprobs1.txt");
 
     Ngram ng;
     ng.read_arpa("data/classes.1g.wb.arpa.gz");
@@ -47,8 +47,8 @@ BOOST_AUTO_TEST_CASE(PerplexityTest2)
 {
     cerr << endl;
     Categories wcs;
-    wcs.read_class_gen_probs("data/cprobs1.txt");
-    wcs.read_class_mem_probs("data/wprobs1.txt");
+    wcs.read_category_gen_probs("data/cprobs1.txt");
+    wcs.read_category_mem_probs("data/wprobs1.txt");
 
     Ngram ng;
     ng.read_arpa("data/classes.1g.wb.arpa.gz");
@@ -75,8 +75,8 @@ BOOST_AUTO_TEST_CASE(PerplexityTest3)
 {
     cerr << endl;
     Categories wcs;
-    wcs.read_class_gen_probs("data/cprobs1.txt");
-    wcs.read_class_mem_probs("data/wprobs1.txt");
+    wcs.read_category_gen_probs("data/cprobs1.txt");
+    wcs.read_category_mem_probs("data/wprobs1.txt");
 
     Ngram ng;
     ng.read_arpa("data/classes.2g.wb.arpa.gz");
@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE(PerplexityTest4)
 {
     cerr << endl;
     Categories wcs;
-    wcs.read_class_gen_probs("data/cprobs1.txt");
-    wcs.read_class_mem_probs("data/wprobs1.txt");
+    wcs.read_category_gen_probs("data/cprobs1.txt");
+    wcs.read_category_mem_probs("data/wprobs1.txt");
 
     Ngram ng;
     ng.read_arpa("data/classes.2g.wb.arpa.gz");
@@ -131,8 +131,8 @@ BOOST_AUTO_TEST_CASE(PerplexityTest5)
 {
     cerr << endl;
     Categories wcs;
-    wcs.read_class_gen_probs("data/cprobs2.txt");
-    wcs.read_class_mem_probs("data/wprobs2.txt");
+    wcs.read_category_gen_probs("data/cprobs2.txt");
+    wcs.read_category_mem_probs("data/wprobs2.txt");
 
     Ngram ng;
     ng.read_arpa("data/classes.2g.wb.arpa.gz");

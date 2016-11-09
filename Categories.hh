@@ -44,32 +44,32 @@ public:
     Categories() { m_num_classes = 0; };
     Categories(int num_classes);
     Categories(std::string filename,
-                const std::map<std::string, int> &counts,
-                int top_word_classes=0);
+               const std::map<std::string, int> &counts,
+               int top_word_categories=0);
     void accumulate(std::string word, int c, flt_type weight);
     void accumulate(Categories &acc);
     void estimate_model();
     int num_words() const;
-    int num_words_with_classes() const;
+    int num_words_with_categories() const;
     int num_classes() const;
-    int num_observed_classes() const;
-    int num_class_gen_probs() const;
-    int num_class_mem_probs() const;
+    int num_observed_categories() const;
+    int num_category_gen_probs() const;
+    int num_category_mem_probs() const;
     int num_stats() const;
     void get_words(std::set<std::string> &words, bool get_unanalyzed=true);
     void get_unanalyzed_words(std::set<std::string> &words);
     void get_unanalyzed_words(std::map<std::string, flt_type> &words);
     flt_type log_likelihood(int c, std::string word) const;
     flt_type log_likelihood(int c, const CategoryProbs *wcp) const;
-    const CategoryProbs* get_class_mem_probs(std::string word) const;
-    const CategoryProbs* get_class_gen_probs(std::string word) const;
-    void get_all_class_mem_probs(std::vector<std::map<std::string, flt_type> > &word_probs) const;
-    bool assert_class_gen_probs() const;
-    bool assert_class_mem_probs() const;
-    void write_class_gen_probs(std::string fname) const;
-    void write_class_mem_probs(std::string fname) const;
-    void read_class_gen_probs(std::string fname);
-    void read_class_mem_probs(std::string fname);
+    const CategoryProbs* get_category_gen_probs(std::string word) const;
+    const CategoryProbs* get_category_mem_probs(std::string word) const;
+    void get_all_category_mem_probs(std::vector<std::map<std::string, flt_type> > &word_probs) const;
+    bool assert_category_gen_probs() const;
+    bool assert_category_mem_probs() const;
+    void write_category_gen_probs(std::string fname) const;
+    void write_category_mem_probs(std::string fname) const;
+    void read_category_gen_probs(std::string fname);
+    void read_category_mem_probs(std::string fname);
 
     int m_num_classes;
 

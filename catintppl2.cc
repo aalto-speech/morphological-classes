@@ -18,18 +18,18 @@ void read_class_model(Categories &wcs,
                       string cmemberfname)
 {
     cerr << "Reading class generation probabilities.." << endl;
-    wcs.read_class_gen_probs(cgenfname);
+    wcs.read_category_gen_probs(cgenfname);
     cerr << "Reading class membership probabilities.." << endl;
-    wcs.read_class_mem_probs(cmemberfname);
+    wcs.read_category_mem_probs(cmemberfname);
 
     cerr << "Asserting class generation probabilities.." << endl;
-    if (!wcs.assert_class_gen_probs()) {
+    if (!wcs.assert_category_gen_probs()) {
         cerr << "Problem in class generation probabilities" << endl;
         exit(1);
     }
 
     cerr << "Asserting class membership probabilities.." << endl;
-    if (!wcs.assert_class_mem_probs()) {
+    if (!wcs.assert_category_mem_probs()) {
         cerr << "Problem in class membership probabilities" << endl;
         //exit(1);
     }

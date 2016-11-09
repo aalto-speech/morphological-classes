@@ -18,8 +18,8 @@ Categories::Categories(int num_classes)
 }
 
 Categories::Categories(std::string filename,
-                         const map<string, int> &counts,
-                         int top_word_classes)
+                       const map<string, int> &counts,
+                       int top_word_categories)
 {
     SimpleFileInput infile(filename);
     m_stats.clear();
@@ -49,7 +49,7 @@ Categories::Categories(std::string filename,
     m_stats["<unk>"][UNK_CLASS] = 1.0;
 
     // Set an own class for the most common words
-    if (top_word_classes > 0) {
+    if (top_word_categories > 0) {
         map<int, string> sorted_counts;
         for (auto wit=counts.begin(); wit != counts.end(); ++wit)
             sorted_counts[wit->second] = wit->first;
@@ -58,7 +58,7 @@ Categories::Categories(std::string filename,
             m_stats[wit->second].clear();
             m_stats[wit->second][m_num_classes] = 1.0;
             m_num_classes++;
-            if (++sci >= top_word_classes) break;
+            if (++sci >= top_word_categories) break;
         }
     }
 
@@ -139,7 +139,7 @@ Categories::num_words() const
 }
 
 int
-Categories::num_words_with_classes() const
+Categories::num_words_with_categories() const
 {
     int words = 0;
     if (m_class_mem_probs.size() > 0) {
@@ -161,7 +161,7 @@ Categories::num_classes() const
 
 
 int
-Categories::num_observed_classes() const
+Categories::num_observed_categories() const
 {
     set<int> classes;
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -172,7 +172,7 @@ Categories::num_observed_classes() const
 
 
 int
-Categories::num_class_gen_probs() const
+Categories::num_category_gen_probs() const
 {
     int num_class_probs = 0;
     for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
@@ -182,7 +182,7 @@ Categories::num_class_gen_probs() const
 
 
 int
-Categories::num_class_mem_probs() const
+Categories::num_category_mem_probs() const
 {
     int num_word_probs = 0;
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -252,7 +252,7 @@ Categories::log_likelihood(int c, const CategoryProbs *wcp) const
 
 
 const CategoryProbs*
-Categories::get_class_mem_probs(std::string word) const
+Categories::get_category_mem_probs(std::string word) const
 {
     auto wit = m_class_mem_probs.find(word);
     if (wit == m_class_mem_probs.end()) return nullptr;
@@ -261,7 +261,7 @@ Categories::get_class_mem_probs(std::string word) const
 
 
 const CategoryProbs*
-Categories::get_class_gen_probs(std::string word) const
+Categories::get_category_gen_probs(std::string word) const
 {
     auto wit = m_class_gen_probs.find(word);
     if (wit == m_class_gen_probs.end()) return nullptr;
@@ -270,7 +270,7 @@ Categories::get_class_gen_probs(std::string word) const
 
 
 void
-Categories::get_all_class_mem_probs(vector<map<string, flt_type> > &word_probs) const
+Categories::get_all_category_mem_probs(vector<map<string, flt_type> > &word_probs) const
 {
     word_probs.resize(num_classes());
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -280,7 +280,7 @@ Categories::get_all_class_mem_probs(vector<map<string, flt_type> > &word_probs) 
 
 
 bool
-Categories::assert_class_gen_probs() const
+Categories::assert_category_gen_probs() const
 {
     std::map<string, flt_type> word_totals;
     for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
@@ -303,7 +303,7 @@ Categories::assert_class_gen_probs() const
 }
 
 bool
-Categories::assert_class_mem_probs() const
+Categories::assert_category_mem_probs() const
 {
     vector<flt_type> class_totals(m_num_classes, MIN_LOG_PROB);
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
@@ -323,7 +323,7 @@ Categories::assert_class_mem_probs() const
 }
 
 void
-Categories::write_class_gen_probs(string fname) const
+Categories::write_category_gen_probs(string fname) const
 {
     SimpleFileOutput wcf(fname);
 
@@ -340,7 +340,7 @@ Categories::write_class_gen_probs(string fname) const
 }
 
 void
-Categories::write_class_mem_probs(string fname) const
+Categories::write_category_mem_probs(string fname) const
 {
     SimpleFileOutput wcf(fname);
 
@@ -357,7 +357,7 @@ Categories::write_class_mem_probs(string fname) const
 }
 
 void
-Categories::read_class_gen_probs(string fname)
+Categories::read_category_gen_probs(string fname)
 {
     SimpleFileInput wcf(fname);
 
@@ -381,7 +381,7 @@ Categories::read_class_gen_probs(string fname)
 }
 
 void
-Categories::read_class_mem_probs(string fname)
+Categories::read_category_mem_probs(string fname)
 {
     SimpleFileInput wcf(fname);
 
@@ -512,9 +512,9 @@ segment_sent(const std::vector<std::string> &words,
 
     for (unsigned int i=2; i<words.size(); i++) {
 
-        const CategoryProbs *wcp = categories.get_class_mem_probs(words[i]);
-        const CategoryProbs *c2p = categories.get_class_gen_probs(words[i-2]);
-        const CategoryProbs *c1p = categories.get_class_gen_probs(words[i-1]);
+        const CategoryProbs *wcp = categories.get_category_mem_probs(words[i]);
+        const CategoryProbs *c2p = categories.get_category_gen_probs(words[i-2]);
+        const CategoryProbs *c1p = categories.get_category_gen_probs(words[i-1]);
 
         vector<Token*> &curr_tokens = tokens[i-1];
         flt_type best_score = -FLT_MAX;

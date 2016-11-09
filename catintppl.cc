@@ -105,18 +105,18 @@ int main(int argc, char* argv[]) {
 
     Categories wcs;
     cerr << "Reading class probs.." << endl;
-    wcs.read_class_gen_probs(classpfname);
+    wcs.read_category_gen_probs(classpfname);
     cerr << "Reading word probs.." << endl;
-    wcs.read_class_mem_probs(wordpfname);
+    wcs.read_category_mem_probs(wordpfname);
 
     cerr << "Asserting class generation probabilities.." << endl;
-    if (!wcs.assert_class_gen_probs()) {
+    if (!wcs.assert_category_gen_probs()) {
         cerr << "Problem in class generation probabilities" << endl;
         exit(1);
     }
 
     cerr << "Asserting class membership probabilities.." << endl;
-    if (!wcs.assert_class_mem_probs()) {
+    if (!wcs.assert_category_mem_probs()) {
         cerr << "Problem in class membership probabilities" << endl;
         //exit(1);
     }

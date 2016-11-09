@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -39,13 +40,27 @@ int main(int argc, char* argv[]) {
 
     Categories wcs;
     cerr << "Reading class generation probs.." << endl;
-    wcs.read_class_gen_probs(cgenpfname);
+    wcs.read_category_gen_probs(cgenpfname);
     cerr << "Reading class membership probs.." << endl;
-    wcs.read_class_mem_probs(cmempfname);
+    wcs.read_category_mem_probs(cmempfname);
 
     cerr << "Reading class n-gram model.." << endl;
     Ngram cngram;
     cngram.read_arpa(cngramfname);
+
+    // The class indexes are stored as strings in the n-gram class
+    vector<int> indexmap(wcs.num_classes());
+    for (int i=0; i<(int)indexmap.size(); i++)
+        if (cngram.vocabulary_lookup.find(int2str(i)) != cngram.vocabulary_lookup.end())
+            indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
+    if (indexmap[START_CLASS] == -1) {
+        cerr << "warning, start class not in the model" << endl;
+        exit(EXIT_FAILURE);
+    }
+    if (indexmap[UNK_CLASS] == -1) {
+        cerr << "warning, unk class not in the model" << endl;
+        exit(EXIT_FAILURE);
+    }
 
     set<string> vocab; wcs.get_words(vocab, false);
 
@@ -84,8 +99,8 @@ int main(int argc, char* argv[]) {
     outf.close();
 
     stats.estimate_model();
-    stats.write_class_gen_probs(modelfname + ".cgenprobs.gz");
-    stats.write_class_mem_probs(modelfname + ".cmemprobs.gz");
+    stats.write_category_gen_probs(modelfname + ".cgenprobs.gz");
+    stats.write_category_mem_probs(modelfname + ".cmemprobs.gz");
 
     cerr << "Likelihood: " << total_ll << endl;
 

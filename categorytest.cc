@@ -67,8 +67,8 @@ BOOST_AUTO_TEST_CASE(CategoryTest1)
 {
     Categories wcs;
     set_wcs_fixture(wcs);
-    wcs.assert_class_gen_probs();
-    wcs.assert_class_mem_probs();
+    wcs.assert_category_gen_probs();
+    wcs.assert_category_mem_probs();
 
     vector<vector<string> > sents;
     int num_unk_tokens, num_unk_types, num_word_tokens, num_word_types;
