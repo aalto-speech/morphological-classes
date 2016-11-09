@@ -9,8 +9,6 @@
 
 using namespace std;
 
-#define MIN_NGRAM_PROB -20.0
-
 
 Categories::Categories(int num_classes)
 {
@@ -520,11 +518,6 @@ segment_sent(const std::vector<std::string> &words,
 
             Token &tok = *(*tit);
 
-            // FIXME: implementation required
-            //const NgramCtxt *ctxt = ngram->get_context(tok.m_prev_token->m_class, tok.m_class);
-            // Allow all n-grams with the MIN_NGRAM_PROB probability
-            //if (ctxt == nullptr) continue;
-
             flt_type class_gen_score = 0.0;
             if (c2p != nullptr) {
                 auto c2it = c2p->find(tok.m_prev_token->m_class);
@@ -536,14 +529,16 @@ segment_sent(const std::vector<std::string> &words,
             }
 
             // Classes are defined, iterate over class memberships
-            // Ngram likelihood is MIN_NGRAM_PROB for n-grams not in the model
             if (wcp != nullptr && wcp->size() > 0) {
                 for (auto cit = wcp->cbegin(); cit != wcp->cend(); ++cit) {
                     int c = cit->first;
 
                     flt_type curr_score = tok.m_score;
                     curr_score += class_gen_score;
-                    //curr_score += ngram->log_likelihood(ctxt, c);
+                    flt_type ngram_lp = 0.0;
+                    int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], ngram_lp);
+                    static double log10_to_ln = log(10.0);
+                    curr_score += ngram_lp * log10_to_ln;
                     curr_score += cit->second;
 
                     if ((curr_score+prob_beam) < best_score) {
@@ -556,10 +551,12 @@ segment_sent(const std::vector<std::string> &words,
 
                     Token* new_tok = new Token(tok, c);
                     new_tok->m_score = curr_score;
+                    new_tok->m_cng_node = ngram_node_idx;
                     tokens[i].push_back(new_tok);
                     pointers.push_back(new_tok);
                 }
             }
+
             // No classes defined, handles initial pass for words without a class
             // FIXME: implementation required
             /*
