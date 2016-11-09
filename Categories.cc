@@ -605,149 +605,76 @@ segment_sent(const std::vector<std::string> &words,
 
 
 flt_type
-collect_stats(const vector<vector<string> > &sents,
+collect_stats(vector<string> &sent,
               const Ngram &ngram,
               const Categories &categories,
               Categories &stats,
-              string seqfname,
-              unsigned int max_tokens,
-              unsigned int max_final_tokens,
-              unsigned int num_threads,
-              unsigned int thread_index,
-              flt_type *retval,
-              int *skipped_sents,
+              SimpleFileOutput &seqf,
+              unsigned int num_tokens,
+              unsigned int num_final_tokens,
+              unsigned int num_parses,
               flt_type prob_beam,
               bool verbose)
 {
-    int sent_count = 0;
-    int total_token_count = 0;
-    flt_type total_ll = 0;
-    if (skipped_sents != nullptr) *skipped_sents = 0;
     unsigned long int unpruned = 0;
     unsigned long int pruned = 0;
 
-    for (unsigned int senti=0; senti<sents.size(); senti++) {
+    vector<vector<Token*> > tokens;
+    vector<Token*> pointers;
+    segment_sent(sent, ngram, categories,
+                 prob_beam, num_tokens, num_final_tokens,
+                 unpruned, pruned, tokens, pointers);
 
-        if (verbose && senti > 0 && senti % 10000 == 0) {
-            cerr << "thread " << thread_index << "\tline " << senti
-                 << "\t(class,word) freqs: " << stats.num_stats() << endl;
-            cerr << "pruning percentage: " << float(pruned)/float(pruned+unpruned) << endl;
-        }
+    vector<Token*> &final_tokens = tokens.back();
 
-        if (num_threads > 0 && (senti % num_threads) != thread_index) continue;
-
-        const vector<string> &words = sents[senti];
-
-        vector<vector<Token*> > tokens;
-        vector<Token*> pointers;
-        segment_sent(words, ngram, categories,
-                     prob_beam, max_tokens, max_final_tokens,
-                     unpruned, pruned, tokens, pointers);
-
-        vector<Token*> &final_tokens = tokens.back();
-
-        if (final_tokens.size() == 0) {
-            //cerr << "No tokens in final node, skipping sentence" << endl;
-            if (skipped_sents != nullptr) (*skipped_sents)++;
-            for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
-                delete *pit;
-            continue;
-        }
-
-        flt_type normalizer = MIN_LOG_PROB;
-        for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit) {
-            Token *tok = *tit;
-            normalizer = add_log_domain_probs(normalizer, tok->m_score);
-        }
-
-        if (std::isinf(normalizer) || std::isnan(normalizer)) {
-            cerr << "Nan or inf total ll, skipping sentence" << endl;
-            for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
-                delete *pit;
-            continue;
-        }
-
-        for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit) {
-            Token *tok = *tit;
-            flt_type prob = tok->m_score - normalizer;
-            if (prob > 0.0) prob = 0.0;
-            vector<int> classes; classes.push_back(tok->m_class);
-            while (tok->m_prev_token != nullptr) {
-                tok = tok->m_prev_token;
-                classes.push_back(tok->m_class);
-            }
-            std::reverse(classes.begin(), classes.end());
-
-            flt_type weight = exp(prob);
-            for (unsigned int i=1; i<classes.size(); i++)
-                stats.accumulate(words[i], classes[i], weight);
-        }
-
-        sent_count++;
-        total_token_count += final_tokens.size();
-        total_ll += normalizer;
-
+    if (final_tokens.size() == 0) {
+        cerr << "No tokens in the final node, skipping sentence" << endl;
         for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
             delete *pit;
+        return 0.0;
     }
 
-    if (verbose && num_threads == 0)
-        cerr << "Final tokens per sentence: " << float(total_token_count)/float(sent_count) << endl;
-    if (retval != nullptr) *retval = total_ll;
-    return total_ll;
-}
-
-
-flt_type
-collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
-                  const Ngram &ngram,
-                  const Categories &categories,
-                  Categories &stats,
-                  string seqfname,
-                  unsigned int num_threads,
-                  unsigned int max_tokens,
-                  unsigned int max_final_tokens,
-                  flt_type prob_beam,
-                  bool verbose)
-{
-    vector<std::thread*> workers;
-    vector<Categories*> thr_stats(num_threads, nullptr);
-    vector<flt_type> lls(num_threads, 0.0);
-    vector<int> skipped_sents(num_threads, 0);
-
-    for (unsigned int thri=0; thri<num_threads; thri++) {
-        thr_stats[thri] = new Categories(categories.num_classes());
-        std::thread *thr = new std::thread(collect_stats,
-                                           std::cref(sents),
-                                           std::cref(ngram),
-                                           std::cref(categories),
-                                           std::ref(*thr_stats[thri]),
-                                           seqfname,
-                                           max_tokens,
-                                           max_final_tokens,
-                                           num_threads,
-                                           thri,
-                                           &(lls[thri]),
-                                           &(skipped_sents[thri]),
-                                           prob_beam,
-                                           verbose);
-        workers.push_back(thr);
+    flt_type total_lp = MIN_LOG_PROB;
+    for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit) {
+        Token *tok = *tit;
+        total_lp = add_log_domain_probs(total_lp, tok->m_score);
     }
 
-    flt_type total_ll = 0.0;
-    int skipped = 0;
-    for (unsigned int thri=0; thri<num_threads; thri++) {
-        workers[thri]->join();
-        total_ll += lls[thri];
-        skipped += skipped_sents[thri];
-        stats.accumulate(*(thr_stats[thri]));
-        delete thr_stats[thri];
-        delete workers[thri];
+    if (std::isinf(total_lp) || std::isnan(total_lp)) {
+        cerr << "Error, invalid total ll" << endl;
+        for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
+            delete *pit;
+        return 0.0;
     }
 
-    cerr << skipped << " training sentences were without valid probabilities" << endl;
+    for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit) {
+        Token *tok = *tit;
+        flt_type lp = std::min((flt_type)0.0, tok->m_score-total_lp);
+        vector<int> classes; classes.push_back(tok->m_class);
+        while (tok->m_prev_token != nullptr) {
+            tok = tok->m_prev_token;
+            classes.push_back(tok->m_class);
+        }
+        std::reverse(classes.begin(), classes.end());
 
-    return total_ll;
+        flt_type weight = exp(lp);
+        for (unsigned int i=1; i<classes.size(); i++)
+            stats.accumulate(sent[i], classes[i], weight);
+
+        if (num_parses > 1) {
+            seqf << weight;
+            seqf << " ";
+        }
+        seqf << "<s>";
+        for (unsigned int i=2; i<classes.size()-1; i++)
+            seqf << " " << classes[i];
+        seqf << " </s>\n";
+    }
+
+    for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
+        delete *pit;
+
+    return total_lp;
 }
 
 
@@ -755,98 +682,6 @@ bool descending_token_sort(Token *a, Token *b)
 {
     return (a->m_score > b->m_score);
 }
-
-
-/*
-void
-print_class_seqs(string &fname,
-                 const vector<vector<string> > &sents,
-                 const Ngram *ngram,
-                 const Categories *categories,
-                 unsigned int max_tokens,
-                 flt_type prob_beam,
-                 unsigned int max_parses)
-{
-    SimpleFileOutput seqf(fname);
-    print_class_seqs(seqf, sents, ngram, categories,
-                     max_tokens, prob_beam, max_parses);
-    seqf.close();
-}
-
-
-void
-print_class_seqs(SimpleFileOutput &seqf,
-                 const vector<vector<string> > &sents,
-                 const Ngram *ngram,
-                 const Categories &categories,
-                 unsigned int max_tokens,
-                 flt_type prob_beam,
-                 unsigned int max_parses)
-{
-    for (unsigned int senti=0; senti<sents.size(); senti++) {
-
-        const vector<string> &words = sents[senti];
-
-        unsigned long int unpruned;
-        unsigned long int pruned;
-        vector<vector<Token*> > tokens;
-        vector<Token*> pointers;
-        segment_sent(words, ngram, categories,
-                     prob_beam, max_tokens, max_tokens,
-                     unpruned, pruned, tokens, pointers);
-
-        vector<Token*> &final_tokens = tokens.back();
-
-        if (final_tokens.size() == 0) {
-            cerr << "No tokens in final node, skipping sentence" << endl;
-            for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
-                delete *pit;
-            continue;
-        }
-
-        sort(final_tokens.begin(), final_tokens.end(), descending_token_sort);
-        final_tokens.resize(std::min(max_parses, (unsigned int)final_tokens.size()));
-
-        flt_type normalizer = MIN_LOG_PROB;
-        for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit)
-            normalizer = add_log_domain_probs(normalizer, (*tit)->m_score);
-
-        if (std::isinf(normalizer) || std::isnan(normalizer)) {
-            cerr << "Nan or inf total ll, skipping sentence" << endl;
-            for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
-                delete *pit;
-            continue;
-        }
-
-        flt_type best_prob = (*(final_tokens.begin()))->m_score - normalizer;
-        for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit) {
-            Token *tok = *tit;
-            flt_type prob = tok->m_score - normalizer;
-            if (best_prob - prob > prob_beam) break;
-            if (prob > 0.0) prob = 0.0;
-            vector<int> classes; classes.push_back(tok->m_class);
-            while (tok->m_prev_token != nullptr) {
-                tok = tok->m_prev_token;
-                classes.push_back(tok->m_class);
-            }
-            std::reverse(classes.begin(), classes.end());
-
-            flt_type weight = exp(prob);
-            if (max_parses > 1) {
-                seqf << weight;
-                seqf << " ";
-            }
-            seqf << "<s>";
-            for (unsigned int i=2; i<classes.size()-1; i++)
-                seqf << " " << classes[i];
-            seqf << " </s>\n";
-        }
-
-        for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
-            delete *pit;
-    }
-}
-*/
 
 
 bool descending_int_flt_sort(const pair<int, flt_type> &i,

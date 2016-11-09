@@ -15,7 +15,11 @@ int main(int argc, char* argv[]) {
 
     conf::Config config;
     config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT OUTPUT\n")
-    ('p', "max-parses=INT", "arg", "10", "Maximum number of parses per sentence")
+    ('p', "num-parses=INT", "arg", "10", "Maximum number of parses to print per sentence")
+    ('t', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position")
+    ('e', "num-end-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the end position")
+    ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words")
+    ('b', "prob-beam=FLOAT", "arg", "100", "Maximum sentence length as number of words")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 5) config.print_help(stderr, 1);
@@ -26,7 +30,11 @@ int main(int argc, char* argv[]) {
     string infname = config.arguments[3];
     string outfname = config.arguments[4];
 
-    int max_parses = config["max-parses"].get_int();
+    int num_parses = config["num-parses"].get_int();
+    int num_tokens = config["num-tokens"].get_int();
+    int num_end_tokens = config["num-end-tokens"].get_int();
+    int max_line_length = config["max-line-length"].get_int();
+    flt_type prob_beam = config["prob-beam"].get_float();
 
     Categories wcs;
     cerr << "Reading class generation probs.." << endl;
@@ -40,34 +48,34 @@ int main(int argc, char* argv[]) {
 
     set<string> vocab; wcs.get_words(vocab, false);
 
-    cerr << "Segmenting.." << endl;
+    Categories stats;
+
     SimpleFileInput corpusf(infname);
     SimpleFileOutput outf(outfname);
     string line;
+    int senti=1;
     while (corpusf.getline(line)) {
-        vector<vector<string> > sent;
+        vector<string> sent;
         stringstream ss(line);
         string word;
-        vector<string> words;
         while (ss >> word) {
             if (word == "<s>" || word == "</s>") continue;
-            words.push_back(word);
+            sent.push_back(word);
         }
-        words.push_back("</s>");
-        if ((int)words.size() > 100+3) continue;
-        if ((int)words.size() == 3) continue;
+        sent.push_back("</s>");
+        if ((int)sent.size() > max_line_length) continue;
+        if ((int)sent.size() == 1) continue;
 
-        for (auto wit=words.begin(); wit != words.end(); ++wit) {
-            if (*wit == "<s>") continue;
+        for (auto wit=sent.begin(); wit != sent.end(); ++wit)
             if (vocab.find(*wit) == vocab.end())
                 wit->assign("<unk>");
-        }
 
-        sent.push_back(words);
-
-//        print_class_seqs(outf,
-//                         sent, &tg, &wcs,
-//                         100, 10.0, max_parses);
+        flt_type ll = collect_stats(sent,
+                                    cngram, wcs,
+                                    stats, outf,
+                                    num_tokens, num_end_tokens,
+                                    num_parses, prob_beam, false);
+        senti++;
     }
 
     outf.close();

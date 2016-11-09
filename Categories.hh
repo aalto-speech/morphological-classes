@@ -106,48 +106,16 @@ void segment_sent(const std::vector<std::string> &sent,
                   std::vector<std::vector<Token*> > &tokens,
                   std::vector<Token*> &pointers);
 
-flt_type collect_stats(const std::vector<std::vector<std::string> > &sents,
+flt_type collect_stats(std::vector<std::string> &sent,
                        const Ngram &ngram,
                        const Categories &categories,
                        Categories &stats,
-                       std::string seqfname,
-                       unsigned int max_tokens=100,
-                       unsigned int max_final_tokens=10,
-                       unsigned int num_threads=0,
-                       unsigned int thread_index=0,
-                       flt_type *retval=nullptr,
-                       int *skipped_sents=nullptr,
+                       SimpleFileOutput &seqf,
+                       unsigned int num_tokens=100,
+                       unsigned int num_final_tokens=10,
+                       unsigned int num_parses=0,
                        flt_type prob_beam=10.0,
                        bool verbose=false);
-
-flt_type collect_stats_thr(const std::vector<std::vector<std::string> > &sents,
-                           const Ngram &ngram,
-                           const Categories &categories,
-                           Categories &stats,
-                           std::string seqfname,
-                           unsigned int num_threads,
-                           unsigned int max_tokens=100,
-                           unsigned int max_final_tokens=10,
-                           flt_type prob_beam=10.0,
-                           bool verbose=false);
-
-/*
-void print_class_seqs(std::string &fname,
-                      const std::vector<std::vector<std::string> > &sents,
-                      const Ngram *ngram,
-                      const Categories *categories,
-                      unsigned int max_tokens=100,
-                      flt_type prob_beam=100.0,
-                      unsigned int max_parses=10);
-
-void print_class_seqs(SimpleFileOutput &seqf,
-                      const std::vector<std::vector<std::string> > &sents,
-                      const Ngram *ngram,
-                      const Categories *categories,
-                      unsigned int max_tokens=100,
-                      flt_type prob_beam=100.0,
-                      unsigned int max_parses=10);
-*/
 
 void limit_num_classes(std::map<std::string, CategoryProbs> &probs,
                        int num_classes);
