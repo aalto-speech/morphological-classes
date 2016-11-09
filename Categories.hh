@@ -14,24 +14,34 @@
 
 class Token {
 public:
-    Token() {
-        m_class = START_CLASS;
-        m_score = 0.0;
-        m_prev_token = nullptr;
-    }
-    Token(Token *prev_token, int clss, flt_type score) {
+    Token() : m_class(START_CLASS),
+              m_cng_node(-1),
+              m_score(0.0),
+              m_prev_token(nullptr) { };
+
+    Token(Token *prev_token,
+          int clss,
+          flt_type score)
+    {
         m_prev_token = prev_token;
         m_class = clss;
         m_score = score;
+        m_cng_node = prev_token->m_cng_node;
     }
-    Token(Token &prev_token, int clss) {
+
+    Token(Token &prev_token,
+          int clss)
+    {
         m_prev_token = &prev_token;
         m_class = clss;
         m_score = prev_token.m_score;
+        m_cng_node = prev_token.m_cng_node;
     }
+
     ~Token() { };
 
     int m_class;
+    int m_cng_node;
     flt_type m_score;
     Token *m_prev_token;
 };
@@ -97,6 +107,7 @@ int read_sents(std::string corpusfname,
 
 void segment_sent(const std::vector<std::string> &sent,
                   const Ngram &ngram,
+                  const std::vector<int> &indexmap,
                   const Categories &categories,
                   flt_type prob_beam,
                   unsigned int max_tokens,
@@ -106,8 +117,9 @@ void segment_sent(const std::vector<std::string> &sent,
                   std::vector<std::vector<Token*> > &tokens,
                   std::vector<Token*> &pointers);
 
-flt_type collect_stats(std::vector<std::string> &sent,
+flt_type collect_stats(const std::vector<std::string> &sent,
                        const Ngram &ngram,
+                       const std::vector<int> &indexmap,
                        const Categories &categories,
                        Categories &stats,
                        SimpleFileOutput &seqf,

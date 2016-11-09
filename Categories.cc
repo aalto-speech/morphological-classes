@@ -488,10 +488,11 @@ read_sents(string corpusfname,
 void
 segment_sent(const std::vector<std::string> &words,
              const Ngram &ngram,
+             const vector<int> &indexmap,
              const Categories &categories,
+             unsigned int num_tokens,
+             unsigned int num_final_tokens,
              flt_type prob_beam,
-             unsigned int max_tokens,
-             unsigned int max_final_tokens,
              unsigned long int &unpruned,
              unsigned long int &pruned,
              vector<vector<Token*> > &tokens,
@@ -502,15 +503,11 @@ segment_sent(const std::vector<std::string> &words,
     tokens.resize(words.size());
 
     Token *initial_token = new Token();
+    initial_token->m_cng_node = ngram.sentence_start_node;
     tokens[0].push_back(initial_token);
     pointers.push_back(initial_token);
 
-    Token *initial_token_2 = new Token();
-    initial_token_2->m_prev_token = initial_token;
-    tokens[1].push_back(initial_token_2);
-    pointers.push_back(initial_token_2);
-
-    for (unsigned int i=2; i<words.size(); i++) {
+    for (unsigned int i=1; i<words.size(); i++) {
 
         const CategoryProbs *wcp = categories.get_category_mem_probs(words[i]);
         const CategoryProbs *c2p = categories.get_category_gen_probs(words[i-2]);
@@ -596,17 +593,18 @@ segment_sent(const std::vector<std::string> &words,
         }
 
         if (i<words.size()-1)
-            histogram_prune(tokens[i], max_tokens, worst_score, best_score);
+            histogram_prune(tokens[i], num_tokens, worst_score, best_score);
         else
-            histogram_prune(tokens[i], max_final_tokens, worst_score, best_score);
+            histogram_prune(tokens[i], num_final_tokens, worst_score, best_score);
     }
 
 }
 
 
 flt_type
-collect_stats(vector<string> &sent,
+collect_stats(const vector<string> &sent,
               const Ngram &ngram,
+              const vector<int> &indexmap,
               const Categories &categories,
               Categories &stats,
               SimpleFileOutput &seqf,
@@ -621,8 +619,8 @@ collect_stats(vector<string> &sent,
 
     vector<vector<Token*> > tokens;
     vector<Token*> pointers;
-    segment_sent(sent, ngram, categories,
-                 prob_beam, num_tokens, num_final_tokens,
+    segment_sent(sent, ngram, indexmap, categories,
+                 num_tokens, num_final_tokens, prob_beam,
                  unpruned, pruned, tokens, pointers);
 
     vector<Token*> &final_tokens = tokens.back();

@@ -75,6 +75,7 @@ int main(int argc, char* argv[]) {
         vector<string> sent;
         stringstream ss(line);
         string word;
+        sent.push_back("<s>");
         while (ss >> word) {
             if (word == "<s>" || word == "</s>") continue;
             sent.push_back(word);
@@ -88,7 +89,8 @@ int main(int argc, char* argv[]) {
                 wit->assign("<unk>");
 
         flt_type ll = collect_stats(sent,
-                                    cngram, wcs,
+                                    cngram, indexmap,
+                                    wcs,
                                     stats, outf,
                                     num_tokens, num_end_tokens,
                                     num_parses, prob_beam, false);
