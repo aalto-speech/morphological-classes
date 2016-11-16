@@ -451,7 +451,7 @@ segment_sent(const std::vector<std::string> &words,
 
             Token &tok = *(*tit);
 
-            flt_type cat_gen_lp = get_cat_gen_lp(&tok, 2);
+            flt_type cat_gen_lp = get_cat_gen_lp(&tok, ngram.max_order-1);
 
             // Categories are defined, iterate over memberships
             if (cmp != nullptr && cmp->size() > 0) {
@@ -532,7 +532,7 @@ segment_sent(const std::vector<std::string> &words,
     for (auto tit = curr_tokens.begin(); tit != curr_tokens.end(); ++tit) {
         Token &tok = *(*tit);
         Token* new_tok = new Token(tok, -1);
-        new_tok->m_lp = tok.m_lp + get_cat_gen_lp(&tok, 2);
+        new_tok->m_lp = tok.m_lp + get_cat_gen_lp(&tok, ngram.max_order-1);
         flt_type ngram_lp = 0.0;
         new_tok->m_cng_node = ngram.score(tok.m_cng_node, ngram.sentence_end_symbol_idx, ngram_lp);
         new_tok->m_lp += ngram_lp * log10_to_ln;
