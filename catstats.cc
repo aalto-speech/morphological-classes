@@ -21,6 +21,7 @@ int main(int argc, char* argv[]) {
     ('e', "num-end-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the end position (DEFAULT: 10)")
     ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words (DEFAULT: 100)")
     ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
+    ('u', "update-categories", "", "", "Update category generation and membership probabilities")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 5) config.print_help(stderr, 1);
@@ -36,6 +37,7 @@ int main(int argc, char* argv[]) {
     int num_end_tokens = config["num-end-tokens"].get_int();
     int max_line_length = config["max-line-length"].get_int();
     flt_type prob_beam = config["prob-beam"].get_float();
+    bool update_categories = config["update-categories"].specified;
 
     if (num_parses > num_end_tokens) {
         cerr << "Warning, num-parses higher than num-end-tokens" << endl;
@@ -95,9 +97,15 @@ int main(int argc, char* argv[]) {
 
     outf.close();
 
-    stats.estimate_model();
-    stats.write_category_gen_probs(modelfname + ".cgenprobs.gz");
-    stats.write_category_mem_probs(modelfname + ".cmemprobs.gz");
+    if (update_categories) {
+        stats.estimate_model();
+        stats.write_category_gen_probs(modelfname + ".cgenprobs.gz");
+        stats.write_category_mem_probs(modelfname + ".cmemprobs.gz");
+    }
+    else {
+        wcs.write_category_gen_probs(modelfname + ".cgenprobs.gz");
+        wcs.write_category_mem_probs(modelfname + ".cmemprobs.gz");
+    }
 
     cerr << "Number of sentences processed: " << senti << endl;
     cerr << "Likelihood: " << total_ll << endl;
