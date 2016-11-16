@@ -16,11 +16,11 @@ int main(int argc, char* argv[]) {
 
     conf::Config config;
     config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT OUTPUT MODEL\n")
-    ('p', "num-parses=INT", "arg", "10", "Maximum number of parses to print per sentence")
-    ('t', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position")
-    ('e', "num-end-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the end position")
-    ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words")
-    ('b', "prob-beam=FLOAT", "arg", "100", "Maximum sentence length as number of words")
+    ('p', "num-parses=INT", "arg", "10", "Maximum number of parses to print per sentence (DEFAULT: 10)")
+    ('t', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
+    ('e', "num-end-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the end position (DEFAULT: 10)")
+    ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words (DEFAULT: 100)")
+    ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 6) config.print_help(stderr, 1);
@@ -37,6 +37,12 @@ int main(int argc, char* argv[]) {
     int num_end_tokens = config["num-end-tokens"].get_int();
     int max_line_length = config["max-line-length"].get_int();
     flt_type prob_beam = config["prob-beam"].get_float();
+
+    if (num_parses > num_end_tokens) {
+        cerr << "Warning, num-parses higher than num-end-tokens" << endl;
+        cerr << "num-parses set to: " << num_end_tokens << endl;
+        num_parses = num_end_tokens;
+    }
 
     Categories wcs;
     cerr << "Reading class generation probs.." << endl;
