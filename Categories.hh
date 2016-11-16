@@ -93,18 +93,6 @@ public:
 };
 
 
-int get_word_counts(std::string corpusfname,
-                    std::map<std::string, int> &counts);
-
-int read_sents(std::string corpusfname,
-               std::vector<std::vector<std::string> > &sents,
-               int maxlen=20,
-               std::set<std::string> *vocab=nullptr,
-               int *num_word_tokens=nullptr,
-               int *num_word_types=nullptr,
-               int *num_unk_tokens=nullptr,
-               int *num_unk_types=nullptr);
-
 void segment_sent(const std::vector<std::string> &sent,
                   const Ngram &ngram,
                   const std::vector<int> &indexmap,
