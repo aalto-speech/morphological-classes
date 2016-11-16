@@ -15,7 +15,7 @@ using namespace std;
 int main(int argc, char* argv[]) {
 
     conf::Config config;
-    config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT OUTPUT MODEL\n")
+    config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT MODEL\n")
     ('p', "num-parses=INT", "arg", "10", "Maximum number of parses to print per sentence (DEFAULT: 10)")
     ('t', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
     ('e', "num-end-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the end position (DEFAULT: 10)")
@@ -23,14 +23,13 @@ int main(int argc, char* argv[]) {
     ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
-    if (config.arguments.size() != 6) config.print_help(stderr, 1);
+    if (config.arguments.size() != 5) config.print_help(stderr, 1);
 
     string cngramfname = config.arguments[0];
     string cgenpfname = config.arguments[1];
     string cmempfname = config.arguments[2];
     string infname = config.arguments[3];
-    string outfname = config.arguments[4];
-    string modelfname = config.arguments[5];
+    string modelfname = config.arguments[4];
 
     int num_parses = config["num-parses"].get_int();
     int num_tokens = config["num-tokens"].get_int();
@@ -65,7 +64,7 @@ int main(int argc, char* argv[]) {
     Categories stats(wcs.num_categories());
 
     SimpleFileInput corpusf(infname);
-    SimpleFileOutput outf(outfname);
+    SimpleFileOutput outf(modelfname + ".catseq.gz");
     string line;
     int senti=0;
     flt_type total_ll = 0.0;
