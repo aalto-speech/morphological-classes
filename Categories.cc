@@ -10,6 +10,11 @@
 using namespace std;
 
 
+bool descending_token_sort(Token *a, Token *b)
+{
+    return (a->m_score > b->m_score);
+}
+
 Categories::Categories(int num_classes)
 {
     m_num_classes = num_classes;
@@ -578,8 +583,9 @@ collect_stats(const vector<string> &sent,
         return 0.0;
     }
 
-    for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit) {
-        Token *tok = *tit;
+    sort(final_tokens.begin(), final_tokens.end(), descending_token_sort);
+    for (unsigned int i=0; i<final_tokens.size(); i++) {
+        Token *tok = final_tokens[i];
         flt_type lp = std::min((flt_type)0.0, tok->m_score-total_lp);
         vector<int> classes; classes.push_back(tok->m_category);
         while (tok->m_prev_token != nullptr) {
@@ -589,33 +595,26 @@ collect_stats(const vector<string> &sent,
         std::reverse(classes.begin(), classes.end());
 
         flt_type weight = exp(lp);
-        for (unsigned int i=1; i<classes.size()-1; i++) {
-            if (classes[i] == -1) continue; // FIXME skip unks
-            stats.accumulate(sent[i-1], classes[i], weight);
+        for (unsigned int c=1; c<classes.size()-1; c++) {
+            if (classes[c] == -1) continue; // FIXME skip unks
+            stats.accumulate(sent[c-1], classes[c], weight);
         }
 
-        if (num_parses > 1) {
-            seqf << weight;
-            seqf << " ";
+        if (i<num_parses) {
+            if (num_parses > 1) seqf << weight << " ";
+            seqf << "<s>";
+            for (unsigned int c=1; c<classes.size()-1; c++) {
+                if (classes[c] == -1) seqf << " <unk>";
+                else seqf << " " << classes[c];
+            }
+            seqf << " </s>\n";
         }
-        seqf << "<s>";
-        for (unsigned int i=1; i<classes.size()-1; i++) {
-            if (classes[i] == -1) seqf << " <unk>";
-            else seqf << " " << classes[i];
-        }
-        seqf << " </s>\n";
     }
 
     for (auto pit = pointers.begin(); pit != pointers.end(); ++pit)
         delete *pit;
 
     return total_lp;
-}
-
-
-bool descending_token_sort(Token *a, Token *b)
-{
-    return (a->m_score > b->m_score);
 }
 
 

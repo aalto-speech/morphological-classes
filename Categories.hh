@@ -1,5 +1,5 @@
-#ifndef CLASSES
-#define CLASSES
+#ifndef CATEGORIES
+#define CATEGORIES
 
 #include <string>
 #include <map>
@@ -126,4 +126,4 @@ void histogram_prune(std::vector<Token*> &tokens,
                      flt_type best_score);
 
 
-#endif /* CLASSES */
+#endif /* CATEGORIES */
