@@ -4,6 +4,7 @@
 .project
 *.o
 *.pyc
+init
 catstats
 exchange
 merge
