@@ -1,5 +1,5 @@
-#include <sstream>
 #include <cmath>
+#include <sstream>
 #include <algorithm>
 #include <queue>
 #include <thread>
@@ -43,8 +43,6 @@ Categories::Categories(std::string filename,
         for (auto cit=curr_classes.begin(); cit != curr_classes.end(); ++cit)
             m_stats[word][*cit] = curr_count/double(curr_classes.size());
     }
-    m_stats["<s>"][START_CLASS] = 1.0;
-    m_stats["<unk>"][UNK_CLASS] = 1.0;
 
     // Set an own class for the most common words
     if (top_word_categories > 0) {
@@ -91,10 +89,6 @@ Categories::estimate_model()
     m_class_mem_probs.clear();
     vector<flt_type> class_totals(m_num_classes, 0.0);
     map<string, flt_type> word_totals;
-
-    // Keep class for the UNK symbol in the model even if no UNKs in training data
-    if (m_stats.find("<unk>") == m_stats.end())
-        m_stats["<unk>"][UNK_CLASS] = 1.0;
 
     for (auto wit=m_stats.begin(); wit != m_stats.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit) {
@@ -201,7 +195,7 @@ Categories::num_stats() const
 
 void
 Categories::get_words(set<string> &words,
-                       bool get_unanalyzed)
+                      bool get_unanalyzed)
 {
     words.clear();
     for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)

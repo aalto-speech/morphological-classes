@@ -12,8 +12,6 @@
 typedef float flt_type;
 typedef std::map<int,std::map<int,std::map<int,flt_type> > > ngram_t;
 
-#define START_CLASS 0
-#define UNK_CLASS 1
 #define MIN_LOG_PROB -1000.0
 #define LP_PRUNE_LIMIT -50.0
 

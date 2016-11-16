@@ -36,9 +36,9 @@ void score(const vector<CategoryProbs*> &probs,
             for (auto pit = pos_probs.begin(); pit != pos_probs.end(); ++pit) {
                 CToken tok;
                 tok.m_prob = tit->m_prob + pit->second;
-                if (pit->first != UNK_CLASS || ngram_unk_states)
-                    tok.m_ngram_node = ngram.advance(tit->m_ngram_node, indexmap[pit->first]);
-                else tok.m_ngram_node = ngram.root_node;
+                //if (pit->first != UNK_CLASS || ngram_unk_states)
+                //    tok.m_ngram_node = ngram.advance(tit->m_ngram_node, indexmap[pit->first]);
+                //else tok.m_ngram_node = ngram.root_node;
                 target_tokens.push_back(tok);
                 curr_best = max(curr_best, tok.m_prob);
             }
@@ -102,11 +102,15 @@ likelihood(string &sent,
 
     flt_type sent_ll = 0.0;
 
+    CategoryProbs *special_prob = new CategoryProbs;
+    (*special_prob)[-1] = 0.0;
+
     for (int i=0; i<(int)words.size(); i++) {
         if (words[i] == "<unk>") continue;
         std::vector<CategoryProbs*> probs;
         for (int ctxi = max(0, i-order+1); ctxi<i; ctxi++)
-            probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
+            if (words[ctxi] == "<unk>") probs.push_back(special_prob);
+            else probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
         probs.push_back(&(wcs.m_class_mem_probs.at(words[i])));
         flt_type word_ll = -1000;
         score(probs, ngram, indexmap, start_node, false, word_ll, ngram_unk_states);
@@ -116,8 +120,9 @@ likelihood(string &sent,
 
     std::vector<CategoryProbs*> probs;
     for (int ctxi = max(0, (int)words.size()-order+1); ctxi<(int)words.size(); ctxi++)
-        probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
-    probs.push_back(&(wcs.m_class_mem_probs.at("<s>")));
+        if (words[ctxi] == "<unk>") probs.push_back(special_prob);
+        else probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
+    probs.push_back(special_prob);
     flt_type word_ll = -1000;
     score(probs, ngram, indexmap, start_node, true, word_ll, ngram_unk_states);
     sent_ll += word_ll;

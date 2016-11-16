@@ -14,7 +14,7 @@
 
 class Token {
 public:
-    Token() : m_class(START_CLASS),
+    Token() : m_class(-1),
               m_cng_node(-1),
               m_score(0.0),
               m_prev_token(nullptr) { };

@@ -205,6 +205,25 @@ Ngram::read_arpa(string arpafname) {
     sentence_start_symbol_idx = vocabulary_lookup[sentence_start_symbol];
     sentence_start_node = find_node(root_node, sentence_start_symbol_idx);
     if (sentence_start_node == -1) throw string("Sentence start symbol not found.");
+
+    if (vocabulary_lookup.find("<unk>") != vocabulary_lookup.end()
+        && vocabulary_lookup.find("<UNK>") != vocabulary_lookup.end()) {
+        cerr << "Error, both <unk> and <UNK> symbols in the language model" << endl;
+        exit(EXIT_FAILURE);
+    }
+    else if (vocabulary_lookup.find("<unk>") != vocabulary_lookup.end()) {
+        cerr << "Detected unk symbol: <unk>" << endl;
+        unk_symbol_idx = vocabulary_lookup["<unk>"];
+    }
+    else if (vocabulary_lookup.find("<UNK>") != vocabulary_lookup.end()) {
+        cerr << "Detected unk symbol: <UNK>" << endl;
+        unk_symbol.assign("<UNK>");
+        unk_symbol_idx = vocabulary_lookup["<UNK>"];
+    }
+    else {
+        cerr << "Error, no unk symbol in the language model" << endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 

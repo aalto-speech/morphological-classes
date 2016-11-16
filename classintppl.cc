@@ -73,21 +73,6 @@ int main(int argc, char* argv[]) {
     lm.read_arpa(arpafname);
     int lm_start_node = lm.advance(lm.root_node, lm.vocabulary_lookup.at("<s>"));
 
-    string unk;
-    int unk_id;
-    if (lm.vocabulary_lookup.find("<unk>") != lm.vocabulary_lookup.end()) {
-        unk.assign("<unk>");
-        unk_id = lm.vocabulary_lookup["<unk>"];
-    }
-    else if (lm.vocabulary_lookup.find("<UNK>") != lm.vocabulary_lookup.end()) {
-        unk.assign("<UNK>");
-        unk_id = lm.vocabulary_lookup["<UNK>"];
-    }
-    else {
-        cerr << "Unk symbol not found in language model." << endl;
-        exit(1);
-    }
-
     map<string, pair<int, flt_type> > class_memberships;
     cerr << "Reading class memberships.." << endl;
     int num_classes = read_class_memberships(classmfname, class_memberships);
@@ -103,10 +88,6 @@ int main(int argc, char* argv[]) {
         if (class_ng.vocabulary_lookup.find(int2str(i)) != class_ng.vocabulary_lookup.end())
             indexmap[i] = class_ng.vocabulary_lookup[int2str(i)];
         else indexmap[i] = -1;
-    if (indexmap[UNK_CLASS] == -1) {
-        cerr << "Unk class not found in the class n-gram model, forcing use-root-node" << endl;
-        root_unk_states = true;
-    }
 
     cerr << "Scoring sentences.." << endl;
     SimpleFileInput infile(infname);
@@ -125,21 +106,21 @@ int main(int argc, char* argv[]) {
         double sent_ll = 0.0;
 
         vector<string> words;
-        preprocess_sent(line, lm, class_memberships, unk, words, num_words, num_oovs);
+        preprocess_sent(line, lm, class_memberships, "<unk>", words, num_words, num_oovs);
 
         int curr_class_lm_node = class_lm_start_node;
         int curr_lm_node = lm_start_node;
 
         for (int i=0; i<(int)words.size(); i++) {
 
-            if (words[i] == unk) {
+            if (words[i] == "<unk>") {
                 if (root_unk_states) {
                     curr_lm_node = lm.root_node;
                     curr_class_lm_node = class_ng.root_node;
                 }
                 else {
-                    curr_lm_node = lm.advance(curr_lm_node, unk_id);
-                    curr_class_lm_node = class_ng.advance(curr_class_lm_node, indexmap[UNK_CLASS]);
+                    curr_lm_node = lm.advance(curr_lm_node, lm.unk_symbol_idx);
+                    curr_class_lm_node = class_ng.advance(curr_class_lm_node, class_ng.unk_symbol_idx);
                 }
                 continue;
             }

@@ -59,14 +59,6 @@ int main(int argc, char* argv[]) {
     for (int i=0; i<(int)indexmap.size(); i++)
         if (cngram.vocabulary_lookup.find(int2str(i)) != cngram.vocabulary_lookup.end())
             indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
-    if (indexmap[START_CLASS] == -1) {
-        cerr << "warning, start class not in the model" << endl;
-        exit(EXIT_FAILURE);
-    }
-    if (indexmap[UNK_CLASS] == -1) {
-        cerr << "warning, unk class not in the model" << endl;
-        exit(EXIT_FAILURE);
-    }
 
     set<string> vocab; wcs.get_words(vocab, false);
 
@@ -81,12 +73,10 @@ int main(int argc, char* argv[]) {
         vector<string> sent;
         stringstream ss(line);
         string word;
-        sent.push_back("<s>");
         while (ss >> word) {
             if (word == "<s>" || word == "</s>") continue;
             sent.push_back(word);
         }
-        sent.push_back("</s>");
         if ((int)sent.size() > max_line_length) continue;
         if ((int)sent.size() == 1) continue;
 
