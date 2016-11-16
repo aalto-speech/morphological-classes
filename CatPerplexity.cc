@@ -108,6 +108,7 @@ likelihood(string &sent,
     for (int i=0; i<(int)words.size(); i++) {
         if (words[i] == "<unk>") continue;
         std::vector<CategoryProbs*> probs;
+        // FIXME
         for (int ctxi = max(0, i-order+1); ctxi<i; ctxi++)
             if (words[ctxi] == "<unk>") probs.push_back(special_prob);
             else probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
@@ -119,9 +120,11 @@ likelihood(string &sent,
     }
 
     std::vector<CategoryProbs*> probs;
+    // FIXME
     for (int ctxi = max(0, (int)words.size()-order+1); ctxi<(int)words.size(); ctxi++)
         if (words[ctxi] == "<unk>") probs.push_back(special_prob);
         else probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
+    // FIXME
     probs.push_back(special_prob);
     flt_type word_ll = -1000;
     score(probs, ngram, indexmap, start_node, true, word_ll, ngram_unk_states);
