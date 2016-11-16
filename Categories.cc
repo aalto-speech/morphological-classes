@@ -458,8 +458,7 @@ segment_sent(const std::vector<std::string> &words,
                 for (auto cit = cmp->cbegin(); cit != cmp->cend(); ++cit) {
                     int c = cit->first;
 
-                    flt_type curr_score = tok.m_lp;
-                    curr_score += cat_gen_lp;
+                    flt_type curr_score = tok.m_lp + cat_gen_lp;
                     flt_type ngram_lp = 0.0;
                     int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], ngram_lp);
                     curr_score += ngram_lp * log10_to_ln;
@@ -533,7 +532,7 @@ segment_sent(const std::vector<std::string> &words,
     for (auto tit = curr_tokens.begin(); tit != curr_tokens.end(); ++tit) {
         Token &tok = *(*tit);
         Token* new_tok = new Token(tok, -1);
-        new_tok->m_lp = tok.m_lp;
+        new_tok->m_lp = tok.m_lp + get_cat_gen_lp(&tok, 2);
         flt_type ngram_lp = 0.0;
         new_tok->m_cng_node = ngram.score(tok.m_cng_node, ngram.sentence_end_symbol_idx, ngram_lp);
         new_tok->m_lp += ngram_lp * log10_to_ln;
