@@ -25,6 +25,8 @@ public:
         sentence_start_node(-1),
         sentence_start_symbol_idx(-1),
         sentence_start_symbol("<s>"),
+        sentence_end_symbol_idx(-1),
+        sentence_end_symbol("</s>"),
         unk_symbol_idx(-1),
         unk_symbol("<unk>"),
         max_order(-1) { };
@@ -41,6 +43,10 @@ public:
     int sentence_start_node;
     int sentence_start_symbol_idx;
     std::string sentence_start_symbol;
+
+    int sentence_end_symbol_idx;
+    std::string sentence_end_symbol;
+
     int unk_symbol_idx;
     std::string unk_symbol;
 
