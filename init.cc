@@ -53,7 +53,7 @@ write_class_unigram_counts(const map<string, int> &word_counts,
             category_counts["<unk>"] += wit->second;
             continue;
         }
-        const CategoryProbs &cprobs = wcl.m_class_gen_probs.at(wit->first);
+        const CategoryProbs &cprobs = wcl.m_category_gen_probs.at(wit->first);
         if (cprobs.size() == 0)
             category_counts["<unk>"] += wit->second;
         else {
@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
         Categories wcl(init_words_fname, word_counts, top_word_classes);
         wcl.assert_category_gen_probs();
         wcl.assert_category_mem_probs();
-        int num_classes = wcl.num_classes();
+        int num_classes = wcl.num_categories();
 
         cerr << "Read class probabilities for " << wcl.num_words() << " words" << endl;
         cerr << "Number of words with categories: " << wcl.num_words_with_categories() << endl;

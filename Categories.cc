@@ -85,8 +85,8 @@ Categories::accumulate(Categories &acc)
 void
 Categories::estimate_model()
 {
-    m_class_gen_probs.clear();
-    m_class_mem_probs.clear();
+    m_category_gen_probs.clear();
+    m_category_mem_probs.clear();
     vector<flt_type> class_totals(m_num_classes, 0.0);
     map<string, flt_type> word_totals;
 
@@ -104,8 +104,8 @@ Categories::estimate_model()
     for (auto wit=m_stats.begin(); wit != m_stats.end(); ++wit) {
 
         // Keep words without analyses in the vocabulary
-        m_class_gen_probs[wit->first] = CategoryProbs();
-        m_class_mem_probs[wit->first] = CategoryProbs();
+        m_category_gen_probs[wit->first] = CategoryProbs();
+        m_category_mem_probs[wit->first] = CategoryProbs();
 
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit) {
             flt_type wlp = log(clit->second) - class_totals[clit->first];
@@ -113,8 +113,8 @@ Categories::estimate_model()
             if (wlp > LP_PRUNE_LIMIT && !std::isinf(wlp)
                 && clp > LP_PRUNE_LIMIT && !std::isinf(clp))
             {
-                m_class_gen_probs[wit->first][clit->first] = clp;
-                m_class_mem_probs[wit->first][clit->first] = wlp;
+                m_category_gen_probs[wit->first][clit->first] = clp;
+                m_category_mem_probs[wit->first][clit->first] = wlp;
             }
         }
     }
@@ -126,7 +126,7 @@ Categories::estimate_model()
 int
 Categories::num_words() const
 {
-    if (m_class_mem_probs.size() > 0) return m_class_mem_probs.size();
+    if (m_category_mem_probs.size() > 0) return m_category_mem_probs.size();
     else return m_stats.size();
 }
 
@@ -134,8 +134,8 @@ int
 Categories::num_words_with_categories() const
 {
     int words = 0;
-    if (m_class_mem_probs.size() > 0) {
-        for (auto wit = m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
+    if (m_category_mem_probs.size() > 0) {
+        for (auto wit = m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
             if (wit->second.size() > 0) words++;
     }
     else {
@@ -146,7 +146,7 @@ Categories::num_words_with_categories() const
 }
 
 int
-Categories::num_classes() const
+Categories::num_categories() const
 {
     return m_num_classes;
 }
@@ -156,7 +156,7 @@ int
 Categories::num_observed_categories() const
 {
     set<int> classes;
-    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
+    for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit)
             classes.insert(clit->first);
     return classes.size();
@@ -167,7 +167,7 @@ int
 Categories::num_category_gen_probs() const
 {
     int num_class_probs = 0;
-    for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
+    for (auto wit=m_category_gen_probs.begin(); wit != m_category_gen_probs.end(); ++wit)
         num_class_probs += wit->second.size();
     return num_class_probs;
 }
@@ -177,7 +177,7 @@ int
 Categories::num_category_mem_probs() const
 {
     int num_word_probs = 0;
-    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
+    for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         num_word_probs += wit->second.size();
     return num_word_probs;
 }
@@ -198,7 +198,7 @@ Categories::get_words(set<string> &words,
                       bool get_unanalyzed)
 {
     words.clear();
-    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
+    for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         if (wit->second.size() > 0 || get_unanalyzed)
             words.insert(wit->first);
 }
@@ -208,7 +208,7 @@ void
 Categories::get_unanalyzed_words(set<string> &words)
 {
     words.clear();
-    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
+    for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         if (wit->second.size() == 0)
             words.insert(wit->first);
 }
@@ -217,7 +217,7 @@ void
 Categories::get_unanalyzed_words(map<string, flt_type> &words)
 {
     words.clear();
-    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
+    for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         if (wit->second.size() == 0)
             words.insert(make_pair(wit->first, 0.0));
 }
@@ -225,8 +225,8 @@ Categories::get_unanalyzed_words(map<string, flt_type> &words)
 flt_type
 Categories::log_likelihood(int c, std::string word) const
 {
-    auto wit = m_class_mem_probs.find(word);
-    if (wit == m_class_mem_probs.end()) return MIN_LOG_PROB;
+    auto wit = m_category_mem_probs.find(word);
+    if (wit == m_category_mem_probs.end()) return MIN_LOG_PROB;
     auto prit = wit->second.find(c);
     if (prit == wit->second.end()) return MIN_LOG_PROB;
     return prit->second;
@@ -246,8 +246,8 @@ Categories::log_likelihood(int c, const CategoryProbs *wcp) const
 const CategoryProbs*
 Categories::get_category_mem_probs(std::string word) const
 {
-    auto wit = m_class_mem_probs.find(word);
-    if (wit == m_class_mem_probs.end()) return nullptr;
+    auto wit = m_category_mem_probs.find(word);
+    if (wit == m_category_mem_probs.end()) return nullptr;
     return &(wit->second);
 }
 
@@ -255,8 +255,8 @@ Categories::get_category_mem_probs(std::string word) const
 const CategoryProbs*
 Categories::get_category_gen_probs(std::string word) const
 {
-    auto wit = m_class_gen_probs.find(word);
-    if (wit == m_class_gen_probs.end()) return nullptr;
+    auto wit = m_category_gen_probs.find(word);
+    if (wit == m_category_gen_probs.end()) return nullptr;
     return &(wit->second);
 }
 
@@ -264,8 +264,8 @@ Categories::get_category_gen_probs(std::string word) const
 void
 Categories::get_all_category_mem_probs(vector<map<string, flt_type> > &word_probs) const
 {
-    word_probs.resize(num_classes());
-    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
+    word_probs.resize(num_categories());
+    for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         for (auto pit=wit->second.begin(); pit != wit->second.end(); ++pit)
             word_probs[pit->first][wit->first] = pit->second;
 }
@@ -275,10 +275,10 @@ bool
 Categories::assert_category_gen_probs() const
 {
     std::map<string, flt_type> word_totals;
-    for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
+    for (auto wit=m_category_gen_probs.begin(); wit != m_category_gen_probs.end(); ++wit)
         word_totals[wit->first] = MIN_LOG_PROB;
 
-    for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit)
+    for (auto wit=m_category_gen_probs.begin(); wit != m_category_gen_probs.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit)
             word_totals[wit->first] = add_log_domain_probs(word_totals[wit->first], clit->second);
 
@@ -298,7 +298,7 @@ bool
 Categories::assert_category_mem_probs() const
 {
     vector<flt_type> class_totals(m_num_classes, MIN_LOG_PROB);
-    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit)
+    for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit)
             class_totals[clit->first] = add_log_domain_probs(class_totals[clit->first], clit->second);
 
@@ -319,7 +319,7 @@ Categories::write_category_gen_probs(string fname) const
 {
     SimpleFileOutput wcf(fname);
 
-    for (auto wit=m_class_gen_probs.begin(); wit != m_class_gen_probs.end(); ++wit) {
+    for (auto wit=m_category_gen_probs.begin(); wit != m_category_gen_probs.end(); ++wit) {
         wcf << wit->first << "\t";
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit) {
             if (clit != wit->second.begin()) wcf << " ";
@@ -336,7 +336,7 @@ Categories::write_category_mem_probs(string fname) const
 {
     SimpleFileOutput wcf(fname);
 
-    for (auto wit=m_class_mem_probs.begin(); wit != m_class_mem_probs.end(); ++wit) {
+    for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit) {
         wcf << wit->first << "\t";
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit) {
             if (clit != wit->second.begin()) wcf << " ";
@@ -362,10 +362,10 @@ Categories::read_category_gen_probs(string fname)
         flt_type prob;
         ss >> word;
         // Keep words without classes in the model
-        m_class_gen_probs[word] = CategoryProbs();
+        m_category_gen_probs[word] = CategoryProbs();
         while (ss >> clss) {
             ss >> prob;
-            m_class_gen_probs[word][clss] = prob;
+            m_category_gen_probs[word][clss] = prob;
             max_class = max(max_class, clss);
         }
     }
@@ -386,10 +386,10 @@ Categories::read_category_mem_probs(string fname)
         flt_type prob;
         ss >> word;
         // Keep words without classes in the model
-        m_class_mem_probs[word] = CategoryProbs();
+        m_category_mem_probs[word] = CategoryProbs();
         while (ss >> clss) {
             ss >> prob;
-            m_class_mem_probs[word][clss] = prob;
+            m_category_mem_probs[word][clss] = prob;
             max_class = max(max_class, clss);
         }
     }
@@ -412,20 +412,23 @@ segment_sent(const std::vector<std::string> &words,
 {
     pointers.clear();
     tokens.clear();
-    tokens.resize(words.size());
+    tokens.resize(words.size()+2);
+    static double log10_to_ln = log(10.0);
 
     Token *initial_token = new Token();
     initial_token->m_cng_node = ngram.sentence_start_node;
     tokens[0].push_back(initial_token);
     pointers.push_back(initial_token);
 
-    for (unsigned int i=1; i<words.size(); i++) {
+    for (unsigned int i=0; i<words.size(); i++) {
 
         const CategoryProbs *wcp = categories.get_category_mem_probs(words[i]);
-        const CategoryProbs *c2p = categories.get_category_gen_probs(words[i-2]);
-        const CategoryProbs *c1p = categories.get_category_gen_probs(words[i-1]);
+        const CategoryProbs *c2p = nullptr;
+        const CategoryProbs *c1p = nullptr;
+        if (i>1) c2p = categories.get_category_gen_probs(words[i-2]);
+        if (i>0) c1p = categories.get_category_gen_probs(words[i-1]);
 
-        vector<Token*> &curr_tokens = tokens[i-1];
+        vector<Token*> &curr_tokens = tokens[i];
         flt_type best_score = -FLT_MAX;
         flt_type worst_score = FLT_MAX;
         for (auto tit = curr_tokens.begin(); tit != curr_tokens.end(); ++tit) {
@@ -434,15 +437,15 @@ segment_sent(const std::vector<std::string> &words,
 
             flt_type class_gen_score = 0.0;
             if (c2p != nullptr) {
-                auto c2it = c2p->find(tok.m_prev_token->m_class);
+                auto c2it = c2p->find(tok.m_prev_token->m_category);
                 if (c2it != c2p->end()) class_gen_score += c2it->second;
             }
             if (c1p != nullptr) {
-                auto c1it = c1p->find(tok.m_class);
+                auto c1it = c1p->find(tok.m_category);
                 if (c1it != c1p->end()) class_gen_score += c1it->second;
             }
 
-            // Classes are defined, iterate over class memberships
+            // Categories are defined, iterate over memberships
             if (wcp != nullptr && wcp->size() > 0) {
                 for (auto cit = wcp->cbegin(); cit != wcp->cend(); ++cit) {
                     int c = cit->first;
@@ -451,7 +454,6 @@ segment_sent(const std::vector<std::string> &words,
                     curr_score += class_gen_score;
                     flt_type ngram_lp = 0.0;
                     int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], ngram_lp);
-                    static double log10_to_ln = log(10.0);
                     curr_score += ngram_lp * log10_to_ln;
                     curr_score += cit->second;
 
@@ -466,9 +468,17 @@ segment_sent(const std::vector<std::string> &words,
                     Token* new_tok = new Token(tok, c);
                     new_tok->m_score = curr_score;
                     new_tok->m_cng_node = ngram_node_idx;
-                    tokens[i].push_back(new_tok);
+                    tokens[i+1].push_back(new_tok);
                     pointers.push_back(new_tok);
                 }
+            }
+            // Advance with the unk symbol
+            else {
+                Token* new_tok = new Token(tok, -1);
+                new_tok->m_score = tok.m_score;
+                new_tok->m_cng_node = ngram.advance(tok.m_cng_node, ngram.unk_symbol_idx);
+                tokens[i+1].push_back(new_tok);
+                pointers.push_back(new_tok);
             }
 
             // No classes defined, handles initial pass for words without a class
@@ -504,11 +514,23 @@ segment_sent(const std::vector<std::string> &words,
         }
 
         if (i<words.size()-1)
-            histogram_prune(tokens[i], num_tokens, worst_score, best_score);
+            histogram_prune(tokens[i+1], num_tokens, worst_score, best_score);
         else
-            histogram_prune(tokens[i], num_final_tokens, worst_score, best_score);
+            histogram_prune(tokens[i+1], num_final_tokens, worst_score, best_score);
     }
 
+    // Add sentence end scores
+    vector<Token*> &curr_tokens = tokens[tokens.size()-2];
+    for (auto tit = curr_tokens.begin(); tit != curr_tokens.end(); ++tit) {
+        Token &tok = *(*tit);
+        Token* new_tok = new Token(tok, -1);
+        new_tok->m_score = tok.m_score;
+        flt_type ngram_lp = 0.0;
+        new_tok->m_cng_node = ngram.score(tok.m_cng_node, ngram.sentence_end_symbol_idx, ngram_lp);
+        new_tok->m_score += ngram_lp * log10_to_ln;
+        tokens.back().push_back(new_tok);
+        pointers.push_back(new_tok);
+    }
 }
 
 
@@ -559,24 +581,28 @@ collect_stats(const vector<string> &sent,
     for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit) {
         Token *tok = *tit;
         flt_type lp = std::min((flt_type)0.0, tok->m_score-total_lp);
-        vector<int> classes; classes.push_back(tok->m_class);
+        vector<int> classes; classes.push_back(tok->m_category);
         while (tok->m_prev_token != nullptr) {
             tok = tok->m_prev_token;
-            classes.push_back(tok->m_class);
+            classes.push_back(tok->m_category);
         }
         std::reverse(classes.begin(), classes.end());
 
         flt_type weight = exp(lp);
-        for (unsigned int i=1; i<classes.size(); i++)
-            stats.accumulate(sent[i], classes[i], weight);
+        for (unsigned int i=1; i<classes.size()-1; i++) {
+            if (classes[i] == -1) continue; // FIXME skip unks
+            stats.accumulate(sent[i-1], classes[i], weight);
+        }
 
         if (num_parses > 1) {
             seqf << weight;
             seqf << " ";
         }
         seqf << "<s>";
-        for (unsigned int i=2; i<classes.size()-1; i++)
-            seqf << " " << classes[i];
+        for (unsigned int i=1; i<classes.size()-1; i++) {
+            if (classes[i] == -1) seqf << " <unk>";
+            else seqf << " " << classes[i];
+        }
         seqf << " </s>\n";
     }
 

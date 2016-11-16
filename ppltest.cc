@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest1)
     Ngram ng;
     ng.read_arpa("data/classes.1g.wb.arpa.gz");
 
-    vector<int> indexmap(wcs.num_classes());
+    vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         indexmap[i] = ng.vocabulary_lookup[int2str(i)];
 
@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest2)
     Ngram ng;
     ng.read_arpa("data/classes.1g.wb.arpa.gz");
 
-    vector<int> indexmap(wcs.num_classes());
+    vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         indexmap[i] = ng.vocabulary_lookup[int2str(i)];
 
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest3)
     Ngram ng;
     ng.read_arpa("data/classes.2g.wb.arpa.gz");
 
-    vector<int> indexmap(wcs.num_classes());
+    vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         indexmap[i] = ng.vocabulary_lookup[int2str(i)];
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest4)
     Ngram ng;
     ng.read_arpa("data/classes.2g.wb.arpa.gz");
 
-    vector<int> indexmap(wcs.num_classes());
+    vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         indexmap[i] = ng.vocabulary_lookup[int2str(i)];
 
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(PerplexityTest5)
     Ngram ng;
     ng.read_arpa("data/classes.2g.wb.arpa.gz");
 
-    vector<int> indexmap(wcs.num_classes());
+    vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         indexmap[i] = ng.vocabulary_lookup[int2str(i)];
 

@@ -55,14 +55,14 @@ int main(int argc, char* argv[]) {
     cngram.read_arpa(cngramfname);
 
     // The class indexes are stored as strings in the n-gram class
-    vector<int> indexmap(wcs.num_classes());
+    vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         if (cngram.vocabulary_lookup.find(int2str(i)) != cngram.vocabulary_lookup.end())
             indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
 
     set<string> vocab; wcs.get_words(vocab, false);
 
-    Categories stats;
+    Categories stats(wcs.num_categories());
 
     SimpleFileInput corpusf(infname);
     SimpleFileOutput outf(outfname);

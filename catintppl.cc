@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
     class_ng.read_arpa(classngramfname);
 
     // The class indexes are stored as strings in the n-gram class
-    vector<int> indexmap(wcs.num_classes());
+    vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         indexmap[i] = class_ng.vocabulary_lookup[int2str(i)];
 

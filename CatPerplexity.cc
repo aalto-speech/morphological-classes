@@ -87,7 +87,7 @@ likelihood(string &sent,
     while (ss >> word) {
         if (word == "<s>") continue;
         if (word == "</s>") continue;
-        if (wcs.m_class_gen_probs.find(word) == wcs.m_class_gen_probs.end()
+        if (wcs.m_category_gen_probs.find(word) == wcs.m_category_gen_probs.end()
             || word == "<unk>"  || word == "<UNK>")
         {
             words.push_back("<unk>");
@@ -111,8 +111,8 @@ likelihood(string &sent,
         // FIXME
         for (int ctxi = max(0, i-order+1); ctxi<i; ctxi++)
             if (words[ctxi] == "<unk>") probs.push_back(special_prob);
-            else probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
-        probs.push_back(&(wcs.m_class_mem_probs.at(words[i])));
+            else probs.push_back(&(wcs.m_category_gen_probs.at(words[ctxi])));
+        probs.push_back(&(wcs.m_category_mem_probs.at(words[i])));
         flt_type word_ll = -1000;
         score(probs, ngram, indexmap, start_node, false, word_ll, ngram_unk_states);
         sent_ll += word_ll;
@@ -123,7 +123,7 @@ likelihood(string &sent,
     // FIXME
     for (int ctxi = max(0, (int)words.size()-order+1); ctxi<(int)words.size(); ctxi++)
         if (words[ctxi] == "<unk>") probs.push_back(special_prob);
-        else probs.push_back(&(wcs.m_class_gen_probs.at(words[ctxi])));
+        else probs.push_back(&(wcs.m_category_gen_probs.at(words[ctxi])));
     // FIXME
     probs.push_back(special_prob);
     flt_type word_ll = -1000;

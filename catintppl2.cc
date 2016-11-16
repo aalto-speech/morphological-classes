@@ -38,7 +38,7 @@ void read_class_model(Categories &wcs,
     ng.read_arpa(arpafname);
 
     // The class indexes are stored as strings in the n-gram class
-    indexmap.resize(wcs.num_classes());
+    indexmap.resize(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         indexmap[i] = ng.vocabulary_lookup[int2str(i)];
 }

@@ -14,7 +14,7 @@
 
 class Token {
 public:
-    Token() : m_class(-1),
+    Token() : m_category(-1),
               m_cng_node(-1),
               m_score(0.0),
               m_prev_token(nullptr) { };
@@ -24,7 +24,7 @@ public:
           flt_type score)
     {
         m_prev_token = prev_token;
-        m_class = clss;
+        m_category = clss;
         m_score = score;
         m_cng_node = prev_token->m_cng_node;
     }
@@ -33,14 +33,14 @@ public:
           int clss)
     {
         m_prev_token = &prev_token;
-        m_class = clss;
+        m_category = clss;
         m_score = prev_token.m_score;
         m_cng_node = prev_token.m_cng_node;
     }
 
     ~Token() { };
 
-    int m_class;
+    int m_category;
     int m_cng_node;
     flt_type m_score;
     Token *m_prev_token;
@@ -61,7 +61,7 @@ public:
     void estimate_model();
     int num_words() const;
     int num_words_with_categories() const;
-    int num_classes() const;
+    int num_categories() const;
     int num_observed_categories() const;
     int num_category_gen_probs() const;
     int num_category_mem_probs() const;
@@ -87,9 +87,9 @@ public:
     std::map<std::string, CategoryProbs> m_stats;
 
     // Final model p(c|w)
-    std::map<std::string, CategoryProbs> m_class_gen_probs;
+    std::map<std::string, CategoryProbs> m_category_gen_probs;
     // Final model p(w|c)
-    std::map<std::string, CategoryProbs> m_class_mem_probs;
+    std::map<std::string, CategoryProbs> m_category_mem_probs;
 };
 
 
