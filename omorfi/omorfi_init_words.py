@@ -9,8 +9,8 @@ from omorfi_parse import merge_uc_lc
 
 
 def get_class_idx_map(classes):
+    idx = 0
     idx_map = dict()
-    idx = 2
     for clss in classes:
         idx_map[clss] = idx
         idx += 1
@@ -32,9 +32,6 @@ def initialize(analyses, clsmap):
         # in-vocabulary word with no analyses
         else:
             word_states[word] = set()
-    word_states["<s>"] = {0}
-    word_states["<unk>"] = {1}
-    #word_states["</s>"] = {0}
 
     return word_states
 
@@ -68,5 +65,3 @@ if __name__ == "__main__":
     for idx, clss in rev_clsmap.items():
         print >>classf, "%i\t%s" % (idx, clss)
     classf.close()
-
-
