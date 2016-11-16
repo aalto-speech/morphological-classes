@@ -60,8 +60,6 @@ if __name__ == "__main__":
     rev_clsmap = dict()
     for clss, idx in clsmap.items():
         rev_clsmap[idx] = clss
-    rev_clsmap[0] = "<s>"
-    rev_clsmap[1] = "<unk>"
     for idx, clss in rev_clsmap.items():
         print >>classf, "%i\t%s" % (idx, clss)
     classf.close()
