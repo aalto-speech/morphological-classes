@@ -15,8 +15,10 @@ get_word_counts(string corpusfname,
     SimpleFileInput corpusf(corpusfname);
 
     int wc = 0;
+    int lc = 0;
     string line;
     while (corpusf.getline(line)) {
+        if (line.length() == 0) continue;
         stringstream ss(line);
         string word;
         while (ss >> word) {
@@ -24,9 +26,47 @@ get_word_counts(string corpusfname,
             counts[word]++;
             wc++;
         }
+        lc++;
     }
 
+    counts["<s>"] = lc;
+    counts["</s>"] = lc;
+
     return wc;
+}
+
+
+void
+write_class_unigram_counts(const map<string, int> &word_counts,
+                           const Categories &wcl,
+                           string countfname)
+{
+    map<string, flt_type> category_counts;
+    for (auto wit=word_counts.cbegin(); wit != word_counts.cend(); ++wit) {
+        if (wit->first == "<s>" || wit->first == "</s>"
+            || wit->first == "<unk>")
+        {
+            category_counts[wit->first] += wit->second;
+            continue;
+        }
+        else if (wit->first == "<UNK>") {
+            category_counts["<unk>"] += wit->second;
+            continue;
+        }
+        const CategoryProbs &cprobs = wcl.m_class_gen_probs.at(wit->first);
+        if (cprobs.size() == 0)
+            category_counts["<unk>"] += wit->second;
+        else {
+            flt_type tmp = 1.0 / (flt_type)cprobs.size();
+            for (auto catit = cprobs.cbegin(); catit != cprobs.end(); ++catit)
+                category_counts[int2str(catit->first)] += wit->second * tmp;
+        }
+    }
+
+    SimpleFileOutput countf(countfname);
+    for (auto cit = category_counts.begin(); cit != category_counts.end(); ++cit)
+        countf << cit->first << "\t" << cit->second << "\n";
+    countf.close();
 }
 
 
@@ -47,19 +87,20 @@ int main(int argc, char* argv[])
 
         map<string, int> word_counts;
         get_word_counts(corpus_fname, word_counts);
-        Categories *wcl = new Categories(init_words_fname, word_counts, top_word_classes);
-        wcl->assert_category_gen_probs();
-        wcl->assert_category_mem_probs();
-        int num_classes = wcl->num_classes();
+        Categories wcl(init_words_fname, word_counts, top_word_classes);
+        wcl.assert_category_gen_probs();
+        wcl.assert_category_mem_probs();
+        int num_classes = wcl.num_classes();
 
-        cerr << "Read class probabilities for " << wcl->num_words() << " words" << endl;
-        cerr << "Number of words with categories: " << wcl->num_words_with_categories() << endl;
+        cerr << "Read class probabilities for " << wcl.num_words() << " words" << endl;
+        cerr << "Number of words with categories: " << wcl.num_words_with_categories() << endl;
         cerr << "Number of categories: " << num_classes << endl;
-        cerr << "Number of category generation probabilities: " << wcl->num_category_gen_probs() << endl;
-        cerr << "Number of category membership probabilities: " << wcl->num_category_mem_probs() << endl;
+        cerr << "Number of category generation probabilities: " << wcl.num_category_gen_probs() << endl;
+        cerr << "Number of category membership probabilities: " << wcl.num_category_mem_probs() << endl;
 
-        wcl->write_category_gen_probs(model_fname + ".cgenprobs.gz");
-        wcl->write_category_mem_probs(model_fname + ".cmemprobs.gz");
+        wcl.write_category_gen_probs(model_fname + ".cgenprobs.gz");
+        wcl.write_category_mem_probs(model_fname + ".cmemprobs.gz");
+        write_class_unigram_counts(word_counts, wcl, model_fname + ".ccounts.gz");
 
     } catch (string &e) {
         cerr << e << endl;
