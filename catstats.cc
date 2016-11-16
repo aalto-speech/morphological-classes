@@ -45,12 +45,12 @@ int main(int argc, char* argv[]) {
     }
 
     Categories wcs;
-    cerr << "Reading class generation probs.." << endl;
+    cerr << "Reading category generation probs.." << endl;
     wcs.read_category_gen_probs(cgenpfname);
-    cerr << "Reading class membership probs.." << endl;
+    cerr << "Reading category membership probs.." << endl;
     wcs.read_category_mem_probs(cmempfname);
 
-    cerr << "Reading class n-gram model.." << endl;
+    cerr << "Reading category n-gram model.." << endl;
     Ngram cngram;
     cngram.read_arpa(cngramfname);
 
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
     SimpleFileInput corpusf(infname);
     SimpleFileOutput outf(outfname);
     string line;
-    int senti=1;
+    int senti=0;
     flt_type total_ll = 0.0;
     while (corpusf.getline(line)) {
         vector<string> sent;
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
             sent.push_back(word);
         }
         if ((int)sent.size() > max_line_length) continue;
-        if ((int)sent.size() == 1) continue;
+        if ((int)sent.size() == 0) continue;
 
         for (auto wit=sent.begin(); wit != sent.end(); ++wit)
             if (vocab.find(*wit) == vocab.end())
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
                                     num_tokens, num_end_tokens,
                                     num_parses, prob_beam, false);
         total_ll += ll;
-        senti++;
+        if (++senti % 10000 == 0) cerr << "Processing sentence " << senti << endl;
     }
 
     outf.close();
@@ -100,6 +100,7 @@ int main(int argc, char* argv[]) {
     stats.write_category_gen_probs(modelfname + ".cgenprobs.gz");
     stats.write_category_mem_probs(modelfname + ".cmemprobs.gz");
 
+    cerr << "Number of sentences processed: " << senti << endl;
     cerr << "Likelihood: " << total_ll << endl;
 
     exit(0);
