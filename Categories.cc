@@ -12,7 +12,7 @@ using namespace std;
 
 bool descending_token_sort(Token *a, Token *b)
 {
-    return (a->m_score > b->m_score);
+    return (a->m_lp > b->m_lp);
 }
 
 Categories::Categories(int num_classes)
@@ -402,6 +402,20 @@ Categories::read_category_mem_probs(string fname)
 }
 
 
+inline flt_type
+get_cat_gen_lp(Token *tok,
+               int context_length)
+{
+    flt_type cat_gen_lp = tok->m_gen_lp;
+    int tmp = 1;
+    while (tok->m_prev_token != nullptr && tmp++ < context_length) {
+        tok = tok->m_prev_token;
+        cat_gen_lp += tok->m_gen_lp;
+    }
+    return cat_gen_lp;
+}
+
+
 void
 segment_sent(const std::vector<std::string> &words,
              const Ngram &ngram,
@@ -427,11 +441,8 @@ segment_sent(const std::vector<std::string> &words,
 
     for (unsigned int i=0; i<words.size(); i++) {
 
-        const CategoryProbs *wcp = categories.get_category_mem_probs(words[i]);
-        const CategoryProbs *c2p = nullptr;
-        const CategoryProbs *c1p = nullptr;
-        if (i>1) c2p = categories.get_category_gen_probs(words[i-2]);
-        if (i>0) c1p = categories.get_category_gen_probs(words[i-1]);
+        const CategoryProbs *cgp = categories.get_category_gen_probs(words[i]);
+        const CategoryProbs *cmp = categories.get_category_mem_probs(words[i]);
 
         vector<Token*> &curr_tokens = tokens[i];
         flt_type best_score = -FLT_MAX;
@@ -440,23 +451,15 @@ segment_sent(const std::vector<std::string> &words,
 
             Token &tok = *(*tit);
 
-            flt_type class_gen_score = 0.0;
-            if (c2p != nullptr) {
-                auto c2it = c2p->find(tok.m_prev_token->m_category);
-                if (c2it != c2p->end()) class_gen_score += c2it->second;
-            }
-            if (c1p != nullptr) {
-                auto c1it = c1p->find(tok.m_category);
-                if (c1it != c1p->end()) class_gen_score += c1it->second;
-            }
+            flt_type cat_gen_lp = get_cat_gen_lp(&tok, 2);
 
             // Categories are defined, iterate over memberships
-            if (wcp != nullptr && wcp->size() > 0) {
-                for (auto cit = wcp->cbegin(); cit != wcp->cend(); ++cit) {
+            if (cmp != nullptr && cmp->size() > 0) {
+                for (auto cit = cmp->cbegin(); cit != cmp->cend(); ++cit) {
                     int c = cit->first;
 
-                    flt_type curr_score = tok.m_score;
-                    curr_score += class_gen_score;
+                    flt_type curr_score = tok.m_lp;
+                    curr_score += cat_gen_lp;
                     flt_type ngram_lp = 0.0;
                     int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], ngram_lp);
                     curr_score += ngram_lp * log10_to_ln;
@@ -471,7 +474,8 @@ segment_sent(const std::vector<std::string> &words,
                     worst_score = min(worst_score, curr_score);
 
                     Token* new_tok = new Token(tok, c);
-                    new_tok->m_score = curr_score;
+                    new_tok->m_lp = curr_score;
+                    new_tok->m_gen_lp = cgp->at(cit->first);
                     new_tok->m_cng_node = ngram_node_idx;
                     tokens[i+1].push_back(new_tok);
                     pointers.push_back(new_tok);
@@ -480,7 +484,7 @@ segment_sent(const std::vector<std::string> &words,
             // Advance with the unk symbol
             else {
                 Token* new_tok = new Token(tok, -1);
-                new_tok->m_score = tok.m_score;
+                new_tok->m_lp = tok.m_lp;
                 new_tok->m_cng_node = ngram.advance(tok.m_cng_node, ngram.unk_symbol_idx);
                 tokens[i+1].push_back(new_tok);
                 pointers.push_back(new_tok);
@@ -529,10 +533,10 @@ segment_sent(const std::vector<std::string> &words,
     for (auto tit = curr_tokens.begin(); tit != curr_tokens.end(); ++tit) {
         Token &tok = *(*tit);
         Token* new_tok = new Token(tok, -1);
-        new_tok->m_score = tok.m_score;
+        new_tok->m_lp = tok.m_lp;
         flt_type ngram_lp = 0.0;
         new_tok->m_cng_node = ngram.score(tok.m_cng_node, ngram.sentence_end_symbol_idx, ngram_lp);
-        new_tok->m_score += ngram_lp * log10_to_ln;
+        new_tok->m_lp += ngram_lp * log10_to_ln;
         tokens.back().push_back(new_tok);
         pointers.push_back(new_tok);
     }
@@ -573,7 +577,7 @@ collect_stats(const vector<string> &sent,
     flt_type total_lp = MIN_LOG_PROB;
     for (auto tit = final_tokens.begin(); tit != final_tokens.end(); ++tit) {
         Token *tok = *tit;
-        total_lp = add_log_domain_probs(total_lp, tok->m_score);
+        total_lp = add_log_domain_probs(total_lp, tok->m_lp);
     }
 
     if (std::isinf(total_lp) || std::isnan(total_lp)) {
@@ -586,7 +590,7 @@ collect_stats(const vector<string> &sent,
     sort(final_tokens.begin(), final_tokens.end(), descending_token_sort);
     for (unsigned int i=0; i<final_tokens.size(); i++) {
         Token *tok = final_tokens[i];
-        flt_type lp = std::min((flt_type)0.0, tok->m_score-total_lp);
+        flt_type lp = std::min((flt_type)0.0, tok->m_lp-total_lp);
         vector<int> classes; classes.push_back(tok->m_category);
         while (tok->m_prev_token != nullptr) {
             tok = tok->m_prev_token;
@@ -659,7 +663,7 @@ void histogram_prune(vector<Token*> &tokens,
     vector<int> token_bins(tokens.size());
     vector<int> bin_counts(NUM_BINS, 0);
     for (int i=0; i<(int)tokens.size(); i++) {
-        int bin = round((NUM_BINS-1) * ((best_score-tokens[i]->m_score) / range));
+        int bin = round((NUM_BINS-1) * ((best_score-tokens[i]->m_lp) / range));
         token_bins[i] = bin;
         bin_counts[bin]++;
     }

@@ -16,33 +16,37 @@ class Token {
 public:
     Token() : m_category(-1),
               m_cng_node(-1),
-              m_score(0.0),
+              m_lp(0.0),
+              m_gen_lp(0.0),
               m_prev_token(nullptr) { };
 
     Token(Token *prev_token,
-          int clss,
+          int category,
           flt_type score)
     {
-        m_prev_token = prev_token;
-        m_category = clss;
-        m_score = score;
+        m_category = category;
         m_cng_node = prev_token->m_cng_node;
+        m_lp = score;
+        m_gen_lp = 0.0;
+        m_prev_token = prev_token;
     }
 
     Token(Token &prev_token,
-          int clss)
+          int category)
     {
-        m_prev_token = &prev_token;
-        m_category = clss;
-        m_score = prev_token.m_score;
+        m_category = category;
         m_cng_node = prev_token.m_cng_node;
+        m_lp = prev_token.m_lp;
+        m_gen_lp = 0.0;
+        m_prev_token = &prev_token;
     }
 
     ~Token() { };
 
     int m_category;
     int m_cng_node;
-    flt_type m_score;
+    flt_type m_lp;
+    flt_type m_gen_lp;
     Token *m_prev_token;
 };
 
