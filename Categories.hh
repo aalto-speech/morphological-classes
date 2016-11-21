@@ -101,25 +101,31 @@ void segment_sent(const std::vector<std::string> &sent,
                   const Ngram &ngram,
                   const std::vector<int> &indexmap,
                   const Categories &categories,
-                  flt_type prob_beam,
                   unsigned int max_tokens,
                   unsigned int max_final_tokens,
-                  unsigned long int &unpruned,
-                  unsigned long int &pruned,
+                  flt_type prob_beam,
                   std::vector<std::vector<Token*> > &tokens,
-                  std::vector<Token*> &pointers);
+                  std::vector<Token*> &pointers,
+                  unsigned long int *num_vocab_words=nullptr,
+                  unsigned long int *num_oov_words=nullptr,
+                  unsigned long int *num_unpruned_tokens=nullptr,
+                  unsigned long int *num_pruned_tokens=nullptr);
 
 flt_type collect_stats(const std::vector<std::string> &sent,
                        const Ngram &ngram,
                        const std::vector<int> &indexmap,
                        const Categories &categories,
                        Categories &stats,
-                       SimpleFileOutput &seqf,
+                       SimpleFileOutput *seqf,
                        unsigned int num_tokens=100,
                        unsigned int num_final_tokens=10,
                        unsigned int num_parses=0,
                        flt_type prob_beam=10.0,
-                       bool verbose=false);
+                       bool verbose=false,
+                       unsigned long int *num_vocab_words=nullptr,
+                       unsigned long int *num_oov_words=nullptr,
+                       unsigned long int *num_unpruned_tokens=nullptr,
+                       unsigned long int *num_pruned_tokens=nullptr);
 
 void limit_num_classes(std::map<std::string, CategoryProbs> &probs,
                        int num_classes);

@@ -15,7 +15,7 @@ using namespace std;
 int main(int argc, char* argv[]) {
 
     conf::Config config;
-    config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT MODEL\n")
+    config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT [MODEL]\n")
     ('p', "num-parses=INT", "arg", "10", "Maximum number of parses to print per sentence (DEFAULT: 10)")
     ('t', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
     ('e', "num-end-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the end position (DEFAULT: 10)")
@@ -24,13 +24,16 @@ int main(int argc, char* argv[]) {
     ('u', "update-categories", "", "", "Update category generation and membership probabilities")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
-    if (config.arguments.size() != 5) config.print_help(stderr, 1);
+    if (config.arguments.size() != 4 && config.arguments.size() != 5)
+        config.print_help(stderr, 1);
 
     string cngramfname = config.arguments[0];
     string cgenpfname = config.arguments[1];
     string cmempfname = config.arguments[2];
     string infname = config.arguments[3];
-    string modelfname = config.arguments[4];
+    string modelfname = "";
+    if (config.arguments.size() == 5)
+        modelfname = config.arguments[4];
 
     int num_parses = config["num-parses"].get_int();
     int num_tokens = config["num-tokens"].get_int();
@@ -66,9 +69,13 @@ int main(int argc, char* argv[]) {
     Categories stats(wcs.num_categories());
 
     SimpleFileInput corpusf(infname);
-    SimpleFileOutput outf(modelfname + ".catseq.gz");
+    SimpleFileOutput *outf = nullptr;
+    if (modelfname.length() > 0)
+        outf = new SimpleFileOutput(modelfname + ".catseq.gz");
     string line;
-    int senti=0;
+    unsigned long int senti=0;
+    unsigned long int num_vocab_words=0;
+    unsigned long int num_oov_words=0;
     flt_type total_ll = 0.0;
     while (corpusf.getline(line)) {
         vector<string> sent;
@@ -90,12 +97,24 @@ int main(int argc, char* argv[]) {
                                     wcs,
                                     stats, outf,
                                     num_tokens, num_end_tokens,
-                                    num_parses, prob_beam, false);
+                                    num_parses, prob_beam, false,
+                                    &num_vocab_words, &num_oov_words);
         total_ll += ll;
         if (++senti % 10000 == 0) cerr << "Processing sentence " << senti << endl;
     }
 
-    outf.close();
+    if (outf != nullptr) {
+        outf->close();
+        delete outf;
+    }
+
+    cerr << "Number of sentences processed: " << senti << endl;
+    cerr << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
+    cerr << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+senti << endl;
+    cerr << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
+    cerr << "Likelihood: " << total_ll << endl;
+
+    if (modelfname.length() == 0) exit(EXIT_SUCCESS);
 
     if (update_categories) {
         stats.estimate_model();
@@ -107,9 +126,7 @@ int main(int argc, char* argv[]) {
         wcs.write_category_mem_probs(modelfname + ".cmemprobs.gz");
     }
 
-    cerr << "Number of sentences processed: " << senti << endl;
-    cerr << "Likelihood: " << total_ll << endl;
 
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 

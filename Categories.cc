@@ -424,10 +424,12 @@ segment_sent(const std::vector<std::string> &words,
              unsigned int num_tokens,
              unsigned int num_final_tokens,
              flt_type prob_beam,
-             unsigned long int &unpruned,
-             unsigned long int &pruned,
              vector<vector<Token*> > &tokens,
-             vector<Token*> &pointers)
+             vector<Token*> &pointers,
+             unsigned long int *num_vocab_words,
+             unsigned long int *num_oov_words,
+             unsigned long int *num_unpruned_tokens,
+             unsigned long int *num_pruned_tokens)
 {
     pointers.clear();
     tokens.clear();
@@ -443,6 +445,13 @@ segment_sent(const std::vector<std::string> &words,
 
         const CategoryProbs *cgp = categories.get_category_gen_probs(words[i]);
         const CategoryProbs *cmp = categories.get_category_mem_probs(words[i]);
+
+        if (cmp != nullptr && cmp->size() > 0) {
+            if (num_vocab_words != nullptr) (*num_vocab_words)++;
+        }
+        else {
+            if (num_oov_words != nullptr) (*num_oov_words)++;
+        }
 
         vector<Token*> &curr_tokens = tokens[i];
         flt_type best_score = -FLT_MAX;
@@ -465,10 +474,10 @@ segment_sent(const std::vector<std::string> &words,
                     curr_score += cit->second;
 
                     if ((curr_score+prob_beam) < best_score) {
-                        pruned++;
+                        if (num_pruned_tokens != nullptr) (*num_pruned_tokens)++;
                         continue;
                     }
-                    unpruned++;
+                    if (num_unpruned_tokens != nullptr) (*num_unpruned_tokens)++;
                     best_score = max(best_score, curr_score);
                     worst_score = min(worst_score, curr_score);
 
@@ -548,21 +557,24 @@ collect_stats(const vector<string> &sent,
               const vector<int> &indexmap,
               const Categories &categories,
               Categories &stats,
-              SimpleFileOutput &seqf,
+              SimpleFileOutput *seqf,
               unsigned int num_tokens,
               unsigned int num_final_tokens,
               unsigned int num_parses,
               flt_type prob_beam,
-              bool verbose)
+              bool verbose,
+              unsigned long int *num_vocab_words,
+              unsigned long int *num_oov_words,
+              unsigned long int *num_unpruned_tokens,
+              unsigned long int *num_pruned_tokens)
 {
-    unsigned long int unpruned = 0;
-    unsigned long int pruned = 0;
-
     vector<vector<Token*> > tokens;
     vector<Token*> pointers;
     segment_sent(sent, ngram, indexmap, categories,
                  num_tokens, num_final_tokens, prob_beam,
-                 unpruned, pruned, tokens, pointers);
+                 tokens, pointers,
+                 num_vocab_words, num_oov_words,
+                 num_unpruned_tokens, num_pruned_tokens);
 
     vector<Token*> &final_tokens = tokens.back();
 
@@ -603,14 +615,16 @@ collect_stats(const vector<string> &sent,
             stats.accumulate(sent[c-1], classes[c], weight);
         }
 
-        if (i<num_parses) {
-            if (num_parses > 1) seqf << weight << " ";
-            seqf << "<s>";
-            for (unsigned int c=1; c<classes.size()-1; c++) {
-                if (classes[c] == -1) seqf << " <unk>";
-                else seqf << " " << classes[c];
+        if (seqf != nullptr) {
+            if (i<num_parses) {
+                if (num_parses > 1) *seqf << weight << " ";
+                *seqf << "<s>";
+                for (unsigned int c=1; c<classes.size()-1; c++) {
+                    if (classes[c] == -1) *seqf << " <unk>";
+                    else *seqf << " " << classes[c];
+                }
+                *seqf << " </s>\n";
             }
-            seqf << " </s>\n";
         }
     }
 
