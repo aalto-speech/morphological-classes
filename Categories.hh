@@ -55,8 +55,8 @@ typedef std::map<int, flt_type> CategoryProbs;
 
 class Categories {
 public:
-    Categories() { m_num_classes = 0; };
-    Categories(int num_classes);
+    Categories() { m_num_categories = 0; };
+    Categories(int num_categories);
     Categories(std::string filename,
                const std::map<std::string, int> &counts,
                int top_word_categories=0);
@@ -85,7 +85,7 @@ public:
     void read_category_gen_probs(std::string fname);
     void read_category_mem_probs(std::string fname);
 
-    int m_num_classes;
+    int m_num_categories;
 
     // Sufficient statistics
     std::map<std::string, CategoryProbs> m_stats;
@@ -127,8 +127,8 @@ flt_type collect_stats(const std::vector<std::string> &sent,
                        unsigned long int *num_unpruned_tokens=nullptr,
                        unsigned long int *num_pruned_tokens=nullptr);
 
-void limit_num_classes(std::map<std::string, CategoryProbs> &probs,
-                       int num_classes);
+void limit_num_categories(std::map<std::string, CategoryProbs> &probs,
+                          int num_categories);
 
 void histogram_prune(std::vector<Token*> &tokens,
                      int num_tokens,

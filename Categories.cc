@@ -17,7 +17,7 @@ bool descending_token_sort(Token *a, Token *b)
 
 Categories::Categories(int num_classes)
 {
-    m_num_classes = num_classes;
+    m_num_categories = num_classes;
 }
 
 Categories::Categories(std::string filename,
@@ -28,7 +28,7 @@ Categories::Categories(std::string filename,
     m_stats.clear();
 
     string line;
-    m_num_classes = 0;
+    m_num_categories = 0;
     set<string> words;
     while(infile.getline(line)) {
         stringstream ss(line);
@@ -40,7 +40,7 @@ Categories::Categories(std::string filename,
         int cl;
         vector<int> curr_classes;
         while (ss >> cl) {
-            m_num_classes = max(cl+1, m_num_classes);
+            m_num_categories = max(cl+1, m_num_categories);
             curr_classes.push_back(cl);
         }
         flt_type curr_count = 1.0;
@@ -57,8 +57,8 @@ Categories::Categories(std::string filename,
         int sci = 0;
         for (auto wit=sorted_counts.rbegin(); wit != sorted_counts.rend(); wit++) {
             m_stats[wit->second].clear();
-            m_stats[wit->second][m_num_classes] = 1.0;
-            m_num_classes++;
+            m_stats[wit->second][m_num_categories] = 1.0;
+            m_num_categories++;
             if (++sci >= top_word_categories) break;
         }
     }
@@ -92,7 +92,7 @@ Categories::estimate_model()
 {
     m_category_gen_probs.clear();
     m_category_mem_probs.clear();
-    vector<flt_type> class_totals(m_num_classes, 0.0);
+    vector<flt_type> class_totals(m_num_categories, 0.0);
     map<string, flt_type> word_totals;
 
     for (auto wit=m_stats.begin(); wit != m_stats.end(); ++wit)
@@ -153,38 +153,38 @@ Categories::num_words_with_categories() const
 int
 Categories::num_categories() const
 {
-    return m_num_classes;
+    return m_num_categories;
 }
 
 
 int
 Categories::num_observed_categories() const
 {
-    set<int> classes;
+    set<int> categories;
     for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit)
-            classes.insert(clit->first);
-    return classes.size();
+            categories.insert(clit->first);
+    return categories.size();
 }
 
 
 int
 Categories::num_category_gen_probs() const
 {
-    int num_class_probs = 0;
+    int num_cat_gen_probs = 0;
     for (auto wit=m_category_gen_probs.begin(); wit != m_category_gen_probs.end(); ++wit)
-        num_class_probs += wit->second.size();
-    return num_class_probs;
+        num_cat_gen_probs += wit->second.size();
+    return num_cat_gen_probs;
 }
 
 
 int
 Categories::num_category_mem_probs() const
 {
-    int num_word_probs = 0;
+    int num_cat_mem_probs = 0;
     for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
-        num_word_probs += wit->second.size();
-    return num_word_probs;
+        num_cat_mem_probs += wit->second.size();
+    return num_cat_mem_probs;
 }
 
 
@@ -302,16 +302,16 @@ Categories::assert_category_gen_probs() const
 bool
 Categories::assert_category_mem_probs() const
 {
-    vector<flt_type> class_totals(m_num_classes, MIN_LOG_PROB);
+    vector<flt_type> category_totals(m_num_categories, MIN_LOG_PROB);
     for (auto wit=m_category_mem_probs.begin(); wit != m_category_mem_probs.end(); ++wit)
         for (auto clit = wit->second.begin(); clit != wit->second.end(); ++clit)
-            class_totals[clit->first] = add_log_domain_probs(class_totals[clit->first], clit->second);
+            category_totals[clit->first] = add_log_domain_probs(category_totals[clit->first], clit->second);
 
     bool ok = true;
-    for (unsigned int cl=0; cl<class_totals.size(); cl++) {
-        if (class_totals[cl] == MIN_LOG_PROB) continue;
-        if (fabs(class_totals[cl]) > 0.000001) {
-            cerr << "assert, class " << cl << ": " << class_totals[cl] << endl;
+    for (unsigned int cl=0; cl<category_totals.size(); cl++) {
+        if (category_totals[cl] == MIN_LOG_PROB) continue;
+        if (fabs(category_totals[cl]) > 0.000001) {
+            cerr << "assert, category " << cl << ": " << category_totals[cl] << endl;
             ok = false;
         }
     }
@@ -359,22 +359,22 @@ Categories::read_category_gen_probs(string fname)
     SimpleFileInput wcf(fname);
 
     string line;
-    int max_class = 0;
+    int max_category = 0;
     while (wcf.getline(line)) {
         stringstream ss(line);
         string word;
-        int clss;
+        int cat;
         flt_type prob;
         ss >> word;
-        // Keep words without classes in the model
+        // Keep words without categories in the model
         m_category_gen_probs[word] = CategoryProbs();
-        while (ss >> clss) {
+        while (ss >> cat) {
             ss >> prob;
-            m_category_gen_probs[word][clss] = prob;
-            max_class = max(max_class, clss);
+            m_category_gen_probs[word][cat] = prob;
+            max_category = max(max_category, cat);
         }
     }
-    m_num_classes = max(m_num_classes, max_class+1);
+    m_num_categories = max(m_num_categories, max_category+1);
 }
 
 void
@@ -383,22 +383,22 @@ Categories::read_category_mem_probs(string fname)
     SimpleFileInput wcf(fname);
 
     string line;
-    int max_class = 0;
+    int max_category = 0;
     while (wcf.getline(line)) {
         stringstream ss(line);
         string word;
-        int clss;
+        int cat;
         flt_type prob;
         ss >> word;
-        // Keep words without classes in the model
+        // Keep words without categories in the model
         m_category_mem_probs[word] = CategoryProbs();
-        while (ss >> clss) {
+        while (ss >> cat) {
             ss >> prob;
-            m_category_mem_probs[word][clss] = prob;
-            max_class = max(max_class, clss);
+            m_category_mem_probs[word][cat] = prob;
+            max_category = max(max_category, cat);
         }
     }
-    m_num_classes = max(m_num_classes, max_class+1);
+    m_num_categories = max(m_num_categories, max_category+1);
 }
 
 
@@ -602,26 +602,26 @@ collect_stats(const vector<string> &sent,
     for (unsigned int i=0; i<final_tokens.size(); i++) {
         Token *tok = final_tokens[i];
         flt_type lp = std::min((flt_type)0.0, tok->m_lp-total_lp);
-        vector<int> classes; classes.push_back(tok->m_category);
+        vector<int> catseq; catseq.push_back(tok->m_category);
         while (tok->m_prev_token != nullptr) {
             tok = tok->m_prev_token;
-            classes.push_back(tok->m_category);
+            catseq.push_back(tok->m_category);
         }
-        std::reverse(classes.begin(), classes.end());
+        std::reverse(catseq.begin(), catseq.end());
 
         flt_type weight = exp(lp);
-        for (unsigned int c=1; c<classes.size()-1; c++) {
-            if (classes[c] == -1) continue; // FIXME skip unks
-            stats.accumulate(sent[c-1], classes[c], weight);
+        for (unsigned int c=1; c<catseq.size()-1; c++) {
+            if (catseq[c] == -1) continue; // FIXME skip unks
+            stats.accumulate(sent[c-1], catseq[c], weight);
         }
 
         if (seqf != nullptr) {
             if (i<num_parses) {
                 if (num_parses > 1) *seqf << weight << " ";
                 *seqf << "<s>";
-                for (unsigned int c=1; c<classes.size()-1; c++) {
-                    if (classes[c] == -1) *seqf << " <unk>";
-                    else *seqf << " " << classes[c];
+                for (unsigned int c=1; c<catseq.size()-1; c++) {
+                    if (catseq[c] == -1) *seqf << " <unk>";
+                    else *seqf << " " << catseq[c];
                 }
                 *seqf << " </s>\n";
             }
@@ -642,8 +642,8 @@ bool descending_int_flt_sort(const pair<int, flt_type> &i,
 }
 
 
-void limit_num_classes(map<string, CategoryProbs> &probs,
-                       int num_classes)
+void limit_num_categories(map<string, CategoryProbs> &probs,
+                          int num_categories)
 {
     for (auto wit=probs.begin(); wit != probs.end(); ++wit) {
         vector<pair<int, flt_type> > wprobs;
@@ -651,7 +651,7 @@ void limit_num_classes(map<string, CategoryProbs> &probs,
             wprobs.push_back(*pit);
         sort(wprobs.begin(), wprobs.end(), descending_int_flt_sort);
         wit->second.clear();
-        for (int i=0; i<num_classes && i<(int)wprobs.size(); i++)
+        for (int i=0; i<num_categories && i<(int)wprobs.size(); i++)
             wit->second.insert(wprobs[i]);
     }
 }
