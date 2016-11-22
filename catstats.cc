@@ -113,6 +113,8 @@ int main(int argc, char* argv[]) {
     cerr << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+senti << endl;
     cerr << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
     cerr << "Likelihood: " << total_ll << endl;
+    double ppl = exp(-1.0/double(num_vocab_words+senti) * total_ll);
+    cerr << "Perplexity: " << ppl << endl;
 
     if (modelfname.length() == 0) exit(EXIT_SUCCESS);
 
