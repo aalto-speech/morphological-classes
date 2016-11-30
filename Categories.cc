@@ -423,6 +423,7 @@ segment_sent(const std::vector<std::string> &words,
              const Categories &categories,
              unsigned int num_tokens,
              unsigned int num_final_tokens,
+             unsigned int max_order,
              flt_type prob_beam,
              vector<vector<Token*> > &tokens,
              vector<Token*> &pointers,
@@ -460,7 +461,7 @@ segment_sent(const std::vector<std::string> &words,
 
             Token &tok = *(*tit);
 
-            flt_type cat_gen_lp = get_cat_gen_lp(&tok, ngram.max_order-1);
+            flt_type cat_gen_lp = get_cat_gen_lp(&tok, max_order-1);
 
             // Categories are defined, iterate over memberships
             if (cmp != nullptr && cmp->size() > 0) {
@@ -541,7 +542,7 @@ segment_sent(const std::vector<std::string> &words,
     for (auto tit = curr_tokens.begin(); tit != curr_tokens.end(); ++tit) {
         Token &tok = *(*tit);
         Token* new_tok = new Token(tok, -1);
-        new_tok->m_lp = tok.m_lp + get_cat_gen_lp(&tok, ngram.max_order-1);
+        new_tok->m_lp = tok.m_lp + get_cat_gen_lp(&tok, max_order-1);
         flt_type ngram_lp = 0.0;
         new_tok->m_cng_node = ngram.score(tok.m_cng_node, ngram.sentence_end_symbol_idx, ngram_lp);
         new_tok->m_lp += ngram_lp * log10_to_ln;
@@ -561,6 +562,7 @@ collect_stats(const vector<string> &sent,
               unsigned int num_tokens,
               unsigned int num_final_tokens,
               unsigned int num_parses,
+              unsigned int max_order,
               flt_type prob_beam,
               bool verbose,
               unsigned long int *num_vocab_words,
@@ -571,7 +573,7 @@ collect_stats(const vector<string> &sent,
     vector<vector<Token*> > tokens;
     vector<Token*> pointers;
     segment_sent(sent, ngram, indexmap, categories,
-                 num_tokens, num_final_tokens, prob_beam,
+                 num_tokens, num_final_tokens, max_order, prob_beam,
                  tokens, pointers,
                  num_vocab_words, num_oov_words,
                  num_unpruned_tokens, num_pruned_tokens);

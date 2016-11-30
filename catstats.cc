@@ -20,6 +20,7 @@ int main(int argc, char* argv[]) {
     ('t', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
     ('e', "num-end-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the end position (DEFAULT: 10)")
     ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words (DEFAULT: 100)")
+    ('o', "max-order=INT", "arg", "", "Maximum context length (DEFAULT: MODEL ORDER)")
     ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
     ('u', "update-categories", "", "", "Update category generation and membership probabilities")
     ('h', "help", "", "", "display help");
@@ -57,6 +58,8 @@ int main(int argc, char* argv[]) {
     cerr << "Reading category n-gram model.." << endl;
     Ngram cngram;
     cngram.read_arpa(cngramfname);
+    int max_order = cngram.max_order;
+    if (config["max-order"].specified) max_order = config["max-order"].get_int();
 
     // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(wcs.num_categories());
@@ -97,7 +100,8 @@ int main(int argc, char* argv[]) {
                                     wcs,
                                     stats, outf,
                                     num_tokens, num_end_tokens,
-                                    num_parses, prob_beam, false,
+                                    num_parses, max_order,
+                                    prob_beam, false,
                                     &num_vocab_words, &num_oov_words);
         total_ll += ll;
         if (++senti % 10000 == 0) cerr << "Processing sentence " << senti << endl;

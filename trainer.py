@@ -51,6 +51,7 @@ def init_model(config,
 def catstats(prev_iter_id,
              curr_iter_id,
              corpus,
+             max_order=None,
              update_catprobs=False,
              single_parse=False):
 
@@ -59,6 +60,7 @@ def catstats(prev_iter_id,
 
     stats_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s %s"\
                     % (catstats_exe, prev_iter_id, prev_iter_id, prev_iter_id, corpus, curr_iter_id)
+    if max_order: stats_cmd = "%s -o %i" % (stats_cmd, max_order)
     if update_catprobs: stats_cmd = "%s -u" % stats_cmd
     if single_parse: stats_cmd = "%s -p 1" % stats_cmd
     subprocess.Popen(stats_cmd, shell=True).wait()
@@ -83,6 +85,7 @@ def ngram_training(iter_id,
 
 def evaluate(model_id,
              corpus,
+             max_order=None,
              resfname=None):
 
     catem_dir = config.get("common", "catem_dir")
@@ -90,6 +93,7 @@ def evaluate(model_id,
 
     eval_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s"\
                     % (catstats_exe, model_id, model_id, model_id, corpus)
+    if max_order: eval_cmd = "%s -o %i" % (eval_cmd, max_order)
 
     if resfname:
         resf = open(resfname, "a")
@@ -125,13 +129,18 @@ if __name__ == "__main__":
     write_vocab(args.word_init, vocab, False)
     write_vocab(args.word_init, vocab_capunk, True)
 
+    max_order = 0
+    iterations = config.items("training")
+    for iteration in iterations:
+        smoothing, order, update_catprobs, tag = iteration[1].split(",")
+        max_order = max(max_order, int(order))
+
     prev_iter_id = "%s.iter0" % args.model_id
     init_model(config, args.word_init, vocab, args.train_corpus, prev_iter_id)
     if args.eval_corpus:
         print >>sys.stderr, "Computing evaluation corpus perplexity"
-        evaluate(prev_iter_id, args.eval_corpus, "%s.eval.ppl" % args.model_id)
+        evaluate(prev_iter_id, args.eval_corpus, max_order, "%s.eval.ppl" % args.model_id)
 
-    iterations = config.items("training")
     for iteration in iterations:
         iter_id = "%s.%s" % (args.model_id, iteration[0])
         print >>sys.stderr, ""
@@ -144,11 +153,12 @@ if __name__ == "__main__":
         print >>sys.stderr, "Update category probabilities: %s" % update_catprobs
         print >>sys.stderr, "Tag unks: %s" % tag
 
-        catstats(prev_iter_id, iter_id, args.train_corpus, update_catprobs, smoothing=="kn")
+        catstats(prev_iter_id, iter_id, args.train_corpus,
+                 max_order, update_catprobs, smoothing=="kn")
         ngram_training(iter_id, smoothing, vocab, order)
 
         if args.eval_corpus:
             print >>sys.stderr, "Computing evaluation corpus perplexity"
-            evaluate(iter_id, args.eval_corpus, "%s.eval.ppl" % args.model_id)
+            evaluate(iter_id, args.eval_corpus, max_order, "%s.eval.ppl" % args.model_id)
 
         prev_iter_id = iter_id
