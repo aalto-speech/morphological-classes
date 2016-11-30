@@ -3,6 +3,7 @@
 import os
 import sys
 import argparse
+import ConfigParser
 import subprocess
 
 
@@ -25,21 +26,54 @@ def write_vocab(initfname,
         tokens = line.split()
         for token in tokens[1:]:
             categories.add(token)
-    for cat in sorted_categories:
+    for cat in categories:
         print >>vocabf, cat
     vocabf.close()
+
+
+def init_model(config,
+               word_init,
+               vocabfname,
+               corpus,
+               model_id):
+
+    catem_dir = config.get("common", "catem_dir")
+    init_exe = os.path.join(catem_dir, "init")
+    iter0_id = "%s.iter0" % model_id
+    init_cmd = "%s %s %s %s" % (init_exe, word_init, corpus, iter0_id)
+    p = subprocess.Popen(init_cmd, shell=True)
+    p.wait()
+
+    nc_exe = config.get("common", "srilm")
+    nc_cmd = "%s -read %s.ccounts.gz -float-counts -unk -wbdiscount -order 1 -vocab %s -lm %s.arpa.gz"\
+                % (nc_exe, iter0_id, vocabfname, iter0_id)
+    p = subprocess.Popen(nc_cmd, shell=True)
+    p.wait()
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Training script for a category n-gram model .')
+    parser.add_argument('trainer_cfg',
+                        help='Training configuration file')
     parser.add_argument('word_init',
-                        help='Initial categories for the words', )
+                        help='Initial categories for the words')
     parser.add_argument('train_corpus',
-                        help='Corpus for training the model', )
-    parser.add_argument('--varikn', action='store_true',
-                        help='Use VariKN for training the n-gram component')
+                        help='Corpus for training the model')
+    parser.add_argument('model_id',
+                        help='Identifier for the model to be trained')
     args = parser.parse_args()
 
-    write_vocab(args.word_init, "vocab", args.varikn)
+    config = ConfigParser.ConfigParser()
+    config.read(args.trainer_cfg)
+
+    vocab = "vocab"
+    vocab_capunk = "vocab"
+    write_vocab(args.word_init, vocab, False)
+    write_vocab(args.word_init, vocab_capunk, True)
+
+    init_model(config, args.word_init, vocab, args.train_corpus, args.model_id)
+
+    print config.sections()
+    print config.items("training")
 
