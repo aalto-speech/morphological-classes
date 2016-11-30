@@ -1,7 +1,8 @@
 .settings
 .idea
-.cproject
 .project
+.cproject
+.pydevproject
 *.o
 *.pyc
 init
