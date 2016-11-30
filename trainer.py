@@ -51,6 +51,7 @@ def init_model(config,
 def catstats(prev_iter_id,
              curr_iter_id,
              corpus,
+             update_catprobs=False,
              single_parse=False):
 
     catem_dir = config.get("common", "catem_dir")
@@ -58,6 +59,7 @@ def catstats(prev_iter_id,
 
     stats_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s %s"\
                     % (catstats_exe, prev_iter_id, prev_iter_id, prev_iter_id, corpus, curr_iter_id)
+    if update_catprobs: stats_cmd = "%s -u" % stats_cmd
     if single_parse: stats_cmd = "%s -p 1" % stats_cmd
     subprocess.Popen(stats_cmd, shell=True).wait()
 
@@ -142,7 +144,7 @@ if __name__ == "__main__":
         print >>sys.stderr, "Update category probabilities: %s" % update_catprobs
         print >>sys.stderr, "Tag unks: %s" % tag
 
-        catstats(prev_iter_id, iter_id, args.train_corpus, smoothing=="kn")
+        catstats(prev_iter_id, iter_id, args.train_corpus, update_catprobs, smoothing=="kn")
         ngram_training(iter_id, smoothing, vocab, order)
 
         if args.eval_corpus:
