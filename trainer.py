@@ -51,6 +51,19 @@ def init_model(config,
     p.wait()
 
 
+def evaluate(model_id,
+             corpus):
+
+    catem_dir = config.get("common", "catem_dir")
+    catstats_exe = os.path.join(catem_dir, "catstats")
+
+    eval_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s"\
+                    % (catstats_exe, model_id, model_id, model_id, corpus)
+    print eval_cmd
+    p = subprocess.Popen(eval_cmd, shell=True)
+    p.wait()
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Training script for a category n-gram model .')
@@ -68,11 +81,13 @@ if __name__ == "__main__":
     config.read(args.trainer_cfg)
 
     vocab = "vocab"
-    vocab_capunk = "vocab"
+    vocab_capunk = "vocab.capunk"
     write_vocab(args.word_init, vocab, False)
     write_vocab(args.word_init, vocab_capunk, True)
 
     init_model(config, args.word_init, vocab, args.train_corpus, args.model_id)
+    print >>sys.stderr, "Evaluating training corpus perplexity"
+    evaluate("%s.iter0" % args.model_id, args.train_corpus)
 
     print config.sections()
     print config.items("training")
