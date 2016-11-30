@@ -35,6 +35,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Training script for a category n-gram model .')
     parser.add_argument('word_init',
                         help='Initial categories for the words', )
+    parser.add_argument('train_corpus',
+                        help='Corpus for training the model', )
     parser.add_argument('--varikn', action='store_true',
                         help='Use VariKN for training the n-gram component')
     args = parser.parse_args()
