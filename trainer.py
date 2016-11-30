@@ -66,7 +66,7 @@ def evaluate(model_id,
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Training script for a category n-gram model .')
+    parser = argparse.ArgumentParser(description='Training script for a category n-gram model.')
     parser.add_argument('trainer_cfg',
                         help='Training configuration file')
     parser.add_argument('word_init',
@@ -85,10 +85,19 @@ if __name__ == "__main__":
     write_vocab(args.word_init, vocab, False)
     write_vocab(args.word_init, vocab_capunk, True)
 
-    init_model(config, args.word_init, vocab, args.train_corpus, args.model_id)
-    print >>sys.stderr, "Evaluating training corpus perplexity"
-    evaluate("%s.iter0" % args.model_id, args.train_corpus)
+    #init_model(config, args.word_init, vocab, args.train_corpus, args.model_id)
+    #print >>sys.stderr, "Evaluating training corpus perplexity"
+    #evaluate("%s.iter0" % args.model_id, args.train_corpus)
 
-    print config.sections()
-    print config.items("training")
+    iterations = config.items("training")
+    for iteration in iterations:
+        print >>sys.stderr, ""
+        print >>sys.stderr, "Training %s" % iteration[0]
+        smoothing, order, update_catprobs, tag = iteration[1].split(",")
+        order = int(order)
+        update_catprobs = update_catprobs in ["true", "True", "1"]
+        print >>sys.stderr, "Smoothing: %s" % smoothing
+        print >>sys.stderr, "Model order: %i" % order
+        print >>sys.stderr, "Update category probabilities: %s" % update_catprobs
+        print >>sys.stderr, "Tag unks: %s" % tag
 
