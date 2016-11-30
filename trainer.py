@@ -76,7 +76,6 @@ def ngram_training(iter_id,
     else:
         print >>sys.stderr, "Unknown smoothing option"
         sys.exit(1)
-    print ngram_cmd
     subprocess.Popen(ngram_cmd, shell=True).wait()
 
 
