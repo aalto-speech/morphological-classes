@@ -12,6 +12,58 @@
 using namespace std;
 
 
+flt_type catstats(SimpleFileInput &corpusf,
+                  set<string> &vocab,
+                  const Ngram &cngram,
+                  const vector<int> &indexmap,
+                  const Categories &categories,
+                  Categories &stats,
+                  SimpleFileOutput *seqf,
+                  unsigned int num_tokens,
+                  unsigned int num_final_tokens,
+                  unsigned int num_parses,
+                  unsigned int max_order,
+                  unsigned int max_line_length,
+                  flt_type prob_beam,
+                  bool verbose,
+                  unsigned long int &num_vocab_words,
+                  unsigned long int &num_oov_words,
+                  unsigned long int &senti)
+{
+    string line;
+    flt_type total_ll = 0.0;
+    while (corpusf.getline(line)) {
+        vector<string> sent;
+        stringstream ss(line);
+        string word;
+        while (ss >> word) {
+            if (word == "<s>" || word == "</s>") continue;
+            sent.push_back(word);
+        }
+        if (sent.size() > max_line_length) continue;
+        if (sent.size() == 0) continue;
+
+        for (auto wit=sent.begin(); wit != sent.end(); ++wit)
+            if (vocab.find(*wit) == vocab.end())
+                wit->assign("<unk>");
+
+        flt_type ll = collect_stats(sent,
+                                    cngram, indexmap,
+                                    categories,
+                                    stats, seqf,
+                                    num_tokens, num_final_tokens,
+                                    num_parses, max_order,
+                                    prob_beam, false,
+                                    &num_vocab_words, &num_oov_words);
+        total_ll += ll;
+        if (++senti % 10000 == 0) cerr << "Processing sentence " << senti << endl;
+    }
+
+    return total_ll;
+}
+
+
+
 int main(int argc, char* argv[]) {
 
     conf::Config config;
@@ -72,44 +124,24 @@ int main(int argc, char* argv[]) {
     Categories stats(wcs.num_categories());
 
     SimpleFileInput corpusf(infname);
-    SimpleFileOutput *outf = nullptr;
+    SimpleFileOutput *seqf = nullptr;
     if (modelfname.length() > 0)
-        outf = new SimpleFileOutput(modelfname + ".catseq.gz");
-    string line;
-    unsigned long int senti=0;
+        seqf = new SimpleFileOutput(modelfname + ".catseq.gz");
     unsigned long int num_vocab_words=0;
     unsigned long int num_oov_words=0;
-    flt_type total_ll = 0.0;
-    while (corpusf.getline(line)) {
-        vector<string> sent;
-        stringstream ss(line);
-        string word;
-        while (ss >> word) {
-            if (word == "<s>" || word == "</s>") continue;
-            sent.push_back(word);
-        }
-        if ((int)sent.size() > max_line_length) continue;
-        if ((int)sent.size() == 0) continue;
+    unsigned long int senti=0;
 
-        for (auto wit=sent.begin(); wit != sent.end(); ++wit)
-            if (vocab.find(*wit) == vocab.end())
-                wit->assign("<unk>");
+    flt_type total_ll = catstats(corpusf, vocab,
+                                 cngram, indexmap, wcs,
+                                 stats, seqf,
+                                 num_tokens, num_end_tokens, num_parses,
+                                 max_order, max_line_length, prob_beam,
+                                 false,
+                                 num_vocab_words, num_oov_words, senti);
 
-        flt_type ll = collect_stats(sent,
-                                    cngram, indexmap,
-                                    wcs,
-                                    stats, outf,
-                                    num_tokens, num_end_tokens,
-                                    num_parses, max_order,
-                                    prob_beam, false,
-                                    &num_vocab_words, &num_oov_words);
-        total_ll += ll;
-        if (++senti % 10000 == 0) cerr << "Processing sentence " << senti << endl;
-    }
-
-    if (outf != nullptr) {
-        outf->close();
-        delete outf;
+    if (seqf != nullptr) {
+        seqf->close();
+        delete seqf;
     }
 
     cout << "Number of sentences processed: " << senti << endl;
