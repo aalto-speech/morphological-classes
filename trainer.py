@@ -55,14 +55,15 @@ def catstats(prev_iter_id,
              max_order=None,
              update_catprobs=False,
              single_parse=False,
-             num_threads=1):
+             num_threads=1,
+             tag=0):
 
     catem_dir = config.get("common", "catem_dir")
     catstats_exe = os.path.join(catem_dir, "catstats")
 
-    stats_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s %s -t %i"\
+    stats_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s %s -t %i -g %i"\
                     % (catstats_exe, prev_iter_id, prev_iter_id, prev_iter_id,
-                       corpus, curr_iter_id, num_threads)
+                       corpus, curr_iter_id, num_threads, tag)
     if max_order: stats_cmd = "%s -o %i" % (stats_cmd, max_order)
     if update_catprobs: stats_cmd = "%s -u" % stats_cmd
     if single_parse: stats_cmd = "%s -p 1" % stats_cmd
@@ -161,14 +162,16 @@ if __name__ == "__main__":
         print >>sys.stderr, "Training %s" % iter_id
         smoothing, order, update_catprobs, tag = iteration[1].split(",")
         order = int(order)
+        tag = int(tag)
         update_catprobs = update_catprobs in ["true", "True", "1"]
         print >>sys.stderr, "Smoothing: %s" % smoothing
         print >>sys.stderr, "Model order: %i" % order
         print >>sys.stderr, "Update category probabilities: %s" % update_catprobs
-        print >>sys.stderr, "Tag unks: %s" % tag
+        print >>sys.stderr, "Tag unks: %i" % tag
 
         catstats(prev_iter_id, iter_id, args.train_corpus,
-                 max_order, update_catprobs, smoothing=="kn", args.num_threads)
+                 max_order, update_catprobs, smoothing=="kn",
+                 args.num_threads, tag)
         ngram_training(iter_id, smoothing, vocab, order)
 
         if args.eval_corpus:

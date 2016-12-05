@@ -1,5 +1,4 @@
 #include <cstdlib>
-#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -147,6 +146,7 @@ int main(int argc, char* argv[]) {
     ('o', "max-order=INT", "arg", "", "Maximum context length (DEFAULT: MODEL ORDER)")
     ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
     ('u', "update-categories", "", "", "Update category generation and membership probabilities")
+    ('g', "tagging=INT", "arg", "0", "Tagging mode 0=no (DEFAULT) 1=first unk in sentence 2=all")
     ('t', "num-threads=INT", "arg", "1", "Number of threads")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
@@ -167,6 +167,7 @@ int main(int argc, char* argv[]) {
     params.num_final_tokens = config["num-final-tokens"].get_int();
     params.max_line_length = config["max-line-length"].get_int();
     params.prob_beam = config["prob-beam"].get_float();
+    params.tagging = static_cast<TaggingMode>(config["tagging"].get_int());
     bool update_categories = config["update-categories"].specified;
 
     if (params.num_parses > params.num_final_tokens) {
@@ -197,9 +198,6 @@ int main(int argc, char* argv[]) {
 
     Categories stats(wcs.num_categories());
 
-    time_t now = time(0);
-    cerr << std::ctime(&now) << endl;
-
     unsigned long int num_vocab_words=0;
     unsigned long int num_oov_words=0;
     unsigned long int num_sents=0;
@@ -211,16 +209,12 @@ int main(int argc, char* argv[]) {
                      stats, modelfname,
                      num_vocab_words, num_oov_words, num_sents,
                      config["num-threads"].get_int());
-
     else
         catstats(infname, vocab,
                  cngram, indexmap, wcs,
                  params,
                  stats, modelfname,
                  num_vocab_words, num_oov_words, num_sents, total_ll);
-
-    now = time(0);
-    cerr << std::ctime(&now) << endl;
 
     cout << "Number of sentences processed: " << num_sents << endl;
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;

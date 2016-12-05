@@ -11,6 +11,9 @@
 #include "defs.hh"
 #include "Ngram.hh"
 
+
+enum TaggingMode { NO=0, FIRST=1, ALL=2 };
+
 class TrainingParameters {
 public:
     TrainingParameters()
@@ -20,7 +23,8 @@ public:
           max_order(3),
           max_line_length(100),
           prob_beam(10.0),
-          verbose(false) { };
+          verbose(false),
+          tagging(NO) { };
 
     unsigned int num_tokens;
     unsigned int num_final_tokens;
@@ -29,6 +33,7 @@ public:
     unsigned int max_line_length;
     flt_type prob_beam;
     bool verbose;
+    TaggingMode tagging;
 };
 
 

@@ -604,7 +604,7 @@ collect_stats(const vector<string> &sent,
 
         flt_type weight = exp(lp);
         for (unsigned int c=1; c<catseq.size()-1; c++) {
-            if (catseq[c] == -1) continue; // FIXME skip unks
+            if (catseq[c] == -1) continue; // skip unks
             stats.accumulate(sent[c-1], catseq[c], weight);
         }
 
