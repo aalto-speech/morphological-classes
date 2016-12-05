@@ -19,13 +19,7 @@ flt_type catstats(SimpleFileInput &corpusf,
                   const Categories &categories,
                   Categories &stats,
                   SimpleFileOutput *seqf,
-                  unsigned int num_tokens,
-                  unsigned int num_final_tokens,
-                  unsigned int num_parses,
-                  unsigned int max_order,
-                  unsigned int max_line_length,
-                  flt_type prob_beam,
-                  bool verbose,
+                  TrainingParameters &params,
                   unsigned long int &num_vocab_words,
                   unsigned long int &num_oov_words,
                   unsigned long int &senti)
@@ -40,7 +34,7 @@ flt_type catstats(SimpleFileInput &corpusf,
             if (word == "<s>" || word == "</s>") continue;
             sent.push_back(word);
         }
-        if (sent.size() > max_line_length) continue;
+        if (sent.size() > params.max_line_length) continue;
         if (sent.size() == 0) continue;
 
         for (auto wit=sent.begin(); wit != sent.end(); ++wit)
@@ -51,9 +45,7 @@ flt_type catstats(SimpleFileInput &corpusf,
                                     cngram, indexmap,
                                     categories,
                                     stats, seqf,
-                                    num_tokens, num_final_tokens,
-                                    num_parses, max_order,
-                                    prob_beam, false,
+                                    params,
                                     &num_vocab_words, &num_oov_words);
         total_ll += ll;
         if (++senti % 10000 == 0) cerr << "Processing sentence " << senti << endl;
@@ -70,7 +62,7 @@ int main(int argc, char* argv[]) {
     config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT [MODEL]\n")
     ('p', "num-parses=INT", "arg", "10", "Maximum number of parses to print per sentence (DEFAULT: 10)")
     ('t', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
-    ('e', "num-end-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the end position (DEFAULT: 10)")
+    ('f', "num-final-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the last position (DEFAULT: 10)")
     ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words (DEFAULT: 100)")
     ('o', "max-order=INT", "arg", "", "Maximum context length (DEFAULT: MODEL ORDER)")
     ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
@@ -88,17 +80,18 @@ int main(int argc, char* argv[]) {
     if (config.arguments.size() == 5)
         modelfname = config.arguments[4];
 
-    int num_parses = config["num-parses"].get_int();
-    int num_tokens = config["num-tokens"].get_int();
-    int num_end_tokens = config["num-end-tokens"].get_int();
-    int max_line_length = config["max-line-length"].get_int();
-    flt_type prob_beam = config["prob-beam"].get_float();
+    TrainingParameters params;
+    params.num_parses = config["num-parses"].get_int();
+    params.num_tokens = config["num-tokens"].get_int();
+    params.num_final_tokens = config["num-final-tokens"].get_int();
+    params.max_line_length = config["max-line-length"].get_int();
+    params.prob_beam = config["prob-beam"].get_float();
     bool update_categories = config["update-categories"].specified;
 
-    if (num_parses > num_end_tokens) {
-        cerr << "Warning, num-parses higher than num-end-tokens" << endl;
-        cerr << "num-parses set to: " << num_end_tokens << endl;
-        num_parses = num_end_tokens;
+    if (params.num_parses > params.num_final_tokens) {
+        cerr << "Warning, num-parses higher than num-final-tokens" << endl;
+        cerr << "num-parses set to: " << params.num_final_tokens << endl;
+        params.num_parses = params.num_final_tokens;
     }
 
     Categories wcs;
@@ -110,8 +103,8 @@ int main(int argc, char* argv[]) {
     cerr << "Reading category n-gram model.." << endl;
     Ngram cngram;
     cngram.read_arpa(cngramfname);
-    int max_order = cngram.max_order;
-    if (config["max-order"].specified) max_order = config["max-order"].get_int();
+    params.max_order = cngram.max_order;
+    if (config["max-order"].specified) params.max_order = config["max-order"].get_int();
 
     // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(wcs.num_categories());
@@ -134,9 +127,7 @@ int main(int argc, char* argv[]) {
     flt_type total_ll = catstats(corpusf, vocab,
                                  cngram, indexmap, wcs,
                                  stats, seqf,
-                                 num_tokens, num_end_tokens, num_parses,
-                                 max_order, max_line_length, prob_beam,
-                                 false,
+                                 params,
                                  num_vocab_words, num_oov_words, senti);
 
     if (seqf != nullptr) {

@@ -421,10 +421,7 @@ segment_sent(const std::vector<std::string> &words,
              const Ngram &ngram,
              const vector<int> &indexmap,
              const Categories &categories,
-             unsigned int num_tokens,
-             unsigned int num_final_tokens,
-             unsigned int max_order,
-             flt_type prob_beam,
+             TrainingParameters &params,
              vector<vector<Token*> > &tokens,
              vector<Token*> &pointers,
              unsigned long int *num_vocab_words,
@@ -461,7 +458,7 @@ segment_sent(const std::vector<std::string> &words,
 
             Token &tok = *(*tit);
 
-            flt_type cat_gen_lp = get_cat_gen_lp(&tok, max_order-1);
+            flt_type cat_gen_lp = get_cat_gen_lp(&tok, params.max_order-1);
 
             // Categories are defined, iterate over memberships
             if (cmp != nullptr && cmp->size() > 0) {
@@ -474,7 +471,7 @@ segment_sent(const std::vector<std::string> &words,
                     curr_score += ngram_lp * log10_to_ln;
                     curr_score += cit->second;
 
-                    if ((curr_score+prob_beam) < best_score) {
+                    if ((curr_score+params.prob_beam) < best_score) {
                         if (num_pruned_tokens != nullptr) (*num_pruned_tokens)++;
                         continue;
                     }
@@ -532,9 +529,9 @@ segment_sent(const std::vector<std::string> &words,
         }
 
         if (i<words.size()-1)
-            histogram_prune(tokens[i+1], num_tokens, worst_score, best_score);
+            histogram_prune(tokens[i+1], params.num_tokens, worst_score, best_score);
         else
-            histogram_prune(tokens[i+1], num_final_tokens, worst_score, best_score);
+            histogram_prune(tokens[i+1], params.num_final_tokens, worst_score, best_score);
     }
 
     // Add sentence end scores
@@ -542,7 +539,7 @@ segment_sent(const std::vector<std::string> &words,
     for (auto tit = curr_tokens.begin(); tit != curr_tokens.end(); ++tit) {
         Token &tok = *(*tit);
         Token* new_tok = new Token(tok, -1);
-        new_tok->m_lp = tok.m_lp + get_cat_gen_lp(&tok, max_order-1);
+        new_tok->m_lp = tok.m_lp + get_cat_gen_lp(&tok, params.max_order-1);
         flt_type ngram_lp = 0.0;
         new_tok->m_cng_node = ngram.score(tok.m_cng_node, ngram.sentence_end_symbol_idx, ngram_lp);
         new_tok->m_lp += ngram_lp * log10_to_ln;
@@ -559,12 +556,7 @@ collect_stats(const vector<string> &sent,
               const Categories &categories,
               Categories &stats,
               SimpleFileOutput *seqf,
-              unsigned int num_tokens,
-              unsigned int num_final_tokens,
-              unsigned int num_parses,
-              unsigned int max_order,
-              flt_type prob_beam,
-              bool verbose,
+              TrainingParameters &params,
               unsigned long int *num_vocab_words,
               unsigned long int *num_oov_words,
               unsigned long int *num_unpruned_tokens,
@@ -573,7 +565,7 @@ collect_stats(const vector<string> &sent,
     vector<vector<Token*> > tokens;
     vector<Token*> pointers;
     segment_sent(sent, ngram, indexmap, categories,
-                 num_tokens, num_final_tokens, max_order, prob_beam,
+                 params,
                  tokens, pointers,
                  num_vocab_words, num_oov_words,
                  num_unpruned_tokens, num_pruned_tokens);
@@ -618,8 +610,8 @@ collect_stats(const vector<string> &sent,
         }
 
         if (seqf != nullptr) {
-            if (i<num_parses) {
-                if (num_parses > 1) *seqf << weight << " ";
+            if (i<params.num_parses) {
+                if (params.num_parses > 1) *seqf << weight << " ";
                 *seqf << "<s>";
                 for (unsigned int c=1; c<catseq.size()-1; c++) {
                     if (catseq[c] == -1) *seqf << " <unk>";

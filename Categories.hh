@@ -11,6 +11,26 @@
 #include "defs.hh"
 #include "Ngram.hh"
 
+class TrainingParameters {
+public:
+    TrainingParameters()
+        : num_tokens(100),
+          num_final_tokens(10),
+          num_parses(0),
+          max_order(3),
+          max_line_length(100),
+          prob_beam(10.0),
+          verbose(false) { };
+
+    unsigned int num_tokens;
+    unsigned int num_final_tokens;
+    unsigned int num_parses;
+    unsigned int max_order;
+    unsigned int max_line_length;
+    flt_type prob_beam;
+    bool verbose;
+};
+
 
 class Token {
 public:
@@ -101,10 +121,7 @@ void segment_sent(const std::vector<std::string> &sent,
                   const Ngram &ngram,
                   const std::vector<int> &indexmap,
                   const Categories &categories,
-                  unsigned int max_tokens,
-                  unsigned int max_final_tokens,
-                  unsigned int max_order,
-                  flt_type prob_beam,
+                  TrainingParameters &params,
                   std::vector<std::vector<Token*> > &tokens,
                   std::vector<Token*> &pointers,
                   unsigned long int *num_vocab_words=nullptr,
@@ -118,12 +135,7 @@ flt_type collect_stats(const std::vector<std::string> &sent,
                        const Categories &categories,
                        Categories &stats,
                        SimpleFileOutput *seqf,
-                       unsigned int num_tokens=100,
-                       unsigned int num_final_tokens=10,
-                       unsigned int num_parses=0,
-                       unsigned int max_order=3,
-                       flt_type prob_beam=10.0,
-                       bool verbose=false,
+                       TrainingParameters &params,
                        unsigned long int *num_vocab_words=nullptr,
                        unsigned long int *num_oov_words=nullptr,
                        unsigned long int *num_unpruned_tokens=nullptr,
