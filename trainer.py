@@ -138,8 +138,8 @@ if __name__ == "__main__":
     config = ConfigParser.ConfigParser()
     config.read(args.trainer_cfg)
 
-    vocab = "vocab"
-    vocab_capunk = "vocab.capunk"
+    vocab = "%s.vocab" % args.model_id
+    vocab_capunk = "%s.vocab.capunk" % args.model_id
     write_vocab(args.word_init, vocab, False)
     write_vocab(args.word_init, vocab_capunk, True)
 
@@ -149,12 +149,14 @@ if __name__ == "__main__":
         smoothing, order, update_catprobs, tag = iteration[1].split(",")
         max_order = max(max_order, int(order))
 
+    pplresfname = "%s.eval.ppl" % args.model_id
+    if os.path.exists(pplresfname): os.remove(pplresfname)
     prev_iter_id = "%s.iter0" % args.model_id
     init_model(config, args.word_init, vocab, args.train_corpus, prev_iter_id)
     if args.eval_corpus:
         print >>sys.stderr, "Computing evaluation corpus perplexity"
         evaluate(prev_iter_id, args.eval_corpus, max_order,
-                 "%s.eval.ppl" % args.model_id, args.num_threads)
+                 pplresfname, args.num_threads)
 
     for iteration in iterations:
         iter_id = "%s.%s" % (args.model_id, iteration[0])
@@ -177,6 +179,6 @@ if __name__ == "__main__":
         if args.eval_corpus:
             print >>sys.stderr, "Computing evaluation corpus perplexity"
             evaluate(iter_id, args.eval_corpus, max_order,
-                     "%s.eval.ppl" % args.model_id, args.num_threads)
+                     pplresfname, args.num_threads)
 
         prev_iter_id = iter_id
