@@ -474,6 +474,7 @@ segment_sent(const std::vector<std::string> &words,
     tokens.resize(words.size()+2);
     static double log10_to_ln = log(10.0);
     bool tag_word = params.tagging != NO;
+    bool tagged = false;
 
     Token *initial_token = new Token();
     initial_token->m_cng_node = ngram.sentence_start_node;
@@ -530,13 +531,11 @@ segment_sent(const std::vector<std::string> &words,
             }
             // Tag this word
             else if (cmp != nullptr && tag_word) {
-                cerr << "tagging" << endl;
                 int max_hypos=10;
                 int hypo_count=0;
                 multimap<flt_type, int> tag_hypos = get_cat_tag_hypotheses(ngram, indexmap,
                                                                            tok.m_cng_node, max_hypos);
                 for (auto hit=tag_hypos.rbegin(); hit != tag_hypos.rend(); ++hit) {
-                    cerr << hit->first << " " << hit->second << endl;
                     int c = hit->second;
 
                     flt_type curr_score = tok.m_lp + cat_gen_lp;
@@ -555,7 +554,7 @@ segment_sent(const std::vector<std::string> &words,
 
                     if (++hypo_count > max_hypos) break;
                 }
-                if (params.tagging == FIRST) tag_word = false;
+                tagged=true;
             }
             // Advance with the unk symbol
             else {
@@ -572,6 +571,7 @@ segment_sent(const std::vector<std::string> &words,
             histogram_prune(tokens[i+1], params.num_tokens, worst_score, best_score);
         else
             histogram_prune(tokens[i+1], params.num_final_tokens, worst_score, best_score);
+        if (params.tagging == FIRST && tagged) tag_word = false;
     }
 
     // Add sentence end scores
