@@ -70,9 +70,9 @@ def catstats(prev_iter_id,
 
     if num_threads > 1:
         catseqfnames = glob.glob("%s.thread*.catseq.gz" % curr_iter_id)
-        merge_cmd = "cat %s >%s.catseq.arpa.gz" % (" ".join(catseqfnames), curr_iter_id)
+        merge_cmd = "cat %s >%s.catseq.gz" % (" ".join(catseqfnames), curr_iter_id)
         subprocess.Popen(merge_cmd, shell=True).wait()
-        for catseqfnames in catseqfnames:
+        for catseqfname in catseqfnames:
             os.remove(catseqfname)
 
 
