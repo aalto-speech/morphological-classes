@@ -426,6 +426,7 @@ get_cat_gen_lp(Token *tok,
 
 multimap<flt_type, int>
 get_cat_tag_hypotheses(const Ngram &ngram,
+                       const vector<int> &indexmap,
                        int cng_node,
                        int num_hypotheses=10)
 {
@@ -439,8 +440,11 @@ get_cat_tag_hypotheses(const Ngram &ngram,
         if (first_arc != -1) {
             for (int i=first_arc; i<last_arc; i++) {
                 int target_node = ngram.arc_target_nodes[i];
+                string hypo_cat_str = ngram.vocabulary[ngram.arc_words[i]];
+                if (hypo_cat_str[0] == '<') continue;
+                int hypo_cat_idx = indexmap[str2int(hypo_cat_str)];
                 cat_tag_hypotheses.insert(make_pair(bo_cost+ngram.nodes[target_node].prob,
-                                                    ngram.arc_words[i]));
+                                                    hypo_cat_idx));
             }
         }
 
@@ -529,7 +533,8 @@ segment_sent(const std::vector<std::string> &words,
                 cerr << "tagging" << endl;
                 int max_hypos=10;
                 int hypo_count=0;
-                multimap<flt_type, int> tag_hypos = get_cat_tag_hypotheses(ngram, tok.m_cng_node, max_hypos);
+                multimap<flt_type, int> tag_hypos = get_cat_tag_hypotheses(ngram, indexmap,
+                                                                           tok.m_cng_node, max_hypos);
                 for (auto hit=tag_hypos.rbegin(); hit != tag_hypos.rend(); ++hit) {
                     cerr << hit->first << " " << hit->second << endl;
                     int c = hit->second;
