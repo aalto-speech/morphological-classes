@@ -1,7 +1,10 @@
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <thread>
+#include <functional>
 
 #include "defs.hh"
 #include "io.hh"
@@ -12,48 +15,129 @@
 using namespace std;
 
 
-flt_type catstats(SimpleFileInput &corpusf,
-                  set<string> &vocab,
-                  const Ngram &cngram,
-                  const vector<int> &indexmap,
-                  const Categories &categories,
-                  Categories &stats,
-                  SimpleFileOutput *seqf,
-                  TrainingParameters &params,
-                  unsigned long int &num_vocab_words,
-                  unsigned long int &num_oov_words,
-                  unsigned long int &senti)
+/*
 {
+    for (int cidx=m_num_special_classes; cidx<(int)m_classes.size(); cidx++) {
+        if (cidx == curr_class) continue;
+        if (cidx % num_threads != thread_index) continue;
+        double ll_diff = evaluate_exchange(word_index, curr_class, cidx);
+        if (ll_diff > best_ll_diff) {
+            best_ll_diff = ll_diff;
+            best_class = cidx;
+        }
+    }
+}
+*/
+
+
+bool
+process_sent(string line,
+             const set<string> &vocab,
+             const TrainingParameters &params,
+             vector<string> &sent)
+{
+    sent.clear();
+    stringstream ss(line);
+    string word;
+    while (ss >> word) {
+        if (word == "<s>" || word == "</s>") continue;
+        sent.push_back(word);
+    }
+    if (sent.size() > params.max_line_length) return false;
+    if (sent.size() == 0) return false;
+
+    for (auto wit=sent.begin(); wit != sent.end(); ++wit)
+        if (vocab.find(*wit) == vocab.end())
+            wit->assign("<unk>");
+
+    return true;
+}
+
+
+void
+catstats(string corpusfname,
+         const set<string> &vocab,
+         const Ngram &cngram,
+         const vector<int> &indexmap,
+         const Categories &categories,
+         const TrainingParameters &params,
+         Categories &stats,
+         string modelfname,
+         unsigned long int &num_vocab_words,
+         unsigned long int &num_oov_words,
+         unsigned long int &senti,
+         flt_type &total_ll)
+{
+    SimpleFileOutput *seqf = nullptr;
+    if (modelfname.length() > 0)
+        seqf = new SimpleFileOutput(modelfname + ".catseq.gz");
+
+    SimpleFileInput corpusf(corpusfname);
     string line;
-    flt_type total_ll = 0.0;
     while (corpusf.getline(line)) {
         vector<string> sent;
-        stringstream ss(line);
-        string word;
-        while (ss >> word) {
-            if (word == "<s>" || word == "</s>") continue;
-            sent.push_back(word);
-        }
-        if (sent.size() > params.max_line_length) continue;
-        if (sent.size() == 0) continue;
-
-        for (auto wit=sent.begin(); wit != sent.end(); ++wit)
-            if (vocab.find(*wit) == vocab.end())
-                wit->assign("<unk>");
-
-        flt_type ll = collect_stats(sent,
-                                    cngram, indexmap,
-                                    categories,
-                                    stats, seqf,
-                                    params,
-                                    &num_vocab_words, &num_oov_words);
-        total_ll += ll;
+        if (!process_sent(line, vocab, params, sent)) continue;
+        total_ll += collect_stats(sent,
+                                  cngram, indexmap,
+                                  categories, params,
+                                  stats, seqf,
+                                  &num_vocab_words, &num_oov_words);
         if (++senti % 10000 == 0) cerr << "Processing sentence " << senti << endl;
     }
 
-    return total_ll;
+    if (seqf != nullptr) {
+        seqf->close();
+        delete seqf;
+    }
 }
 
+
+flt_type
+catstats_thr(string corpusfname,
+             const set<string> &vocab,
+             const Ngram &cngram,
+             const vector<int> &indexmap,
+             const Categories &categories,
+             const TrainingParameters &params,
+             Categories &stats,
+             string modelfname,
+             unsigned long int &num_vocab_words,
+             unsigned long int &num_oov_words,
+             unsigned long int &senti,
+             int num_threads)
+{
+    vector<unsigned long int> thr_num_vocab_words(num_threads, 0);
+    vector<unsigned long int> thr_num_oov_words(num_threads, 0);
+    vector<unsigned long int> thr_senti(num_threads, 0);
+    vector<flt_type> thr_ll(num_threads, 0.0);
+    vector<SimpleFileOutput*> thr_seqf;
+    vector<std::thread*> workers;
+    for (int t=0; t<num_threads; t++) {
+        std::thread *worker = new std::thread(&catstats,
+                                              corpusfname,
+                                              std::cref(vocab),
+                                              std::cref(cngram),
+                                              std::cref(indexmap),
+                                              std::cref(categories),
+                                              std::cref(params),
+                                              std::ref(stats),
+                                              modelfname,
+                                              std::ref(thr_num_vocab_words[t]),
+                                              std::ref(thr_num_oov_words[t]),
+                                              std::ref(thr_senti[t]),
+                                              std::ref(thr_ll[t]));
+        workers.push_back(worker);
+    }
+    flt_type total_ll=0.0;
+    for (int t=0; t<num_threads; t++) {
+        workers[t]->join();
+        num_vocab_words += thr_num_vocab_words[t];
+        num_oov_words += thr_num_oov_words[t];
+        senti += thr_senti[t];
+        total_ll += thr_ll[t];
+    }
+    return total_ll;
+}
 
 
 int main(int argc, char* argv[]) {
@@ -116,24 +200,21 @@ int main(int argc, char* argv[]) {
 
     Categories stats(wcs.num_categories());
 
-    SimpleFileInput corpusf(infname);
-    SimpleFileOutput *seqf = nullptr;
-    if (modelfname.length() > 0)
-        seqf = new SimpleFileOutput(modelfname + ".catseq.gz");
+    time_t now = time(0);
+    cerr << std::ctime(&now) << endl;
+
     unsigned long int num_vocab_words=0;
     unsigned long int num_oov_words=0;
     unsigned long int senti=0;
+    flt_type total_ll=0.0;
+    catstats(infname, vocab,
+             cngram, indexmap, wcs,
+             params,
+             stats, modelfname,
+             num_vocab_words, num_oov_words, senti, total_ll);
 
-    flt_type total_ll = catstats(corpusf, vocab,
-                                 cngram, indexmap, wcs,
-                                 stats, seqf,
-                                 params,
-                                 num_vocab_words, num_oov_words, senti);
-
-    if (seqf != nullptr) {
-        seqf->close();
-        delete seqf;
-    }
+    now = time(0);
+    cerr << std::ctime(&now) << endl;
 
     cout << "Number of sentences processed: " << senti << endl;
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;

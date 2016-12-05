@@ -2,7 +2,6 @@
 #include <sstream>
 #include <algorithm>
 #include <queue>
-#include <thread>
 #include <cfloat>
 
 #include "Categories.hh"
@@ -421,7 +420,7 @@ segment_sent(const std::vector<std::string> &words,
              const Ngram &ngram,
              const vector<int> &indexmap,
              const Categories &categories,
-             TrainingParameters &params,
+             const TrainingParameters &params,
              vector<vector<Token*> > &tokens,
              vector<Token*> &pointers,
              unsigned long int *num_vocab_words,
@@ -554,9 +553,9 @@ collect_stats(const vector<string> &sent,
               const Ngram &ngram,
               const vector<int> &indexmap,
               const Categories &categories,
+              const TrainingParameters &params,
               Categories &stats,
               SimpleFileOutput *seqf,
-              TrainingParameters &params,
               unsigned long int *num_vocab_words,
               unsigned long int *num_oov_words,
               unsigned long int *num_unpruned_tokens,
