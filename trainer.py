@@ -2,6 +2,7 @@
 
 import os
 import sys
+import glob
 import argparse
 import ConfigParser
 import subprocess
@@ -53,17 +54,26 @@ def catstats(prev_iter_id,
              corpus,
              max_order=None,
              update_catprobs=False,
-             single_parse=False):
+             single_parse=False,
+             num_threads=1):
 
     catem_dir = config.get("common", "catem_dir")
     catstats_exe = os.path.join(catem_dir, "catstats")
 
-    stats_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s %s"\
-                    % (catstats_exe, prev_iter_id, prev_iter_id, prev_iter_id, corpus, curr_iter_id)
+    stats_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s %s -t %i"\
+                    % (catstats_exe, prev_iter_id, prev_iter_id, prev_iter_id,
+                       corpus, curr_iter_id, num_threads)
     if max_order: stats_cmd = "%s -o %i" % (stats_cmd, max_order)
     if update_catprobs: stats_cmd = "%s -u" % stats_cmd
     if single_parse: stats_cmd = "%s -p 1" % stats_cmd
     subprocess.Popen(stats_cmd, shell=True).wait()
+
+    if num_threads > 1:
+        catseqfnames = glob.glob("%s.thread*.catseq.gz" % curr_iter_id)
+        merge_cmd = "cat %s >%s.catseq.arpa.gz" % (" ".join(catseqfnames), curr_iter_id)
+        subprocess.Popen(merge_cmd, shell=True).wait()
+        for catseqfnames in catseqfnames:
+            os.remove(catseqfname)
 
 
 def ngram_training(iter_id,
@@ -86,13 +96,14 @@ def ngram_training(iter_id,
 def evaluate(model_id,
              corpus,
              max_order=None,
-             resfname=None):
+             resfname=None,
+             num_threads=1):
 
     catem_dir = config.get("common", "catem_dir")
     catstats_exe = os.path.join(catem_dir, "catstats")
 
-    eval_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s"\
-                    % (catstats_exe, model_id, model_id, model_id, corpus)
+    eval_cmd = "%s %s.arpa.gz %s.cgenprobs.gz %s.cmemprobs.gz %s -t %i"\
+                    % (catstats_exe, model_id, model_id, model_id, corpus, num_threads)
     if max_order: eval_cmd = "%s -o %i" % (eval_cmd, max_order)
 
     if resfname:
@@ -119,6 +130,8 @@ if __name__ == "__main__":
                         help='Identifier for the model to be trained')
     parser.add_argument('--eval_corpus',
                         help='Corpus for evaluating the model')
+    parser.add_argument('--num_threads', type=int, default=1,
+                        help='Number of threads for collecting the category statistics')
     args = parser.parse_args()
 
     config = ConfigParser.ConfigParser()
