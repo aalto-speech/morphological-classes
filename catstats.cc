@@ -194,9 +194,9 @@ int main(int argc, char* argv[]) {
         if (cngram.vocabulary_lookup.find(int2str(i)) != cngram.vocabulary_lookup.end())
             indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
 
-    set<string> vocab; wcs.get_words(vocab, false);
+    set<string> vocab; wcs.get_words(vocab, params.tagging != NO);
 
-    Categories stats(wcs.num_categories());
+    Categories stats(wcs);
 
     unsigned long int num_vocab_words=0;
     unsigned long int num_oov_words=0;
@@ -204,11 +204,11 @@ int main(int argc, char* argv[]) {
     flt_type total_ll=0.0;
     if (config["num-threads"].get_int() > 1)
         total_ll = catstats_thr(infname, vocab,
-                     cngram, indexmap, wcs,
-                     params,
-                     stats, modelfname,
-                     num_vocab_words, num_oov_words, num_sents,
-                     config["num-threads"].get_int());
+                                cngram, indexmap, wcs,
+                                params,
+                                stats, modelfname,
+                                num_vocab_words, num_oov_words, num_sents,
+                                config["num-threads"].get_int());
     else
         catstats(infname, vocab,
                  cngram, indexmap, wcs,

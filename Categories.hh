@@ -82,6 +82,7 @@ class Categories {
 public:
     Categories() { m_num_categories = 0; };
     Categories(int num_categories);
+    Categories(Categories &cat);
     Categories(std::string filename,
                const std::map<std::string, int> &counts,
                int top_word_categories=0);

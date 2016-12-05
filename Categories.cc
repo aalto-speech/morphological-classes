@@ -14,10 +14,19 @@ bool descending_token_sort(Token *a, Token *b)
     return (a->m_lp > b->m_lp);
 }
 
-Categories::Categories(int num_classes)
+Categories::Categories(int num_categories)
 {
-    m_num_categories = num_classes;
+    m_num_categories = num_categories;
 }
+
+
+Categories::Categories(Categories &cat)
+{
+    m_num_categories = cat.m_num_categories;
+    for (auto cit=cat.m_category_gen_probs.begin(); cit != cat.m_category_gen_probs.end(); ++cit)
+        m_stats[cit->first] = CategoryProbs();
+}
+
 
 Categories::Categories(std::string filename,
                        const map<string, int> &counts,
@@ -415,6 +424,34 @@ get_cat_gen_lp(Token *tok,
 }
 
 
+multimap<flt_type, int>
+get_cat_tag_hypotheses(const Ngram &ngram,
+                       int cng_node,
+                       int num_hypotheses=10)
+{
+    multimap<flt_type, int> cat_tag_hypotheses;
+
+    double bo_cost = 0.0;
+    while ((int)cat_tag_hypotheses.size() < num_hypotheses) {
+        int first_arc = ngram.nodes[cng_node].first_arc;
+        int last_arc = ngram.nodes[cng_node].last_arc+1;
+
+        if (first_arc != -1) {
+            for (int i=first_arc; i<last_arc; i++) {
+                int target_node = ngram.arc_target_nodes[i];
+                cat_tag_hypotheses.insert(make_pair(bo_cost+ngram.nodes[target_node].prob,
+                                                    ngram.arc_words[i]));
+            }
+        }
+
+        bo_cost += ngram.nodes[cng_node].backoff_prob;
+        cng_node = ngram.nodes[cng_node].backoff_node;
+    }
+
+    return cat_tag_hypotheses;
+}
+
+
 void
 segment_sent(const std::vector<std::string> &words,
              const Ngram &ngram,
@@ -432,6 +469,7 @@ segment_sent(const std::vector<std::string> &words,
     tokens.clear();
     tokens.resize(words.size()+2);
     static double log10_to_ln = log(10.0);
+    bool tag_word = params.tagging != NO;
 
     Token *initial_token = new Token();
     initial_token->m_cng_node = ngram.sentence_start_node;
@@ -486,6 +524,34 @@ segment_sent(const std::vector<std::string> &words,
                     pointers.push_back(new_tok);
                 }
             }
+            // Tag this word
+            else if (cmp != nullptr && tag_word) {
+                cerr << "tagging" << endl;
+                int max_hypos=10;
+                int hypo_count=0;
+                multimap<flt_type, int> tag_hypos = get_cat_tag_hypotheses(ngram, tok.m_cng_node, max_hypos);
+                for (auto hit=tag_hypos.rbegin(); hit != tag_hypos.rend(); ++hit) {
+                    cerr << hit->first << " " << hit->second << endl;
+                    int c = hit->second;
+
+                    flt_type curr_score = tok.m_lp + cat_gen_lp;
+                    flt_type ngram_lp = 0.0;
+                    int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], ngram_lp);
+                    curr_score += ngram_lp * log10_to_ln;
+
+                    best_score = max(best_score, curr_score);
+                    worst_score = min(worst_score, curr_score);
+
+                    Token* new_tok = new Token(tok, c);
+                    new_tok->m_lp = curr_score;
+                    new_tok->m_cng_node = ngram_node_idx;
+                    tokens[i+1].push_back(new_tok);
+                    pointers.push_back(new_tok);
+
+                    if (++hypo_count > max_hypos) break;
+                }
+                if (params.tagging == FIRST) tag_word = false;
+            }
             // Advance with the unk symbol
             else {
                 Token* new_tok = new Token(tok, -1);
@@ -495,36 +561,6 @@ segment_sent(const std::vector<std::string> &words,
                 pointers.push_back(new_tok);
             }
 
-            // No classes defined, handles initial pass for words without a class
-            // FIXME: implementation required
-            /*
-            else {
-                for (auto ngramit = ctxt->cbegin(); ngramit != ctxt->cend(); ++ngramit) {
-                    int c = ngramit->first;
-                    // UNK mapping not allowed in this case
-                    if (c == UNK_CLASS) continue;
-                    if (c == START_CLASS) continue;
-
-                    flt_type curr_score = tok.m_score;
-                    curr_score += class_gen_score;
-                    curr_score += ngramit->second;
-                    // Heuristic p(w|c)=1 for all new words
-
-                    if ((curr_score+prob_beam) < best_score) {
-                        pruned++;
-                        continue;
-                    }
-                    unpruned++;
-                    best_score = max(best_score, curr_score);
-                    worst_score = min(worst_score, curr_score);
-
-                    Token* new_tok = new Token(tok, c);
-                    new_tok->m_score = curr_score;
-                    tokens[i].push_back(new_tok);
-                    pointers.push_back(new_tok);
-                }
-            }
-            */
         }
 
         if (i<words.size()-1)
