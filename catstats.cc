@@ -103,6 +103,8 @@ catstats_thr(string corpusfname,
     vector<std::thread*> workers;
     for (unsigned int t=0; t<num_threads; t++) {
         thr_stats[t] = new Categories(categories.num_categories());
+        string tmodelfname = modelfname;
+        if (tmodelfname.length() > 0) tmodelfname += ".thread" + int2str(t);
         std::thread *worker = new std::thread(&catstats,
                                               corpusfname,
                                               std::cref(vocab),
@@ -111,7 +113,7 @@ catstats_thr(string corpusfname,
                                               std::cref(categories),
                                               std::cref(params),
                                               std::ref(*(thr_stats[t])),
-                                              modelfname + ".thread" + int2str(t),
+                                              tmodelfname,
                                               std::ref(thr_num_vocab_words[t]),
                                               std::ref(thr_num_oov_words[t]),
                                               std::ref(thr_num_sents[t]),
