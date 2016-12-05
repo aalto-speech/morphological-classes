@@ -15,21 +15,6 @@
 using namespace std;
 
 
-/*
-{
-    for (int cidx=m_num_special_classes; cidx<(int)m_classes.size(); cidx++) {
-        if (cidx == curr_class) continue;
-        if (cidx % num_threads != thread_index) continue;
-        double ll_diff = evaluate_exchange(word_index, curr_class, cidx);
-        if (ll_diff > best_ll_diff) {
-            best_ll_diff = ll_diff;
-            best_class = cidx;
-        }
-    }
-}
-*/
-
-
 bool
 process_sent(string line,
              const set<string> &vocab,
@@ -65,8 +50,10 @@ catstats(string corpusfname,
          string modelfname,
          unsigned long int &num_vocab_words,
          unsigned long int &num_oov_words,
-         unsigned long int &senti,
-         flt_type &total_ll)
+         unsigned long int &num_sents,
+         flt_type &total_ll,
+         unsigned int num_threads=1,
+         unsigned int thread_idx=0)
 {
     SimpleFileOutput *seqf = nullptr;
     if (modelfname.length() > 0)
@@ -74,7 +61,10 @@ catstats(string corpusfname,
 
     SimpleFileInput corpusf(corpusfname);
     string line;
+    unsigned long int senti=0;
     while (corpusf.getline(line)) {
+        senti++;
+        if (senti % num_threads != thread_idx) continue;
         vector<string> sent;
         if (!process_sent(line, vocab, params, sent)) continue;
         total_ll += collect_stats(sent,
@@ -82,7 +72,7 @@ catstats(string corpusfname,
                                   categories, params,
                                   stats, seqf,
                                   &num_vocab_words, &num_oov_words);
-        if (++senti % 10000 == 0) cerr << "Processing sentence " << senti << endl;
+        num_sents++;
     }
 
     if (seqf != nullptr) {
@@ -103,16 +93,17 @@ catstats_thr(string corpusfname,
              string modelfname,
              unsigned long int &num_vocab_words,
              unsigned long int &num_oov_words,
-             unsigned long int &senti,
-             int num_threads)
+             unsigned long int &num_sents,
+             unsigned int num_threads)
 {
     vector<unsigned long int> thr_num_vocab_words(num_threads, 0);
     vector<unsigned long int> thr_num_oov_words(num_threads, 0);
-    vector<unsigned long int> thr_senti(num_threads, 0);
+    vector<unsigned long int> thr_num_sents(num_threads, 0);
     vector<flt_type> thr_ll(num_threads, 0.0);
-    vector<SimpleFileOutput*> thr_seqf;
+    vector<Categories*> thr_stats(num_threads, nullptr);
     vector<std::thread*> workers;
-    for (int t=0; t<num_threads; t++) {
+    for (unsigned int t=0; t<num_threads; t++) {
+        thr_stats[t] = new Categories(categories.num_categories());
         std::thread *worker = new std::thread(&catstats,
                                               corpusfname,
                                               std::cref(vocab),
@@ -120,21 +111,26 @@ catstats_thr(string corpusfname,
                                               std::cref(indexmap),
                                               std::cref(categories),
                                               std::cref(params),
-                                              std::ref(stats),
-                                              modelfname,
+                                              std::ref(*(thr_stats[t])),
+                                              modelfname + ".thread" + int2str(t),
                                               std::ref(thr_num_vocab_words[t]),
                                               std::ref(thr_num_oov_words[t]),
-                                              std::ref(thr_senti[t]),
-                                              std::ref(thr_ll[t]));
+                                              std::ref(thr_num_sents[t]),
+                                              std::ref(thr_ll[t]),
+                                              num_threads,
+                                              t);
         workers.push_back(worker);
     }
     flt_type total_ll=0.0;
-    for (int t=0; t<num_threads; t++) {
+    for (unsigned int t=0; t<num_threads; t++) {
         workers[t]->join();
+        stats.accumulate(*(thr_stats[t]));
+        delete thr_stats[t];
         num_vocab_words += thr_num_vocab_words[t];
         num_oov_words += thr_num_oov_words[t];
-        senti += thr_senti[t];
+        num_sents += thr_num_sents[t];
         total_ll += thr_ll[t];
+        delete workers[t];
     }
     return total_ll;
 }
@@ -145,12 +141,13 @@ int main(int argc, char* argv[]) {
     conf::Config config;
     config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT [MODEL]\n")
     ('p', "num-parses=INT", "arg", "10", "Maximum number of parses to print per sentence (DEFAULT: 10)")
-    ('t', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
+    ('n', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
     ('f', "num-final-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the last position (DEFAULT: 10)")
     ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words (DEFAULT: 100)")
     ('o', "max-order=INT", "arg", "", "Maximum context length (DEFAULT: MODEL ORDER)")
     ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
     ('u', "update-categories", "", "", "Update category generation and membership probabilities")
+    ('t', "num-threads=INT", "arg", "1", "Number of threads")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 4 && config.arguments.size() != 5)
@@ -205,23 +202,32 @@ int main(int argc, char* argv[]) {
 
     unsigned long int num_vocab_words=0;
     unsigned long int num_oov_words=0;
-    unsigned long int senti=0;
+    unsigned long int num_sents=0;
     flt_type total_ll=0.0;
-    catstats(infname, vocab,
-             cngram, indexmap, wcs,
-             params,
-             stats, modelfname,
-             num_vocab_words, num_oov_words, senti, total_ll);
+    if (config["num-threads"].get_int() > 1)
+        total_ll = catstats_thr(infname, vocab,
+                     cngram, indexmap, wcs,
+                     params,
+                     stats, modelfname,
+                     num_vocab_words, num_oov_words, num_sents,
+                     config["num-threads"].get_int());
+
+    else
+        catstats(infname, vocab,
+                 cngram, indexmap, wcs,
+                 params,
+                 stats, modelfname,
+                 num_vocab_words, num_oov_words, num_sents, total_ll);
 
     now = time(0);
     cerr << std::ctime(&now) << endl;
 
-    cout << "Number of sentences processed: " << senti << endl;
+    cout << "Number of sentences processed: " << num_sents << endl;
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
-    cout << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+senti << endl;
+    cout << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+num_sents << endl;
     cout << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
     cout << "Likelihood: " << total_ll << endl;
-    double ppl = exp(-1.0/double(num_vocab_words+senti) * total_ll);
+    double ppl = exp(-1.0/double(num_vocab_words+num_sents) * total_ll);
     cout << "Perplexity: " << ppl << endl;
 
     if (modelfname.length() == 0) exit(EXIT_SUCCESS);
