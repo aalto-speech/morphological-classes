@@ -152,7 +152,8 @@ if __name__ == "__main__":
     init_model(config, args.word_init, vocab, args.train_corpus, prev_iter_id)
     if args.eval_corpus:
         print >>sys.stderr, "Computing evaluation corpus perplexity"
-        evaluate(prev_iter_id, args.eval_corpus, max_order, "%s.eval.ppl" % args.model_id)
+        evaluate(prev_iter_id, args.eval_corpus, max_order,
+                 "%s.eval.ppl" % args.model_id, args.num_threads)
 
     for iteration in iterations:
         iter_id = "%s.%s" % (args.model_id, iteration[0])
@@ -167,11 +168,12 @@ if __name__ == "__main__":
         print >>sys.stderr, "Tag unks: %s" % tag
 
         catstats(prev_iter_id, iter_id, args.train_corpus,
-                 max_order, update_catprobs, smoothing=="kn")
+                 max_order, update_catprobs, smoothing=="kn", args.num_threads)
         ngram_training(iter_id, smoothing, vocab, order)
 
         if args.eval_corpus:
             print >>sys.stderr, "Computing evaluation corpus perplexity"
-            evaluate(iter_id, args.eval_corpus, max_order, "%s.eval.ppl" % args.model_id)
+            evaluate(iter_id, args.eval_corpus, max_order,
+                     "%s.eval.ppl" % args.model_id, args.num_threads)
 
         prev_iter_id = iter_id
