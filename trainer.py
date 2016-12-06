@@ -56,7 +56,8 @@ def catstats(prev_iter_id,
              update_catprobs=False,
              single_parse=False,
              num_threads=1,
-             tag=0):
+             tag=0,
+             max_num_categories=None):
 
     catem_dir = config.get("common", "catem_dir")
     catstats_exe = os.path.join(catem_dir, "catstats")
@@ -67,6 +68,7 @@ def catstats(prev_iter_id,
     if max_order: stats_cmd = "%s -o %i" % (stats_cmd, max_order)
     if update_catprobs: stats_cmd = "%s -u" % stats_cmd
     if single_parse: stats_cmd = "%s -p 1" % stats_cmd
+    if max_num_categories: stats_cmd = "%s -c %i" % (stats_cmd, max_num_categories)
     subprocess.Popen(stats_cmd, shell=True).wait()
 
     if num_threads > 1:
@@ -146,7 +148,7 @@ if __name__ == "__main__":
     max_order = 0
     iterations = config.items("training")
     for iteration in iterations:
-        smoothing, order, update_catprobs, tag = iteration[1].split(",")
+        smoothing, order, update_catprobs, tag, max_num_categories = iteration[1].split(",")
         max_order = max(max_order, int(order))
 
     pplresfname = "%s.eval.ppl" % args.model_id
@@ -162,18 +164,20 @@ if __name__ == "__main__":
         iter_id = "%s.%s" % (args.model_id, iteration[0])
         print >>sys.stderr, ""
         print >>sys.stderr, "Training %s" % iter_id
-        smoothing, order, update_catprobs, tag = iteration[1].split(",")
+        smoothing, order, update_catprobs, tag, max_num_categories = iteration[1].split(",")
         order = int(order)
         tag = int(tag)
+        max_num_categories = int(max_num_categories)
         update_catprobs = update_catprobs in ["true", "True", "1"]
         print >>sys.stderr, "Smoothing: %s" % smoothing
         print >>sys.stderr, "Model order: %i" % order
         print >>sys.stderr, "Update category probabilities: %s" % update_catprobs
         print >>sys.stderr, "Tag unks: %i" % tag
+        print >>sys.stderr, "Maximum number of categories: %i" % max_num_categories
 
         catstats(prev_iter_id, iter_id, args.train_corpus,
                  max_order, update_catprobs, smoothing=="kn",
-                 args.num_threads, tag)
+                 args.num_threads, tag, max_num_categories)
         ngram_training(iter_id, smoothing, vocab, order)
 
         if args.eval_corpus:

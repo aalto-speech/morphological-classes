@@ -150,6 +150,7 @@ int main(int argc, char* argv[]) {
     ('u', "update-categories", "", "", "Update category generation and membership probabilities")
     ('g', "tagging=INT", "arg", "0", "Tagging mode 0=no (DEFAULT) 1=first unk in sentence 2=all")
     ('t', "num-threads=INT", "arg", "1", "Number of threads")
+    ('c', "num-categories=INT", "arg", "10", "Upper limit for the number of categories per word")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 4 && config.arguments.size() != 5)
@@ -229,6 +230,8 @@ int main(int argc, char* argv[]) {
     if (modelfname.length() == 0) exit(EXIT_SUCCESS);
 
     if (update_categories) {
+        if (config["num-categories"].specified)
+            limit_num_categories(stats.m_stats, config["num-categories"].get_int());
         stats.estimate_model();
         stats.write_category_gen_probs(modelfname + ".cgenprobs.gz");
         stats.write_category_mem_probs(modelfname + ".cmemprobs.gz");

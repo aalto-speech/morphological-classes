@@ -8,34 +8,6 @@
 using namespace std;
 
 
-int
-get_word_counts(string corpusfname,
-                map<string, int> &counts)
-{
-    SimpleFileInput corpusf(corpusfname);
-
-    int wc = 0;
-    int lc = 0;
-    string line;
-    while (corpusf.getline(line)) {
-        if (line.length() == 0) continue;
-        stringstream ss(line);
-        string word;
-        while (ss >> word) {
-            if (word == "<s>" || word == "</s>") continue;
-            counts[word]++;
-            wc++;
-        }
-        lc++;
-    }
-
-    counts["<s>"] = lc;
-    counts["</s>"] = lc;
-
-    return wc;
-}
-
-
 void
 write_class_unigram_counts(const map<string, int> &word_counts,
                            const Categories &wcl,

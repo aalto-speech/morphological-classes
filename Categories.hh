@@ -154,5 +154,8 @@ void histogram_prune(std::vector<Token*> &tokens,
                      flt_type worst_score,
                      flt_type best_score);
 
+int get_word_counts(std::string corpusfname,
+                    std::map<std::string, int> &counts);
+
 
 #endif /* CATEGORIES */
