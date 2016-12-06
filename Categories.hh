@@ -83,9 +83,8 @@ public:
     Categories() { m_num_categories = 0; };
     Categories(int num_categories);
     Categories(Categories &cat);
-    Categories(std::string filename,
-               const std::map<std::string, int> &counts,
-               int top_word_categories=0);
+    Categories(std::string initfname,
+               const std::map<std::string, int> &counts);
     void accumulate(std::string word, int c, flt_type weight);
     void accumulate(Categories &acc);
     void estimate_model();

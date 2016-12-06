@@ -53,6 +53,8 @@ write_class_unigram_counts(const map<string, int> &word_counts,
             category_counts["<unk>"] += wit->second;
             continue;
         }
+        if (wcl.m_category_gen_probs.find(wit->first) == wcl.m_category_gen_probs.end())
+            continue;
         const CategoryProbs &cprobs = wcl.m_category_gen_probs.at(wit->first);
         if (cprobs.size() == 0)
             category_counts["<unk>"] += wit->second;
@@ -74,7 +76,6 @@ int main(int argc, char* argv[])
 {
     conf::Config config;
     config("usage: init [OPTION...] INIT_WORDS CORPUS MODEL\n")
-    ('w', "top-word-classes=INT", "arg", "0", "Assign an own class for the most common words")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 3) config.print_help(stderr, 1);
@@ -83,11 +84,10 @@ int main(int argc, char* argv[])
         string init_words_fname = config.arguments[0];
         string corpus_fname = config.arguments[1];
         string model_fname = config.arguments[2];
-        int top_word_classes = config["top-word-classes"].get_int();
 
         map<string, int> word_counts;
         get_word_counts(corpus_fname, word_counts);
-        Categories wcl(init_words_fname, word_counts, top_word_classes);
+        Categories wcl(init_words_fname, word_counts);
         wcl.assert_category_gen_probs();
         wcl.assert_category_mem_probs();
         int num_classes = wcl.num_categories();

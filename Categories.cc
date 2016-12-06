@@ -28,11 +28,10 @@ Categories::Categories(Categories &cat)
 }
 
 
-Categories::Categories(std::string filename,
-                       const map<string, int> &counts,
-                       int top_word_categories)
+Categories::Categories(string initfname,
+                       const map<string, int> &counts)
 {
-    SimpleFileInput infile(filename);
+    SimpleFileInput infile(initfname);
     m_stats.clear();
 
     string line;
@@ -43,6 +42,7 @@ Categories::Categories(std::string filename,
 
         string word;
         ss >> word;
+        if (counts.find(word) == counts.end()) continue;
         words.insert(word);
 
         int cl;
@@ -55,20 +55,6 @@ Categories::Categories(std::string filename,
         if (counts.find(word) != counts.end()) curr_count = double(counts.at(word));
         for (auto cit=curr_classes.begin(); cit != curr_classes.end(); ++cit)
             m_stats[word][*cit] = curr_count/double(curr_classes.size());
-    }
-
-    // Set an own class for the most common words
-    if (top_word_categories > 0) {
-        map<int, string> sorted_counts;
-        for (auto wit=counts.begin(); wit != counts.end(); ++wit)
-            sorted_counts[wit->second] = wit->first;
-        int sci = 0;
-        for (auto wit=sorted_counts.rbegin(); wit != sorted_counts.rend(); wit++) {
-            m_stats[wit->second].clear();
-            m_stats[wit->second][m_num_categories] = 1.0;
-            m_num_categories++;
-            if (++sci >= top_word_categories) break;
-        }
     }
 
     // Keep words with no class information in the stats
