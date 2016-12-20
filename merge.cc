@@ -144,7 +144,6 @@ void merge_classes(Exchange &e,
         cerr << e.num_classes() << "\t" << e.log_likelihood() << endl;
 
         if (model_write_interval > 0 && e.num_classes() % model_write_interval == 0) {
-            e.write_word_classes(model_fname + "." + int2str(e.num_classes()) + ".cgenprobs.gz");
             e.write_class_mem_probs(model_fname + "." + int2str(e.num_classes()) + ".cmemprobs.gz");
             e.write_classes(model_fname + "." + int2str(e.num_classes()) + ".classes.gz");
         }
@@ -195,7 +194,6 @@ int main(int argc, char* argv[])
         t2=time(0);
         cerr << "Train run time: " << t2-t1 << " seconds" << endl;
 
-        e.write_word_classes(model_fname + ".cgenprobs.gz");
         e.write_class_mem_probs(model_fname + ".cmemprobs.gz");
         e.write_classes(model_fname + ".classes.gz");
 

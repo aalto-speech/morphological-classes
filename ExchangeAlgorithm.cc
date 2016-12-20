@@ -2,6 +2,7 @@
 #include <sstream>
 #include <cmath>
 #include <ctime>
+#include <cassert>
 #include <thread>
 #include <functional>
 #include <iterator>
@@ -146,16 +147,6 @@ Exchange::read_corpus(string fname,
 
 
 void
-Exchange::write_word_classes(string fname) const
-{
-    SimpleFileOutput mfo(fname);
-    for (unsigned int widx = 0; widx < m_vocabulary.size(); widx++)
-        mfo << m_vocabulary[widx] << "\t" << m_word_classes[widx] << " 0.000000\n";
-    mfo.close();
-}
-
-
-void
 Exchange::write_class_mem_probs(string fname) const
 {
     SimpleFileOutput mfo(fname);
@@ -179,14 +170,12 @@ void
 Exchange::write_classes(string fname) const
 {
     SimpleFileOutput mfo(fname);
+    assert(m_classes.size() == static_cast<unsigned int>(m_num_classes));
     for (int cidx = 0; cidx < m_num_classes; cidx++) {
-        mfo << cidx << ": ";
         const set<int> &words = m_classes[cidx];
         for (auto wit=words.begin(); wit != words.end(); ++wit) {
-            if (wit != words.begin()) mfo << ",";
-            mfo << m_vocabulary[*wit];
+            mfo << m_vocabulary[*wit] << " " << cidx << "\n";
         }
-        mfo << "\n";
     }
     mfo.close();
 }
@@ -775,7 +764,6 @@ Exchange::iterate_exchange(int max_iter,
 
                 if (model_write_interval > 0 && curr_time-last_model_write_time > model_write_interval) {
                     string temp_base = model_base + ".temp" + int2str(tmp_model_idx);
-                    write_word_classes(temp_base + ".cgenprobs.gz");
                     write_class_mem_probs(temp_base + ".cmemprobs.gz");
                     write_classes(temp_base + ".classes.gz");
                     last_model_write_time = curr_time;
@@ -856,7 +844,6 @@ Exchange::iterate_exchange(vector<vector<int> > super_classes,
 
                 if (model_write_interval > 0 && curr_time-last_model_write_time > model_write_interval) {
                     string temp_base = model_base + ".temp" + int2str(tmp_model_idx);
-                    write_word_classes(temp_base + ".cgenprobs.gz");
                     write_class_mem_probs(temp_base + ".cmemprobs.gz");
                     write_classes(temp_base + ".classes.gz");
                     last_model_write_time = curr_time;

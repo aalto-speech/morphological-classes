@@ -137,7 +137,6 @@ void split_classes(Exchange &e,
         super_class_lookup[class2_idx] = sci;
 
         if (model_write_interval > 0 && e.num_classes() % model_write_interval == 0) {
-            e.write_word_classes(model_fname + "." + int2str(e.num_classes()) + ".cgenprobs.gz");
             e.write_class_mem_probs(model_fname + "." + int2str(e.num_classes()) + ".cmemprobs.gz");
             e.write_classes(model_fname + "." + int2str(e.num_classes()) + ".classes.gz");
         }
@@ -225,7 +224,6 @@ void split_classes_2(Exchange &e,
             write_super_classes(model_fname + "." + int2str(e.num_classes()) + ".superclasses.gz",
                                 super_classes,
                                 super_class_lookup);
-            e.write_word_classes(model_fname + "." + int2str(e.num_classes()) + ".cgenprobs.gz");
             e.write_class_mem_probs(model_fname + "." + int2str(e.num_classes()) + ".cmemprobs.gz");
             e.write_classes(model_fname + "." + int2str(e.num_classes()) + ".classes.gz");
         }
@@ -287,7 +285,6 @@ int main(int argc, char* argv[])
                             super_classes,
                             super_class_lookup);
 
-        e.write_word_classes(model_fname + ".cgenprobs.gz");
         e.write_class_mem_probs(model_fname + ".cmemprobs.gz");
         e.write_classes(model_fname + ".classes.gz");
 
