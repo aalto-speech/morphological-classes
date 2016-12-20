@@ -46,7 +46,6 @@ void write_super_classes(string scfname,
 }
 
 
-
 void find_candidate_classes(Exchange &e,
                             vector<int> &classes_to_evaluate,
                             set<int> stoplist,

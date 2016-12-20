@@ -58,9 +58,6 @@ public:
     int do_split(int class_idx,
                  const std::set<int> &class1_words,
                  const std::set<int> &class2_words);
-    double evaluate_split(int class_idx,
-                          const std::set<int> &class1_words,
-                          const std::set<int> &class2_words) const;
     double iterate_exchange(int max_iter=0,
                             int max_seconds=0,
                             int ll_print_interval=0,

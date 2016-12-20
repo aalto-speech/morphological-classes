@@ -124,24 +124,3 @@ BOOST_AUTO_TEST_CASE(DoSplit)
     _assert_same(e, e2);
 }
 
-
-// Test that splitting classes works
-BOOST_AUTO_TEST_CASE(EvaluateSplit)
-{
-    map<string, int> class_init_2 = {{"a", 2}, {"b", 3}, {"c", 3}, {"d", 2}, {"e", 3}};
-    Exchange e(2, class_init_2, "data/exchange1.txt");
-    double initial_ll = e.log_likelihood();
-
-    set<int> class1_words, class2_words;
-    class1_words.insert(e.m_vocabulary_lookup["b"]);
-    class1_words.insert(e.m_vocabulary_lookup["e"]);
-    class2_words.insert(e.m_vocabulary_lookup["c"]);
-    double hypo_ll_diff = e.evaluate_split(3, class1_words, class2_words);
-
-    map<string, int> class_init = {{"a", 2}, {"b", 3}, {"c", 4}, {"d", 2}, {"e", 3}};
-    Exchange e2(3, class_init, "data/exchange1.txt");
-    double splitted_ll = e2.log_likelihood();
-
-    BOOST_REQUIRE_CLOSE(hypo_ll_diff, splitted_ll-initial_ll, 0.001);
-}
-
