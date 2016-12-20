@@ -33,4 +33,5 @@ if __name__ == "__main__":
     for class_label, subclasses in super_classes.items():
         print >>sclassf, ",".join(subclasses)
         print >>sys.stderr, "%s: %i" % (class_label, len(subclasses))
+    sclassf.close()
 
