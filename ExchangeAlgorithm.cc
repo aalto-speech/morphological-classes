@@ -262,42 +262,68 @@ void
 Exchange::read_class_initialization(string class_fname)
 {
     cerr << "Reading class initialization from " << class_fname << endl;
+
     m_word_classes.resize(m_vocabulary.size());
+    int sos_idx = m_vocabulary_lookup["<s>"];
+    int eos_idx = m_vocabulary_lookup["</s>"];
+    int unk_idx = m_vocabulary_lookup["<unk>"];
+    m_word_classes[sos_idx] = START_CLASS;
+    m_word_classes[eos_idx] = START_CLASS;
+    m_word_classes[unk_idx] = UNK_CLASS;
+    if (m_word_boundary) {
+        m_classes.resize(3);
+        int wb_idx = m_vocabulary_lookup["<w>"];
+        m_word_classes[wb_idx] = WB_CLASS;
+        m_classes[WB_CLASS].insert(wb_idx);
+    }
+    else {
+        m_classes.resize(2);
+    }
+    m_classes[START_CLASS].insert(sos_idx);
+    m_classes[START_CLASS].insert(eos_idx);
+    m_classes[UNK_CLASS].insert(unk_idx);
 
     SimpleFileInput classf(class_fname);
     string line;
-    int num_words = 0;
-    set<int> class_indices;
+    map<int, int> file_to_class_idx;
     while (classf.getline(line)) {
         if (!line.length()) continue;
+        stringstream ss(line);
 
         string word;
-        stringstream liness(line);
-        liness >> word;
+        ss >> word;
+        if (word == "<s>" || word == "</s>" || word == "<unk>" ||
+            (m_word_boundary && word == "<w>")) {
+            cerr << "Warning: You have specified special tokens in the class "
+                 << "initialization file. These will be ignored." << endl;
+            continue;
+        }
+        auto vlit = m_vocabulary_lookup.find(word);
+        if (vlit == m_vocabulary_lookup.end()) continue;
+        int widx = vlit->second;
 
-        int best_idx = -1, idx;
-        double best_prob=MIN_LOG_PROB, prob;
-        while (liness >> idx) {
-            liness >>prob;
-            if (prob > best_prob) {
-                best_idx = idx;
-                best_prob = prob;
-            }
+        int file_idx, class_idx;
+        ss >> file_idx;
+        auto cit = file_to_class_idx.find(file_idx);
+        if (cit != file_to_class_idx.end()) {
+            class_idx = cit->second;
+        }
+        else {
+            class_idx = m_classes.size();
+            m_classes.resize(class_idx+1);
+            file_to_class_idx[file_idx] = class_idx;
         }
 
-        int word_idx = m_vocabulary_lookup[word];
-        m_word_classes[word_idx] = best_idx;
-        m_classes.resize(max((int)m_classes.size(), best_idx+1));
-        m_classes[best_idx].insert(word_idx);
-        class_indices.insert(best_idx);
-
-        num_words++;
+        m_classes[class_idx].insert(widx);
+        m_word_classes[widx] = class_idx;
     }
-    m_num_classes = class_indices.size();
 
-    cerr << "Read class initialization for " << num_words << " words" << endl;
-    cerr << "Total number of classes " << m_num_classes << endl;
-    cerr << "Maximum class index " << m_classes.size() << endl;
+    if (m_classes.size() != static_cast<unsigned int>(m_num_classes)) {
+        cerr << "Warning: You have specified class count " << m_num_classes
+             << ", but provided initialization for " << m_classes.size()
+             << " classes. The class count will be corrected." << endl;
+        m_num_classes = m_classes.size();
+    }
 }
 
 
