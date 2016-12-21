@@ -14,19 +14,17 @@
 class Merging {
 public:
     Merging(int num_classes,
-          std::string fname="",
-          std::string vocab_fname="",
-          unsigned int top_word_classes=0,
-          bool word_boundary=false);
+            std::string fname="",
+            std::string vocab_fname="",
+            unsigned int top_word_classes=0);
     Merging(std::string fname,
-          std::string vocab_fname="",
-          std::string class_fname="",
-          unsigned int top_word_classes=0,
-          bool word_boundary=false);
+            std::string vocab_fname="",
+            std::string class_fname="",
+            unsigned int top_word_classes=0);
     Merging(int num_classes,
-          const std::map<std::string, int> &word_classes,
-          std::string fname="",
-          std::string vocab_fname="");
+            const std::map<std::string, int> &word_classes,
+            std::string fname="",
+            std::string vocab_fname="");
     ~Merging() { };
 
     void read_corpus(std::string fname,

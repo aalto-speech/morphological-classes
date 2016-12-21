@@ -54,7 +54,7 @@ struct MergeEvalTask {
 
 
 void
-merge_thr_worker(const Exchange &e,
+merge_thr_worker(const Merging &merging,
                  int num_threads,
                  int thread_index,
                  const vector<MergeEvalTask> &evals,
@@ -63,7 +63,7 @@ merge_thr_worker(const Exchange &e,
     for (int i=0; i<(int)evals.size(); i++) {
         if (i % num_threads != thread_index) continue;
         const MergeEvalTask &task = evals[i];
-        double merge_ll = e.evaluate_merge(task.c1idx, task.c2idx);
+        double merge_ll = merging.evaluate_merge(task.c1idx, task.c2idx);
         if (merge_ll > best_merge.ll) {
             best_merge.ll = merge_ll;
             best_merge.c1idx = task.c1idx;
@@ -75,7 +75,7 @@ merge_thr_worker(const Exchange &e,
 }
 
 
-void merge_classes(Exchange &e,
+void merge_classes(Merging &merging,
                    vector<vector<int> > &super_classes,
                    map<int, int> &super_class_lookup,
                    int target_num_classes,
@@ -86,7 +86,7 @@ void merge_classes(Exchange &e,
 {
     srand(0);
 
-    while (e.num_classes() > target_num_classes)
+    while (merging.num_classes() > target_num_classes)
     {
         vector<MergeEvalTask> eval_tasks;
 
@@ -94,7 +94,7 @@ void merge_classes(Exchange &e,
             vector<int> &super_class = super_classes[sci];
             if (super_class.size() < 2) continue;
 
-            int evals_per_super_class = std::max(1, (int)round(double(super_class.size())/double(e.num_classes())
+            int evals_per_super_class = std::max(1, (int)round(double(super_class.size())/double(merging.num_classes())
                                         * evals_per_iteration));
 
             for (int i=0; i<evals_per_super_class; i++) {
@@ -107,8 +107,8 @@ void merge_classes(Exchange &e,
                 int c1idx = super_class[idx1];
                 int c2idx = super_class[idx2];
 
-                if (e.m_classes[c1idx].size() == 0) continue;
-                if (e.m_classes[c2idx].size() == 0) continue;
+                if (merging.m_classes[c1idx].size() == 0) continue;
+                if (merging.m_classes[c2idx].size() == 0) continue;
 
                 MergeEvalTask task;
                 task.super_class_idx = sci;
@@ -125,7 +125,7 @@ void merge_classes(Exchange &e,
         vector<std::thread*> workers;
         for (int t=0; t<num_threads; t++) {
             std::thread *worker = new std::thread(&merge_thr_worker,
-                                                  std::ref(e),
+                                                  std::ref(merging),
                                                   num_threads, t,
                                                   std::ref(eval_tasks),
                                                   std::ref(thr_best_tasks[t]) );
@@ -137,15 +137,15 @@ void merge_classes(Exchange &e,
                 best_task = thr_best_tasks[t];
         }
 
-        e.do_merge(best_task.c1idx, best_task.c2idx);
+        merging.do_merge(best_task.c1idx, best_task.c2idx);
         int msci = super_class_lookup[best_task.c2idx];
         assert(*(super_classes[msci].begin()+best_task.idx_to_remove) == best_task.idx_to_remove);
         super_classes[msci].erase(super_classes[msci].begin()+best_task.idx_to_remove);
-        cerr << e.num_classes() << "\t" << e.log_likelihood() << endl;
+        cerr << merging.num_classes() << "\t" << merging.log_likelihood() << endl;
 
-        if (model_write_interval > 0 && e.num_classes() % model_write_interval == 0) {
-            e.write_class_mem_probs(model_fname + "." + int2str(e.num_classes()) + ".cmemprobs.gz");
-            e.write_classes(model_fname + "." + int2str(e.num_classes()) + ".classes.gz");
+        if (model_write_interval > 0 && merging.num_classes() % model_write_interval == 0) {
+            merging.write_class_mem_probs(model_fname + "." + int2str(merging.num_classes()) + ".cmemprobs.gz");
+            merging.write_classes(model_fname + "." + int2str(merging.num_classes()) + ".classes.gz");
         }
     }
 }
@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
         string vocab_fname = config["vocabulary"].get_str();
         string super_class_fname = config["super-classes"].get_str();
 
-        Exchange e(corpus_fname, vocab_fname, class_fname);
+        Merging e(corpus_fname, vocab_fname, class_fname);
 
         vector<vector<int> > super_classes;
         map<int, int> super_class_lookup;

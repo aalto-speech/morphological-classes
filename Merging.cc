@@ -8,22 +8,20 @@
 #include <iterator>
 #include <algorithm>
 
-#include "ExchangeAlgorithm.hh"
+#include "Merging.hh"
 #include "io.hh"
 #include "defs.hh"
 
 using namespace std;
 
 
-Exchange::Exchange(int num_classes,
-                   string fname,
-                   string vocab_fname,
-                   unsigned int top_word_classes,
-                   bool word_boundary)
-    : m_num_classes(num_classes+2),
-      m_word_boundary(word_boundary)
+Merging::Merging(int num_classes,
+                 string fname,
+                 string vocab_fname,
+                 unsigned int top_word_classes)
+    : m_num_classes(num_classes+2)
 {
-    m_num_special_classes = word_boundary ? 3 : 2;
+    m_num_special_classes = 2;
     if (fname.length()) {
         read_corpus(fname, vocab_fname);
         initialize_classes_by_freq(top_word_classes);
@@ -32,14 +30,12 @@ Exchange::Exchange(int num_classes,
 }
 
 
-Exchange::Exchange(string fname,
-                   string vocab_fname,
-                   string class_fname,
-                   unsigned int top_word_classes,
-                   bool word_boundary)
-    : m_word_boundary(word_boundary)
+Merging::Merging(string fname,
+                 string vocab_fname,
+                 string class_fname,
+                 unsigned int top_word_classes)
 {
-    m_num_special_classes = word_boundary ? 3 : 2;
+    m_num_special_classes = 2;
     if (fname.length()) {
         read_corpus(fname, vocab_fname);
         read_class_initialization(class_fname);
@@ -48,10 +44,10 @@ Exchange::Exchange(string fname,
 }
 
 
-Exchange::Exchange(int num_classes,
-                   const map<string, int> &word_classes,
-                   string fname,
-                   string vocab_fname)
+Merging::Merging(int num_classes,
+                 const map<string, int> &word_classes,
+                 string fname,
+                 string vocab_fname)
     : m_num_classes(num_classes+2)
 {
     m_num_special_classes = 2;
@@ -64,7 +60,7 @@ Exchange::Exchange(int num_classes,
 
 
 void
-Exchange::read_corpus(string fname,
+Merging::read_corpus(string fname,
                       string vocab_fname)
 {
     string line;
@@ -147,17 +143,15 @@ Exchange::read_corpus(string fname,
 
 
 void
-Exchange::write_class_mem_probs(string fname) const
+Merging::write_class_mem_probs(string fname) const
 {
     SimpleFileOutput mfo(fname);
     mfo << "<s>\t" << START_CLASS << " " << "0.000000" << "\n";
     mfo << "<unk>\t" << UNK_CLASS << " " << "0.000000" << "\n";
-    if (m_word_boundary) mfo << "<w>\t" << WB_CLASS << " " << "0.000000" << "\n";
 
     for (unsigned int widx = 0; widx < m_vocabulary.size(); widx++) {
         string word = m_vocabulary[widx];
-        if (word.find("<") != string::npos && word != "<w>") continue;
-        if (m_word_boundary && word == "<w>") continue;
+        if (word == "<s>" || word == "</s>" || word == "<unk>") continue;
         double lp = log(m_word_counts[widx]);
         lp -= log(m_class_counts[m_word_classes[widx]]);
         mfo << word << "\t" << m_word_classes[widx] << " " << lp << "\n";
@@ -167,7 +161,7 @@ Exchange::write_class_mem_probs(string fname) const
 
 
 void
-Exchange::write_classes(string fname) const
+Merging::write_classes(string fname) const
 {
     SimpleFileOutput mfo(fname);
     assert(m_classes.size() == static_cast<unsigned int>(m_num_classes));
@@ -182,7 +176,7 @@ Exchange::write_classes(string fname) const
 
 
 void
-Exchange::initialize_classes_by_freq(unsigned int top_word_classes)
+Merging::initialize_classes_by_freq(unsigned int top_word_classes)
 {
     multimap<int, int> sorted_words;
     for (unsigned int i=0; i<m_word_counts.size(); ++i) {
@@ -221,15 +215,11 @@ Exchange::initialize_classes_by_freq(unsigned int top_word_classes)
     m_classes[START_CLASS].insert(m_vocabulary_lookup["<s>"]);
     m_classes[START_CLASS].insert(m_vocabulary_lookup["</s>"]);
     m_classes[UNK_CLASS].insert(m_vocabulary_lookup["<unk>"]);
-    if (m_word_boundary) {
-        m_word_classes[m_vocabulary_lookup["<w>"]] = WB_CLASS;
-        m_classes[WB_CLASS].insert(m_vocabulary_lookup["<w>"]);
-    }
 }
 
 
 void
-Exchange::initialize_classes_preset(const map<string, int> &word_classes)
+Merging::initialize_classes_preset(const map<string, int> &word_classes)
 {
     m_classes.resize(m_num_classes);
     m_word_classes.resize(m_vocabulary.size(), -1);
@@ -259,7 +249,7 @@ Exchange::initialize_classes_preset(const map<string, int> &word_classes)
 
 
 void
-Exchange::read_class_initialization(string class_fname)
+Merging::read_class_initialization(string class_fname)
 {
     cerr << "Reading class initialization from " << class_fname << endl;
 
@@ -270,15 +260,8 @@ Exchange::read_class_initialization(string class_fname)
     m_word_classes[sos_idx] = START_CLASS;
     m_word_classes[eos_idx] = START_CLASS;
     m_word_classes[unk_idx] = UNK_CLASS;
-    if (m_word_boundary) {
-        m_classes.resize(3);
-        int wb_idx = m_vocabulary_lookup["<w>"];
-        m_word_classes[wb_idx] = WB_CLASS;
-        m_classes[WB_CLASS].insert(wb_idx);
-    }
-    else {
-        m_classes.resize(2);
-    }
+    m_classes.resize(2);
+
     m_classes[START_CLASS].insert(sos_idx);
     m_classes[START_CLASS].insert(eos_idx);
     m_classes[UNK_CLASS].insert(unk_idx);
@@ -292,8 +275,7 @@ Exchange::read_class_initialization(string class_fname)
 
         string word;
         ss >> word;
-        if (word == "<s>" || word == "</s>" || word == "<unk>" ||
-            (m_word_boundary && word == "<w>")) {
+        if (word == "<s>" || word == "</s>" || word == "<unk>") {
             cerr << "Warning: You have specified special tokens in the class "
                  << "initialization file. These will be ignored." << endl;
             continue;
@@ -328,7 +310,7 @@ Exchange::read_class_initialization(string class_fname)
 
 
 void
-Exchange::set_class_counts()
+Merging::set_class_counts()
 {
     m_class_counts.resize(m_classes.size(), 0);
     m_class_bigram_counts.resize(m_classes.size());
@@ -353,7 +335,7 @@ Exchange::set_class_counts()
 
 
 double
-Exchange::log_likelihood() const
+Merging::log_likelihood() const
 {
     double ll = 0.0;
     for (auto cbg1=m_class_bigram_counts.cbegin(); cbg1 != m_class_bigram_counts.cend(); ++cbg1)
@@ -391,122 +373,7 @@ get_count(const map<int, int> &ctxt,
 
 
 double
-Exchange::evaluate_exchange(int word,
-                            int curr_class,
-                            int tentative_class) const
-{
-    double ll_diff = 0.0;
-    int wc = m_word_counts[word];
-    const map<int, int> &wb_ctxt = m_word_bigram_counts.at(word);
-    const map<int, int> &cw_counts = m_class_word_counts.at(word);
-    const map<int, int> &wc_counts = m_word_class_counts.at(word);
-
-    ll_diff += 2 * (m_class_counts[curr_class]) * log(m_class_counts[curr_class]);
-    ll_diff -= 2 * (m_class_counts[curr_class]-wc) * log(m_class_counts[curr_class]-wc);
-    ll_diff += 2 * (m_class_counts[tentative_class]) * log(m_class_counts[tentative_class]);
-    ll_diff -= 2 * (m_class_counts[tentative_class]+wc) * log(m_class_counts[tentative_class]+wc);
-
-    for (auto wcit=wc_counts.begin(); wcit != wc_counts.end(); ++wcit) {
-        if (wcit->first == curr_class) continue;
-        if (wcit->first == tentative_class) continue;
-
-        int curr_count = m_class_bigram_counts[curr_class][wcit->first];
-        int new_count = curr_count - wcit->second;
-        evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-        curr_count = m_class_bigram_counts[tentative_class][wcit->first];
-        new_count = curr_count + wcit->second;
-        evaluate_ll_diff(ll_diff, curr_count, new_count);
-    }
-
-    for (auto wcit=cw_counts.begin(); wcit != cw_counts.end(); ++wcit) {
-        if (wcit->first == curr_class) continue;
-        if (wcit->first == tentative_class) continue;
-
-        int curr_count = m_class_bigram_counts[wcit->first][curr_class];
-        int new_count = curr_count - wcit->second;
-        evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-        curr_count = m_class_bigram_counts[wcit->first][tentative_class];
-        new_count = curr_count + wcit->second;
-        evaluate_ll_diff(ll_diff, curr_count, new_count);
-    }
-
-    int self_count = 0;
-    auto scit = wb_ctxt.find(word);
-    if (scit != wb_ctxt.end()) self_count = scit->second;
-
-    int curr_count = m_class_bigram_counts[curr_class][tentative_class];
-    int new_count = curr_count - get_count(wc_counts, tentative_class)
-            + get_count(cw_counts, curr_class) - self_count;
-    evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-    curr_count = m_class_bigram_counts[tentative_class][curr_class];
-    new_count = curr_count - get_count(cw_counts, tentative_class)
-            + get_count(wc_counts, curr_class) - self_count;
-    evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-    curr_count = m_class_bigram_counts[curr_class][curr_class];
-    new_count = curr_count - get_count(wc_counts, curr_class)
-            - get_count(cw_counts, curr_class) + self_count;
-    evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-    curr_count = m_class_bigram_counts[tentative_class][tentative_class];
-    new_count = curr_count + get_count(wc_counts, tentative_class)
-            + get_count(cw_counts, tentative_class) + self_count;
-    evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-    return ll_diff;
-}
-
-
-void
-Exchange::do_exchange(int word,
-                      int prev_class,
-                      int new_class)
-{
-    int wc = m_word_counts[word];
-    m_class_counts[prev_class] -= wc;
-    m_class_counts[new_class] += wc;
-
-    map<int, int> &bctxt = m_word_bigram_counts[word];
-    for (auto wit = bctxt.begin(); wit != bctxt.end(); ++wit) {
-        if (wit->first == word) continue;
-        int tgt_class = m_word_classes[wit->first];
-        m_class_bigram_counts[prev_class][tgt_class] -= wit->second;
-        m_class_bigram_counts[new_class][tgt_class] += wit->second;
-        m_class_word_counts[wit->first][prev_class] -= wit->second;
-        m_class_word_counts[wit->first][new_class] += wit->second;
-    }
-
-    map<int, int> &rbctxt = m_word_rev_bigram_counts[word];
-    for (auto wit = rbctxt.begin(); wit != rbctxt.end(); ++wit) {
-        if (wit->first == word) continue;
-        int src_class = m_word_classes[wit->first];
-        m_class_bigram_counts[src_class][prev_class] -= wit->second;
-        m_class_bigram_counts[src_class][new_class] += wit->second;
-        m_word_class_counts[wit->first][prev_class] -= wit->second;
-        m_word_class_counts[wit->first][new_class] += wit->second;
-    }
-
-    auto wit = bctxt.find(word);
-    if (wit != bctxt.end()) {
-        m_class_bigram_counts[prev_class][prev_class] -= wit->second;
-        m_class_bigram_counts[new_class][new_class] += wit->second;
-        m_class_word_counts[word][prev_class] -= wit->second;
-        m_class_word_counts[word][new_class] += wit->second;
-        m_word_class_counts[word][prev_class] -= wit->second;
-        m_word_class_counts[word][new_class] += wit->second;
-    }
-
-    m_classes[prev_class].erase(word);
-    m_classes[new_class].insert(word);
-    m_word_classes[word] = new_class;
-}
-
-
-double
-Exchange::evaluate_merge(int class1,
+Merging::evaluate_merge(int class1,
                          int class2) const
 {
     double cbg_ll_diff = 0.0;
@@ -551,7 +418,7 @@ Exchange::evaluate_merge(int class1,
 
 
 void
-Exchange::do_merge(int class1,
+Merging::do_merge(int class1,
                    int class2)
 {
     for (auto wit=m_classes.at(class2).begin(); wit != m_classes.at(class2).end(); ++wit)
