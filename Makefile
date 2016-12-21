@@ -6,7 +6,7 @@ cxxflags = -O3 -DNDEBUG -std=gnu++0x -Wall -Wno-unused-function
 progs = init catstats ngramppl classppl classintppl catppl catintppl catintppl2 exchange merge split
 progs_srcs = $(progs:=.cc)
 progs_objs = $(progs:=.o)
-srcs = conf.cc io.cc Categories.cc Ngram.cc CatPerplexity.cc ExchangeAlgorithm.cc
+srcs = conf.cc io.cc Categories.cc Ngram.cc CatPerplexity.cc ExchangeAlgorithm.cc Merging.cc
 objs = $(srcs:.cc=.o)
 
 test_progs = runtests

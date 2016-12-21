@@ -13,7 +13,7 @@
 #include "io.hh"
 #include "defs.hh"
 #include "conf.hh"
-#include "ExchangeAlgorithm.hh"
+#include "Merging.hh"
 
 using namespace std;
 
