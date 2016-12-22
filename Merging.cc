@@ -24,13 +24,12 @@ Merging::Merging()
 
 Merging::Merging(int num_classes,
                  const map<string, int> &word_classes,
-                 string fname)
+                 string corpus_fname)
     : m_num_classes(num_classes+2),
       m_num_special_classes(2)
 {
     initialize_classes_preset(word_classes);
-    read_corpus(fname);
-    set_class_counts();
+    read_corpus(corpus_fname);
 }
 
 

@@ -234,7 +234,6 @@ int main(int argc, char* argv[])
         conf::Config config;
         config("usage: split [OPTION...] CORPUS CLASS_INIT MODEL\n")
         ('c', "num-classes=INT", "arg", "2000", "Target number of classes, default: 2000")
-        ('v', "vocabulary=FILE", "arg", "", "Vocabulary, one word per line")
         ('t', "ll-threshold=FLOAT", "arg", "0.0", "Log likelihood threshold for a split, default: 0.0")
         ('e', "num-split-evals=INT", "arg", "0", "Number of evaluations per split, default: 0")
         ('i', "model-write-interval=INT", "arg", "0", "Interval for writing temporary models, default: 0")
@@ -243,7 +242,7 @@ int main(int argc, char* argv[])
         if (config.arguments.size() != 3) config.print_help(stderr, 1);
 
         string corpus_fname = config.arguments[0];
-        string class_fname = config.arguments[1];
+        string class_init_fname = config.arguments[1];
         string model_fname = config.arguments[2];
 
         int num_classes = config["num-classes"].get_int();
@@ -252,23 +251,25 @@ int main(int argc, char* argv[])
         int model_write_interval = config["model-write-interval"].get_int();
         string vocab_fname = config["vocabulary"].get_str();
 
-        Splitting e(corpus_fname, vocab_fname, class_fname);
+        Splitting spl;
+        map<int,int> class_idx_mapping = spl.read_class_initialization(class_init_fname);
+        spl.read_corpus(corpus_fname);
 
         time_t t1,t2;
         t1=time(0);
-        cerr << "log likelihood: " << e.log_likelihood() << endl;
+        cerr << "log likelihood: " << spl.log_likelihood() << endl;
 
         vector<set<int> > super_classes;
         map<int, int> super_class_lookup;
-        for (int i=0; i<(int)e.m_classes.size(); i++) {
-            if (e.m_classes[i].size() > 0) {
+        for (int i=0; i<(int)spl.m_classes.size(); i++) {
+            if (spl.m_classes[i].size() > 0) {
                 super_class_lookup[i] = super_classes.size();
                 set<int> curr_class = { i };
                 super_classes.push_back(curr_class);
             }
         }
 
-        split_classes_2(e,
+        split_classes_2(spl,
                         num_classes, num_split_evals,
                         ll_threshold,
                         model_fname, model_write_interval,
@@ -282,7 +283,7 @@ int main(int argc, char* argv[])
                             super_classes,
                             super_class_lookup);
 
-        e.write_class_mem_probs(model_fname + ".cmemprobs.gz");
+        spl.write_class_mem_probs(model_fname + ".cmemprobs.gz");
 
     } catch (string &e) {
         cerr << e << endl;

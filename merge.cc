@@ -175,9 +175,9 @@ int main(int argc, char* argv[])
         int num_merge_evals = config["num-merge-evals"].get_int();
         int model_write_interval = config["model-write-interval"].get_int();
 
-        Merging merging;
-        map<int,int> class_idx_mapping = merging.read_class_initialization(class_init_fname);
-        merging.read_corpus(corpus_fname);
+        Merging mrg;
+        map<int,int> class_idx_mapping = mrg.read_class_initialization(class_init_fname);
+        mrg.read_corpus(corpus_fname);
 
         vector<vector<int> > super_classes;
         map<int, int> super_class_lookup;
@@ -186,16 +186,16 @@ int main(int argc, char* argv[])
 
         time_t t1,t2;
         t1=time(0);
-        cerr << "log likelihood: " << merging.log_likelihood() << endl;
+        cerr << "log likelihood: " << mrg.log_likelihood() << endl;
 
-        merge_classes(merging, super_classes, super_class_lookup,
+        merge_classes(mrg, super_classes, super_class_lookup,
                       num_classes, num_merge_evals, num_threads,
                       model_fname, model_write_interval);
 
         t2=time(0);
         cerr << "Train run time: " << t2-t1 << " seconds" << endl;
 
-        merging.write_class_mem_probs(model_fname + ".cmemprobs.gz");
+        mrg.write_class_mem_probs(model_fname + ".cmemprobs.gz");
 
     } catch (string &e) {
         cerr << e << endl;

@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-
 #define START_CLASS 0
 #define UNK_CLASS 1
 
@@ -16,7 +15,7 @@ public:
     Merging();
     Merging(int num_classes,
             const std::map<std::string, int> &word_classes,
-            std::string fname="");
+            std::string corpus_fname="");
     ~Merging() { };
 
     void read_corpus(std::string fname);
@@ -31,7 +30,6 @@ public:
                           int class2) const;
     void do_merge(int class1,
                   int class2);
-
 
     int m_num_classes;
     int m_num_special_classes;
@@ -53,6 +51,4 @@ public:
     std::vector<std::map<int, int> > m_word_class_counts; // First index word, second target class
 };
 
-
 #endif /* MERGING */
-
