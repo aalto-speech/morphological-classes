@@ -13,7 +13,7 @@
 #include "io.hh"
 #include "defs.hh"
 #include "conf.hh"
-#include "ExchangeAlgorithm.hh"
+#include "Splitting.hh"
 
 using namespace std;
 
@@ -46,7 +46,7 @@ void write_super_classes(string scfname,
 }
 
 
-void find_candidate_classes(Exchange &e,
+void find_candidate_classes(Splitting &e,
                             vector<int> &classes_to_evaluate,
                             set<int> stoplist,
                             int num_classes)
@@ -74,7 +74,7 @@ void find_candidate_classes(Exchange &e,
 }
 
 
-void split_classes(Exchange &e,
+void split_classes(Splitting &e,
                    int target_num_classes,
                    int num_split_evals,
                    double ll_threshold,
@@ -136,15 +136,13 @@ void split_classes(Exchange &e,
         super_classes[sci].insert(class2_idx);
         super_class_lookup[class2_idx] = sci;
 
-        if (model_write_interval > 0 && e.num_classes() % model_write_interval == 0) {
+        if (model_write_interval > 0 && e.num_classes() % model_write_interval == 0)
             e.write_class_mem_probs(model_fname + "." + int2str(e.num_classes()) + ".cmemprobs.gz");
-            e.write_classes(model_fname + "." + int2str(e.num_classes()) + ".classes.gz");
-        }
     }
 }
 
 
-void split_classes_2(Exchange &e,
+void split_classes_2(Splitting &e,
                      int target_num_classes,
                      int num_split_evals,
                      double ll_threshold,
@@ -225,7 +223,6 @@ void split_classes_2(Exchange &e,
                                 super_classes,
                                 super_class_lookup);
             e.write_class_mem_probs(model_fname + "." + int2str(e.num_classes()) + ".cmemprobs.gz");
-            e.write_classes(model_fname + "." + int2str(e.num_classes()) + ".classes.gz");
         }
     }
 }
@@ -255,7 +252,7 @@ int main(int argc, char* argv[])
         int model_write_interval = config["model-write-interval"].get_int();
         string vocab_fname = config["vocabulary"].get_str();
 
-        Exchange e(corpus_fname, vocab_fname, class_fname);
+        Splitting e(corpus_fname, vocab_fname, class_fname);
 
         time_t t1,t2;
         t1=time(0);
@@ -286,7 +283,6 @@ int main(int argc, char* argv[])
                             super_class_lookup);
 
         e.write_class_mem_probs(model_fname + ".cmemprobs.gz");
-        e.write_classes(model_fname + ".classes.gz");
 
     } catch (string &e) {
         cerr << e << endl;
