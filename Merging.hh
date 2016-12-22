@@ -15,8 +15,7 @@ class Merging {
 public:
     Merging(std::string fname,
             std::string vocab_fname="",
-            std::string class_fname="",
-            unsigned int top_word_classes=0);
+            std::string class_fname="");
     Merging(int num_classes,
             const std::map<std::string, int> &word_classes,
             std::string fname="",

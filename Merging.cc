@@ -17,15 +17,12 @@ using namespace std;
 
 Merging::Merging(string fname,
                  string vocab_fname,
-                 string class_fname,
-                 unsigned int top_word_classes)
+                 string class_fname)
+    : m_num_special_classes(2)
 {
-    m_num_special_classes = 2;
-    if (fname.length()) {
-        read_corpus(fname, vocab_fname);
-        read_class_initialization(class_fname);
-        set_class_counts();
-    }
+    read_corpus(fname, vocab_fname);
+    read_class_initialization(class_fname);
+    set_class_counts();
 }
 
 
@@ -33,14 +30,12 @@ Merging::Merging(int num_classes,
                  const map<string, int> &word_classes,
                  string fname,
                  string vocab_fname)
-    : m_num_classes(num_classes+2)
+    : m_num_classes(num_classes+2),
+      m_num_special_classes(2)
 {
-    m_num_special_classes = 2;
-    if (fname.length()) {
-        read_corpus(fname, vocab_fname);
-        initialize_classes_preset(word_classes);
-        set_class_counts();
-    }
+    read_corpus(fname, vocab_fname);
+    initialize_classes_preset(word_classes);
+    set_class_counts();
 }
 
 
