@@ -19,6 +19,7 @@ using namespace std;
 
 
 void read_super_classes(string scfname,
+                        map<int, int> &class_idx_mapping,
                         vector<vector<int> > &super_classes,
                         map<int, int> &super_class_lookup)
 {
@@ -35,6 +36,7 @@ void read_super_classes(string scfname,
         vector<int> curr_super_class;
         while(std::getline(liness, token, ',')) {
             int class_idx = str2int(token);
+            class_idx = class_idx_mapping[class_idx];
             curr_super_class.push_back(class_idx);
             super_class_lookup[class_idx] = super_classes.size();
         }
@@ -174,24 +176,27 @@ int main(int argc, char* argv[])
         int model_write_interval = config["model-write-interval"].get_int();
         string super_class_fname = config["super-classes"].get_str();
 
-        Merging e(corpus_fname, class_init_fname);
+        Merging merging;
+        map<int,int> class_idx_mapping = merging.read_class_initialization(class_init_fname);
+        merging.read_corpus(corpus_fname);
 
         vector<vector<int> > super_classes;
         map<int, int> super_class_lookup;
-        read_super_classes(super_class_fname, super_classes, super_class_lookup);
+        read_super_classes(super_class_fname, class_idx_mapping,
+                           super_classes, super_class_lookup);
 
         time_t t1,t2;
         t1=time(0);
-        cerr << "log likelihood: " << e.log_likelihood() << endl;
+        cerr << "log likelihood: " << merging.log_likelihood() << endl;
 
-        merge_classes(e, super_classes, super_class_lookup,
+        merge_classes(merging, super_classes, super_class_lookup,
                       num_classes, num_merge_evals, num_threads,
                       model_fname, model_write_interval);
 
         t2=time(0);
         cerr << "Train run time: " << t2-t1 << " seconds" << endl;
 
-        e.write_class_mem_probs(model_fname + ".cmemprobs.gz");
+        merging.write_class_mem_probs(model_fname + ".cmemprobs.gz");
 
     } catch (string &e) {
         cerr << e << endl;

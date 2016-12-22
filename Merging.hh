@@ -13,8 +13,7 @@
 
 class Merging {
 public:
-    Merging(std::string fname,
-            std::string class_fname="");
+    Merging();
     Merging(int num_classes,
             const std::map<std::string, int> &word_classes,
             std::string fname="");
@@ -23,7 +22,8 @@ public:
     void read_corpus(std::string fname);
     void write_class_mem_probs(std::string fname) const;
     void initialize_classes_preset(const std::map<std::string, int> &word_classes);
-    void read_class_initialization(std::string class_fname);
+    int insert_word_to_vocab(std::string word);
+    std::map<int,int> read_class_initialization(std::string class_fname);
     void set_class_counts();
     double log_likelihood() const;
     int num_classes() const { return m_num_classes; }
@@ -35,10 +35,8 @@ public:
     void do_merge(int class1,
                   int class2);
 
-//private:
 
     int m_num_classes;
-    bool m_word_boundary;
     int m_num_special_classes;
 
     std::vector<std::string> m_vocabulary;

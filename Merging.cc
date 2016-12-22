@@ -15,13 +15,10 @@
 using namespace std;
 
 
-Merging::Merging(string fname,
-                 string class_fname)
-    : m_num_special_classes(2)
+Merging::Merging()
+    : m_num_classes(0),
+      m_num_special_classes(2)
 {
-    read_corpus(fname);
-    read_class_initialization(class_fname);
-    set_class_counts();
 }
 
 
@@ -40,43 +37,21 @@ Merging::Merging(int num_classes,
 void
 Merging::read_corpus(string fname)
 {
-    string line;
-
-    cerr << "Reading vocabulary..";
-    set<string> word_types;
-    SimpleFileInput corpusf(fname);
-    while (corpusf.getline(line)) {
-        stringstream ss(line);
-        string token;
-        while (ss >> token) word_types.insert(token);
-    }
-
-    cerr << " " << word_types.size() << " words" << endl;
-
-    m_vocabulary.push_back("<s>");
-    m_vocabulary_lookup["<s>"] = m_vocabulary.size() - 1;
-    m_vocabulary.push_back("</s>");
-    m_vocabulary_lookup["</s>"] = m_vocabulary.size() - 1;
-    m_vocabulary.push_back("<unk>");
-    m_vocabulary_lookup["<unk>"] = m_vocabulary.size() - 1;
-    for (auto wit=word_types.begin(); wit != word_types.end(); ++wit) {
-        if (wit->find("<") != string::npos && *wit != "<w>") continue;
-        m_vocabulary.push_back(*wit);
-        m_vocabulary_lookup[*wit] = m_vocabulary.size() - 1;
-    }
-    word_types.clear();
-
-    cerr << "Reading word counts..";
+    cerr << "Reading corpus.." << endl;
     m_word_counts.resize(m_vocabulary.size());
     m_word_bigram_counts.resize(m_vocabulary.size());
     m_word_rev_bigram_counts.resize(m_vocabulary.size());
     SimpleFileInput corpusf2(fname);
-    int num_tokens = 0;
 
     int ss_idx = m_vocabulary_lookup["<s>"];
     int se_idx = m_vocabulary_lookup["</s>"];
     int unk_idx = m_vocabulary_lookup["<unk>"];
 
+    string line;
+    set<string> unk_types;
+    unsigned long int num_tokens = 0;
+    unsigned long int num_iv_tokens = 0;
+    unsigned long int num_unk_tokens = 0;
     while (corpusf2.getline(line)) {
         vector<int> sent;
         stringstream ss(line);
@@ -84,11 +59,16 @@ Merging::read_corpus(string fname)
 
         sent.push_back(ss_idx);
         while (ss >> token) {
-            if (m_word_boundary && token == "<w>") continue;
             auto vlit = m_vocabulary_lookup.find(token);
-            if (vlit != m_vocabulary_lookup.end())
+            if (vlit != m_vocabulary_lookup.end()) {
                 sent.push_back(vlit->second);
-            else sent.push_back(unk_idx);
+                num_iv_tokens++;
+            }
+            else {
+                sent.push_back(unk_idx);
+                unk_types.insert(token);
+                num_unk_tokens++;
+            }
         }
         sent.push_back(se_idx);
 
@@ -100,7 +80,13 @@ Merging::read_corpus(string fname)
         }
         num_tokens += sent.size()-2;
     }
-    cerr << " " << num_tokens << " tokens" << endl;
+
+    cerr << "number of word tokens: " << num_tokens << endl;
+    cerr << "number of in-vocabulary tokens: " << num_iv_tokens << endl;
+    cerr << "number of out-of-vocabulary tokens: " << num_unk_tokens << endl;
+
+    cerr << "Setting class counts.." << endl;
+    set_class_counts();
 }
 
 
@@ -152,20 +138,34 @@ Merging::initialize_classes_preset(const map<string, int> &word_classes)
 }
 
 
-void
+int
+Merging::insert_word_to_vocab(string word)
+{
+    auto vlit = m_vocabulary_lookup.find(word);
+    if (vlit != m_vocabulary_lookup.end())
+        return vlit->second;
+    else {
+        int word_idx = m_vocabulary.size();
+        m_vocabulary.push_back(word);
+        m_word_classes.push_back(-1);
+        m_vocabulary_lookup[word] = word_idx;
+        return word_idx;
+    }
+}
+
+
+map<int, int>
 Merging::read_class_initialization(string class_fname)
 {
     cerr << "Reading class initialization from " << class_fname << endl;
 
-    m_word_classes.resize(m_vocabulary.size());
-    int sos_idx = m_vocabulary_lookup["<s>"];
-    int eos_idx = m_vocabulary_lookup["</s>"];
-    int unk_idx = m_vocabulary_lookup["<unk>"];
+    int sos_idx = insert_word_to_vocab("<s>");
+    int eos_idx = insert_word_to_vocab("</s>");
+    int unk_idx = insert_word_to_vocab("<unk>");
     m_word_classes[sos_idx] = START_CLASS;
     m_word_classes[eos_idx] = START_CLASS;
     m_word_classes[unk_idx] = UNK_CLASS;
     m_classes.resize(2);
-
     m_classes[START_CLASS].insert(sos_idx);
     m_classes[START_CLASS].insert(eos_idx);
     m_classes[UNK_CLASS].insert(unk_idx);
@@ -173,6 +173,7 @@ Merging::read_class_initialization(string class_fname)
     SimpleFileInput classf(class_fname);
     string line;
     map<int, int> file_to_class_idx;
+    int wordc = 0;
     while (classf.getline(line)) {
         if (!line.length()) continue;
         stringstream ss(line);
@@ -184,9 +185,8 @@ Merging::read_class_initialization(string class_fname)
                  << "initialization file. These will be ignored." << endl;
             continue;
         }
-        auto vlit = m_vocabulary_lookup.find(word);
-        if (vlit == m_vocabulary_lookup.end()) continue;
-        int widx = vlit->second;
+
+        int widx = insert_word_to_vocab(word);
 
         int file_idx, class_idx;
         ss >> file_idx;
@@ -202,14 +202,14 @@ Merging::read_class_initialization(string class_fname)
 
         m_classes[class_idx].insert(widx);
         m_word_classes[widx] = class_idx;
+        wordc++;
     }
 
-    if (m_classes.size() != static_cast<unsigned int>(m_num_classes)) {
-        cerr << "Warning: You have specified class count " << m_num_classes
-             << ", but provided initialization for " << m_classes.size()
-             << " classes. The class count will be corrected." << endl;
-        m_num_classes = m_classes.size();
-    }
+    m_num_classes = m_classes.size();
+    cerr << "Read initialization for " << wordc << " words" << endl;
+    cerr << m_num_classes << " classes specified" << endl;
+
+    return file_to_class_idx;
 }
 
 
