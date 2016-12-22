@@ -145,7 +145,6 @@ void merge_classes(Merging &merging,
 
         if (model_write_interval > 0 && merging.num_classes() % model_write_interval == 0) {
             merging.write_class_mem_probs(model_fname + "." + int2str(merging.num_classes()) + ".cmemprobs.gz");
-            merging.write_classes(model_fname + "." + int2str(merging.num_classes()) + ".classes.gz");
         }
     }
 }
@@ -157,7 +156,6 @@ int main(int argc, char* argv[])
         conf::Config config;
         config("usage: merge [OPTION...] CORPUS CLASS_INIT MODEL\n")
         ('c', "num-classes=INT", "arg", "1000", "Target number of classes, default: 1000")
-        ('v', "vocabulary=FILE", "arg", "", "Vocabulary, one word per line")
         ('t', "num-threads=INT", "arg", "1", "Number of threads, default: 1")
         ('m', "num-merge-evals=INT", "arg", "1000", "Number of evaluations per merge, default: 1000")
         ('i', "model-write-interval=INT", "arg", "0", "Interval for writing temporary models, default: 0")
@@ -167,17 +165,16 @@ int main(int argc, char* argv[])
         if (config.arguments.size() != 3) config.print_help(stderr, 1);
 
         string corpus_fname = config.arguments[0];
-        string class_fname = config.arguments[1];
+        string class_init_fname = config.arguments[1];
         string model_fname = config.arguments[2];
 
         int num_classes = config["num-classes"].get_int();
         int num_threads = config["num-threads"].get_int();
         int num_merge_evals = config["num-merge-evals"].get_int();
         int model_write_interval = config["model-write-interval"].get_int();
-        string vocab_fname = config["vocabulary"].get_str();
         string super_class_fname = config["super-classes"].get_str();
 
-        Merging e(corpus_fname, vocab_fname, class_fname);
+        Merging e(corpus_fname, class_init_fname);
 
         vector<vector<int> > super_classes;
         map<int, int> super_class_lookup;
@@ -195,7 +192,6 @@ int main(int argc, char* argv[])
         cerr << "Train run time: " << t2-t1 << " seconds" << endl;
 
         e.write_class_mem_probs(model_fname + ".cmemprobs.gz");
-        e.write_classes(model_fname + ".classes.gz");
 
     } catch (string &e) {
         cerr << e << endl;

@@ -14,18 +14,14 @@
 class Merging {
 public:
     Merging(std::string fname,
-            std::string vocab_fname="",
             std::string class_fname="");
     Merging(int num_classes,
             const std::map<std::string, int> &word_classes,
-            std::string fname="",
-            std::string vocab_fname="");
+            std::string fname="");
     ~Merging() { };
 
-    void read_corpus(std::string fname,
-                     std::string vocab_fname="");
+    void read_corpus(std::string fname);
     void write_class_mem_probs(std::string fname) const;
-    void write_classes(std::string fname) const;
     void initialize_classes_preset(const std::map<std::string, int> &word_classes);
     void read_class_initialization(std::string class_fname);
     void set_class_counts();

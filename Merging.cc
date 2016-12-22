@@ -16,11 +16,10 @@ using namespace std;
 
 
 Merging::Merging(string fname,
-                 string vocab_fname,
                  string class_fname)
     : m_num_special_classes(2)
 {
-    read_corpus(fname, vocab_fname);
+    read_corpus(fname);
     read_class_initialization(class_fname);
     set_class_counts();
 }
@@ -28,20 +27,18 @@ Merging::Merging(string fname,
 
 Merging::Merging(int num_classes,
                  const map<string, int> &word_classes,
-                 string fname,
-                 string vocab_fname)
+                 string fname)
     : m_num_classes(num_classes+2),
       m_num_special_classes(2)
 {
-    read_corpus(fname, vocab_fname);
+    read_corpus(fname);
     initialize_classes_preset(word_classes);
     set_class_counts();
 }
 
 
 void
-Merging::read_corpus(string fname,
-                      string vocab_fname)
+Merging::read_corpus(string fname)
 {
     string line;
 
@@ -54,21 +51,6 @@ Merging::read_corpus(string fname,
         while (ss >> token) word_types.insert(token);
     }
 
-    if (vocab_fname.length()) {
-        set<string> constrained_vocab;
-        SimpleFileInput vocabf(vocab_fname);
-        while (vocabf.getline(line)) {
-            stringstream ss(line);
-            string token;
-            while (ss >> token) constrained_vocab.insert(token);
-        }
-
-        set<string> intersection;
-        set_intersection(word_types.begin(), word_types.end(),
-                         constrained_vocab.begin(), constrained_vocab.end(),
-                         inserter(intersection, intersection.begin()));
-        word_types = intersection;
-    }
     cerr << " " << word_types.size() << " words" << endl;
 
     m_vocabulary.push_back("<s>");
@@ -135,21 +117,6 @@ Merging::write_class_mem_probs(string fname) const
         double lp = log(m_word_counts[widx]);
         lp -= log(m_class_counts[m_word_classes[widx]]);
         mfo << word << "\t" << m_word_classes[widx] << " " << lp << "\n";
-    }
-    mfo.close();
-}
-
-
-void
-Merging::write_classes(string fname) const
-{
-    SimpleFileOutput mfo(fname);
-    assert(m_classes.size() == static_cast<unsigned int>(m_num_classes));
-    for (int cidx = 0; cidx < m_num_classes; cidx++) {
-        const set<int> &words = m_classes[cidx];
-        for (auto wit=words.begin(); wit != words.end(); ++wit) {
-            mfo << m_vocabulary[*wit] << " " << cidx << "\n";
-        }
     }
     mfo.close();
 }
