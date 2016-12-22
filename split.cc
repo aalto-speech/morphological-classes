@@ -249,7 +249,6 @@ int main(int argc, char* argv[])
         double ll_threshold = config["ll-threshold"].get_float();
         int num_split_evals = config["num-split-evals"].get_int();
         int model_write_interval = config["model-write-interval"].get_int();
-        string vocab_fname = config["vocabulary"].get_str();
 
         Splitting spl;
         map<int,int> class_idx_mapping = spl.read_class_initialization(class_init_fname);
