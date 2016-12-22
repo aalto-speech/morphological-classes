@@ -15,21 +15,6 @@
 using namespace std;
 
 
-Merging::Merging(int num_classes,
-                 string fname,
-                 string vocab_fname,
-                 unsigned int top_word_classes)
-    : m_num_classes(num_classes+2)
-{
-    m_num_special_classes = 2;
-    if (fname.length()) {
-        read_corpus(fname, vocab_fname);
-        initialize_classes_by_freq(top_word_classes);
-        set_class_counts();
-    }
-}
-
-
 Merging::Merging(string fname,
                  string vocab_fname,
                  string class_fname,

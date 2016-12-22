@@ -13,10 +13,6 @@
 
 class Merging {
 public:
-    Merging(int num_classes,
-            std::string fname="",
-            std::string vocab_fname="",
-            unsigned int top_word_classes=0);
     Merging(std::string fname,
             std::string vocab_fname="",
             std::string class_fname="",
