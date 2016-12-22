@@ -27,7 +27,6 @@ public:
                      std::string vocab_fname="");
     void write_class_mem_probs(std::string fname) const;
     void write_classes(std::string fname) const;
-    void initialize_classes_by_freq(unsigned int top_word_classes=0);
     void initialize_classes_preset(const std::map<std::string, int> &word_classes);
     void read_class_initialization(std::string class_fname);
     void set_class_counts();

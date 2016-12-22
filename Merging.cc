@@ -161,49 +161,6 @@ Merging::write_classes(string fname) const
 
 
 void
-Merging::initialize_classes_by_freq(unsigned int top_word_classes)
-{
-    multimap<int, int> sorted_words;
-    for (unsigned int i=0; i<m_word_counts.size(); ++i) {
-        if (m_vocabulary[i].find("<") != string::npos && m_vocabulary[i] != "<w>") continue;
-        sorted_words.insert(make_pair(m_word_counts[i], i));
-    }
-
-    m_classes.resize(m_num_classes);
-    m_word_classes.resize(m_vocabulary.size(), -1);
-
-    if (top_word_classes > 0) {
-        unsigned int widx = 0;
-        for (auto swit=sorted_words.rbegin(); swit != sorted_words.rend(); ++swit) {
-            m_word_classes[swit->second] = widx + m_num_special_classes;
-            m_classes[widx+m_num_special_classes].insert(swit->second);
-            if (++widx >= top_word_classes) break;
-        }
-    }
-
-    unsigned int class_idx_helper = m_num_special_classes + top_word_classes;
-    for (auto swit=sorted_words.rbegin(); swit != sorted_words.rend(); ++swit) {
-        if (m_word_classes[swit->second] != -1) continue;
-
-        unsigned int class_idx = class_idx_helper % m_num_classes;
-        m_word_classes[swit->second] = class_idx;
-        m_classes[class_idx].insert(swit->second);
-
-        class_idx_helper++;
-        while (class_idx_helper % m_num_classes < (m_num_special_classes + top_word_classes))
-            class_idx_helper++;
-    }
-
-    m_word_classes[m_vocabulary_lookup["<s>"]] = START_CLASS;
-    m_word_classes[m_vocabulary_lookup["</s>"]] = START_CLASS;
-    m_word_classes[m_vocabulary_lookup["<unk>"]] = UNK_CLASS;
-    m_classes[START_CLASS].insert(m_vocabulary_lookup["<s>"]);
-    m_classes[START_CLASS].insert(m_vocabulary_lookup["</s>"]);
-    m_classes[UNK_CLASS].insert(m_vocabulary_lookup["<unk>"]);
-}
-
-
-void
 Merging::initialize_classes_preset(const map<string, int> &word_classes)
 {
     m_classes.resize(m_num_classes);
