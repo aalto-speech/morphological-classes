@@ -27,9 +27,6 @@ public:
     void set_class_counts();
     double log_likelihood() const;
     int num_classes() const { return m_num_classes; }
-    void do_exchange(int word,
-                     int prev_class,
-                     int new_class);
     double evaluate_merge(int class1,
                           int class2) const;
     void do_merge(int class1,
