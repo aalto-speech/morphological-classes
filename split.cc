@@ -24,6 +24,7 @@ struct SplitEvalTask {
     double ll;
     set<int> class1_words;
     set<int> class2_words;
+    vector<int> ordered_words;
 };
 
 
@@ -76,132 +77,46 @@ void find_candidate_classes(Splitting &e,
 
 void split_classes(Splitting &e,
                    int target_num_classes,
-                   int num_split_evals,
+                   int num_eval_classes,
                    double ll_threshold,
                    string model_fname,
                    int model_write_interval,
                    vector<set<int> > &super_classes,
                    map<int, int> &super_class_lookup)
 {
-    srand(0);
-
     set<int> stoplist;
+    stoplist.insert(START_CLASS);
+    stoplist.insert(UNK_CLASS);
 
     while (e.num_classes() < target_num_classes)
     {
         vector<int> classes_to_evaluate;
         find_candidate_classes(e, classes_to_evaluate, stoplist, 50);
-        int class1_idx = classes_to_evaluate[0];
-
         SplitEvalTask best_split;
-        best_split.cidx = class1_idx;
+        best_split.cidx = classes_to_evaluate[0];
 
-        if (num_split_evals == 0) {
-            cerr << "random split for class " << best_split.cidx << ", size: " << e.m_classes[best_split.cidx].size() << endl;
-            e.random_split(e.m_classes[best_split.cidx], best_split.class1_words, best_split.class2_words);
+        if (num_eval_classes < 2) {
+            cerr << "split class " << best_split.cidx << ", size: " << e.m_classes[best_split.cidx].size() << endl;
+            e.freq_split(e.m_classes[best_split.cidx],
+                         best_split.class1_words, best_split.class2_words,
+                         best_split.ordered_words);
         }
         else {
-            cerr << "evaluating " << num_split_evals << " random splits for class "
-                    << best_split.cidx << ", size: " << e.m_classes[best_split.cidx].size() << endl;
-            for (int i=0; i<num_split_evals; i++) {
+            for (int ec=0; ec<num_eval_classes; ec++) {
                 SplitEvalTask split_task;
-                split_task.cidx = class1_idx;
-                e.random_split(e.m_classes[split_task.cidx], split_task.class1_words, split_task.class2_words);
+                split_task.cidx = classes_to_evaluate[ec];
+                e.freq_split(e.m_classes[split_task.cidx],
+                             split_task.class1_words, split_task.class2_words, split_task.ordered_words);
                 double orig_ll = e.log_likelihood();
                 int class2_idx = e.do_split(split_task.cidx, split_task.class1_words, split_task.class2_words);
-                e.iterate_exchange_local_2(split_task.cidx, class2_idx);
+                e.iterate_exchange_local(split_task.cidx, class2_idx, split_task.ordered_words, 1);
                 double split_ll = e.log_likelihood();
                 split_task.ll = split_ll - orig_ll;
                 if (split_task.ll > best_split.ll)
                     best_split = split_task;
                 e.do_merge(split_task.cidx, class2_idx);
-            }
-        }
-
-        if (best_split.ll < ll_threshold) {
-            stoplist.insert(class1_idx);
-            continue;
-        }
-
-        cerr << "splitting.." << endl;
-        int class2_idx = e.do_split(best_split.cidx, best_split.class1_words, best_split.class2_words);
-        cerr << e.num_classes() << "\t" << e.log_likelihood() << endl;
-        cerr << "running local exchange algorithm.." << endl;
-        e.iterate_exchange_local_2(best_split.cidx, class2_idx);
-        cerr << "final class sizes: " << e.m_classes[best_split.cidx].size() << " "
-                << e.m_classes[class2_idx].size() << endl;
-        cerr << e.num_classes() << "\t" << e.log_likelihood() << endl;
-
-        int sci = super_class_lookup[best_split.cidx];
-        super_classes[sci].insert(class2_idx);
-        super_class_lookup[class2_idx] = sci;
-
-        if (model_write_interval > 0 && e.num_classes() % model_write_interval == 0)
-            e.write_class_mem_probs(model_fname + "." + int2str(e.num_classes()) + ".cmemprobs.gz");
-    }
-}
-
-
-void split_classes_2(Splitting &e,
-                     int target_num_classes,
-                     int num_split_evals,
-                     double ll_threshold,
-                     string model_fname,
-                     int model_write_interval,
-                     vector<set<int> > &super_classes,
-                     map<int, int> &super_class_lookup)
-{
-    srand(0);
-
-    set<int> stoplist;
-
-    while (e.num_classes() < target_num_classes)
-    {
-        vector<int> classes_to_evaluate;
-        find_candidate_classes(e, classes_to_evaluate, stoplist, 50);
-
-        SplitEvalTask best_split;
-
-        if (num_split_evals == 0) {
-            cerr << "random split for class " << best_split.cidx << ", size: " << e.m_classes[best_split.cidx].size() << endl;
-            e.random_split(e.m_classes[best_split.cidx], best_split.class1_words, best_split.class2_words);
-        }
-        else {
-            int num_evaluated_classes = 5;
-            for (int c=0; c<num_evaluated_classes; c++) {
-                SplitEvalTask curr_best;
-                int curr_num_split_evals = (int)round(double(num_split_evals)/double(num_evaluated_classes));
-                for (int i=0; i<curr_num_split_evals; i++) {
-                    SplitEvalTask split_task;
-                    split_task.cidx = classes_to_evaluate[c];
-                    e.random_split(e.m_classes[split_task.cidx], split_task.class1_words, split_task.class2_words);
-                    double orig_ll = e.log_likelihood();
-                    int class2_idx = e.do_split(split_task.cidx, split_task.class1_words, split_task.class2_words);
-                    e.iterate_exchange_local_2(split_task.cidx, class2_idx, 2);
-                    double split_ll = e.log_likelihood();
-                    split_task.ll = split_ll - orig_ll;
-                    if (split_task.ll > best_split.ll)
-                        best_split = split_task;
-                    if (split_task.ll > curr_best.ll)
-                        curr_best = split_task;
-                    e.do_merge(split_task.cidx, class2_idx);
-                }
-                if (curr_best.ll < ll_threshold)
-                    stoplist.insert(curr_best.cidx);
-            }
-
-            for (int i=0; i<num_split_evals; i++) {
-                SplitEvalTask split_task;
-                split_task.cidx = best_split.cidx;
-                e.random_split(e.m_classes[split_task.cidx], split_task.class1_words, split_task.class2_words);
-                double orig_ll = e.log_likelihood();
-                int class2_idx = e.do_split(split_task.cidx, split_task.class1_words, split_task.class2_words);
-                e.iterate_exchange_local_2(split_task.cidx, class2_idx, 2);
-                double split_ll = e.log_likelihood();
-                split_task.ll = split_ll - orig_ll;
-                if (split_task.ll > best_split.ll)
-                    best_split = split_task;
-                e.do_merge(split_task.cidx, class2_idx);
+                if (split_task.ll < ll_threshold)
+                    stoplist.insert(split_task.cidx);
             }
         }
 
@@ -209,7 +124,7 @@ void split_classes_2(Splitting &e,
         int class2_idx = e.do_split(best_split.cidx, best_split.class1_words, best_split.class2_words);
         cerr << e.num_classes() << "\t" << e.log_likelihood() << endl;
         cerr << "running local exchange algorithm.." << endl;
-        e.iterate_exchange_local_2(best_split.cidx, class2_idx);
+        e.iterate_exchange_local(best_split.cidx, class2_idx, best_split.ordered_words);
         cerr << "final class sizes: " << e.m_classes[best_split.cidx].size() << " "
                 << e.m_classes[class2_idx].size() << endl;
         cerr << e.num_classes() << "\t" << e.log_likelihood() << endl;
@@ -268,12 +183,12 @@ int main(int argc, char* argv[])
             }
         }
 
-        split_classes_2(spl,
-                        num_classes, num_split_evals,
-                        ll_threshold,
-                        model_fname, model_write_interval,
-                        super_classes,
-                        super_class_lookup);
+        split_classes(spl,
+                      num_classes, num_split_evals,
+                      ll_threshold,
+                      model_fname, model_write_interval,
+                      super_classes,
+                      super_class_lookup);
 
         t2=time(0);
         cerr << "Train run time: " << t2-t1 << " seconds" << endl;

@@ -51,8 +51,8 @@ get_count(const map<int, int> &ctxt,
 
 double
 Splitting::evaluate_exchange(int word,
-                            int curr_class,
-                            int tentative_class) const
+                             int curr_class,
+                             int tentative_class) const
 {
     double ll_diff = 0.0;
     int wc = m_word_counts[word];
@@ -166,8 +166,8 @@ Splitting::do_exchange(int word,
 
 void
 Splitting::random_split(const set<int> &words,
-                       set<int> &class1_words,
-                       set<int> &class2_words) const
+                        set<int> &class1_words,
+                        set<int> &class2_words) const
 {
     vector<int> _words(words.begin(), words.end());
     std::random_shuffle(_words.begin(), _words.end());
@@ -178,33 +178,29 @@ Splitting::random_split(const set<int> &words,
 
 
 void
-Splitting::do_split(int class_idx,
-                   bool random)
+Splitting::freq_split(const set<int> &words,
+                      set<int> &class1_words,
+                      set<int> &class2_words,
+                      vector<int> &vowords) const
 {
-    set<int> class1_words;
-    set<int> class2_words;
-
-    if (random) {
-        random_split(m_classes[class_idx], class1_words, class2_words);
+    vowords.clear();
+    multimap<int, int> ordered_words;
+    for (auto wit=words.begin(); wit != words.end(); ++wit)
+        ordered_words.insert(make_pair(m_word_counts[*wit], *wit));
+    bool class1_assign = true;
+    for (auto owit=ordered_words.rbegin(); owit != ordered_words.rend(); ++owit) {
+        if (class1_assign) class1_words.insert(owit->second);
+        else class2_words.insert(owit->second);
+        class1_assign = !class1_assign;
+        vowords.push_back(owit->second);
     }
-    else {
-        for (auto wit=m_classes[class_idx].begin(); wit != m_classes[class_idx].end(); )
-        {
-            class1_words.insert(*wit);
-            if (++wit == m_classes[class_idx].end()) break;
-            class2_words.insert(*wit);
-            wit++;
-        }
-    }
-
-    do_split(class_idx, class1_words, class2_words);
 }
 
 
 int
 Splitting::do_split(int class_idx,
-                   const set<int> &class1_words,
-                   const set<int> &class2_words)
+                    const set<int> &class1_words,
+                    const set<int> &class2_words)
 {
     if (m_classes[class_idx].size() < 2) {
         cerr << "Error, trying to split a class with " << m_classes[class_idx].size() << " words" << endl;
@@ -220,11 +216,11 @@ Splitting::do_split(int class_idx,
     if (class2_idx == -1) {
         class2_idx = m_classes.size();
         m_classes.resize(m_classes.size()+1);
-        m_class_counts.resize(m_classes.size());
+        m_class_counts.resize(m_classes.size(), 0);
         m_class_bigram_counts.resize(m_classes.size());
-        m_class_bigram_counts.back().resize(m_classes.size());
+        m_class_bigram_counts.back().resize(m_classes.size(), 0);
         for (int i=0; i<(int)m_class_bigram_counts[i].size(); i++)
-            m_class_bigram_counts[i].resize(m_classes.size());
+            m_class_bigram_counts[i].resize(m_classes.size(), 0);
     }
 
     // Update class unigram counts
@@ -292,174 +288,29 @@ Splitting::do_split(int class_idx,
 }
 
 
-double
-Splitting::iterate_exchange_local(int class1_idx,
-                                 int class2_idx,
-                                 int max_exchanges,
-                                 int num_threads)
-{
-    bool eval_class_1 = true;
-    bool exchanges_done_1 = true;
-    bool exchanges_done_2 = true;
-    int num_exchanges = 0;
-
-    while ((exchanges_done_1 || exchanges_done_2) && num_exchanges < max_exchanges)
-    {
-        set<int> *words;
-        int curr_class, tentative_class;
-        if (eval_class_1) {
-            words = &(m_classes[class1_idx]);
-            curr_class = class1_idx;
-            tentative_class = class2_idx;
-        }
-        else {
-            words = &(m_classes[class2_idx]);
-            curr_class = class2_idx;
-            tentative_class = class1_idx;
-        }
-        if (words->size() == 1) break;
-
-        int best_word = -1;
-        double best_ll_diff = -1e20;
-
-        if (num_threads > 1) {
-            local_exchange_thr(num_threads,
-                               curr_class,
-                               tentative_class,
-                               best_word,
-                               best_ll_diff);
-        }
-        else {
-            for (auto wit=words->begin(); wit != words->end(); ++wit) {
-                double ll_diff = evaluate_exchange(*wit, curr_class, tentative_class);
-                if (ll_diff > best_ll_diff) {
-                    best_ll_diff = ll_diff;
-                    best_word = *wit;
-                }
-            }
-        }
-
-        if (best_word == -1 || best_ll_diff == -1e20) {
-            cerr << "Problem in class: " << curr_class << endl;
-            exit(1);
-        }
-
-        if (eval_class_1) exchanges_done_1 = false;
-        else exchanges_done_2 = false;
-        if (best_ll_diff > 0.0) {
-            do_exchange(best_word, curr_class, tentative_class);
-            num_exchanges++;
-            if (eval_class_1) exchanges_done_1 = true;
-            else exchanges_done_2 = true;
-        }
-
-        eval_class_1 = !eval_class_1;
-    }
-
-    return log_likelihood();
-}
-
-
 int
-Splitting::iterate_exchange_local_2(int class1_idx,
-                                   int class2_idx,
-                                   int num_iterations)
+Splitting::iterate_exchange_local(int class1_idx,
+                                  int class2_idx,
+                                  vector<int> &owords,
+                                  int num_iterations)
 {
     int num_exchanges = 0;
-
-    struct EvalTask {
-        int word;
-        int current_class;
-        int tentative_class;
-    };
 
     for (int i=0; i<num_iterations; i++) {
-
-        vector<EvalTask> words;
-        set<int> &class1_words = m_classes[class1_idx];
-        set<int> &class2_words = m_classes[class2_idx];
-        auto c1wit = class1_words.begin();
-        auto c2wit = class2_words.end();
-        while (c1wit != class1_words.end() || c2wit != class2_words.end()) {
-            if (c1wit != class1_words.end()) {
-                EvalTask task;
-                task.word = *c1wit;
-                task.current_class = class1_idx;
-                task.tentative_class = class2_idx;
-                words.push_back(task);
-                c1wit++;
-            }
-            if (c2wit != class2_words.end()) {
-                EvalTask task;
-                task.word = *c2wit;
-                task.current_class = class2_idx;
-                task.tentative_class = class1_idx;
-                words.push_back(task);
-                c2wit++;
-            }
-        }
-
-        for (auto wit=words.begin(); wit != words.end(); ++wit) {
-            double ll_diff = evaluate_exchange(wit->word, wit->current_class, wit->tentative_class);
+        for (auto wit=owords.begin(); wit != owords.end(); ++wit) {
+            int curr_class = m_word_classes[*wit];
+            assert(curr_class == class1_idx || curr_class == class2_idx);
+            int tentative_class;
+            if (curr_class == class1_idx) tentative_class = class2_idx;
+            else tentative_class = class1_idx;
+            double ll_diff = evaluate_exchange(*wit, curr_class, tentative_class);
             if (ll_diff > 0.0) {
-                do_exchange(wit->word, wit->current_class, wit->tentative_class);
+                do_exchange(*wit, curr_class, tentative_class);
                 num_exchanges++;
             }
         }
     }
 
     return num_exchanges;
-}
-
-
-void
-Splitting::local_exchange_thr_worker(int num_threads,
-                                    int thread_index,
-                                    int curr_class,
-                                    int tentative_class,
-                                    int &best_word,
-                                    double &best_ll_diff)
-{
-    set<int> &words = m_classes[curr_class];
-    int widx = -1;
-    for (auto wit=words.begin(); wit != words.end(); ++wit) {
-        if (++widx % num_threads != thread_index) continue;
-        double ll_diff = evaluate_exchange(*wit, curr_class, tentative_class);
-        if (ll_diff > best_ll_diff) {
-            best_ll_diff = ll_diff;
-            best_word = *wit;
-        }
-    }
-}
-
-
-void
-Splitting::local_exchange_thr(int num_threads,
-                             int curr_class,
-                             int tentative_class,
-                             int &best_word,
-                             double &best_ll_diff)
-{
-    vector<double> thr_ll_diffs(num_threads, -1e20);
-    vector<int> thr_best_words(num_threads, -1);
-    vector<std::thread*> workers;
-    for (int t=0; t<num_threads; t++) {
-        std::thread *worker = new std::thread(&Splitting::local_exchange_thr_worker, this,
-                                              num_threads, t,
-                                              curr_class, tentative_class,
-                                              std::ref(thr_best_words[t]),
-                                              std::ref(thr_ll_diffs[t]) );
-        workers.push_back(worker);
-    }
-
-    best_word = -1;
-    best_ll_diff = -1e20;
-    for (int t=0; t<num_threads; t++) {
-        workers[t]->join();
-        if (thr_ll_diffs[t] > best_ll_diff) {
-            best_ll_diff = thr_ll_diffs[t];
-            best_word = thr_best_words[t];
-        }
-    }
 }
 
