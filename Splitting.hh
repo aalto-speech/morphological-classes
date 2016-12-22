@@ -54,19 +54,6 @@ public:
     int iterate_exchange_local_2(int class1_idx,
                                  int class2_idx,
                                  int num_iterations=5);
-
-    void exchange_thr(int num_threads,
-                      int word_index,
-                      int curr_class,
-                      int &best_class,
-                      double &best_ll_diff);
-    void exchange_thr_worker(int num_threads,
-                             int thread_index,
-                             int word_index,
-                             int curr_class,
-                             int &best_class,
-                             double &best_ll_diff);
-
     void local_exchange_thr(int num_threads,
                             int curr_class,
                             int tentative_class,

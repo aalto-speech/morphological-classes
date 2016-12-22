@@ -735,54 +735,6 @@ Splitting::iterate_exchange_local_2(int class1_idx,
 
 
 void
-Splitting::exchange_thr_worker(int num_threads,
-                              int thread_index,
-                              int word_index,
-                              int curr_class,
-                              int &best_class,
-                              double &best_ll_diff)
-{
-    for (int cidx=m_num_special_classes; cidx<(int)m_classes.size(); cidx++) {
-        if (cidx == curr_class) continue;
-        if (cidx % num_threads != thread_index) continue;
-        double ll_diff = evaluate_exchange(word_index, curr_class, cidx);
-        if (ll_diff > best_ll_diff) {
-            best_ll_diff = ll_diff;
-            best_class = cidx;
-        }
-    }
-}
-
-
-void
-Splitting::exchange_thr(int num_threads,
-                       int word_index,
-                       int curr_class,
-                       int &best_class,
-                       double &best_ll_diff)
-{
-    vector<double> thr_ll_diffs(num_threads, -1e20);
-    vector<int> thr_best_classes(num_threads, -1);
-    vector<std::thread*> workers;
-    for (int t=0; t<num_threads; t++) {
-        std::thread *worker = new std::thread(&Splitting::exchange_thr_worker, this,
-                                              num_threads, t,
-                                              word_index, curr_class,
-                                              std::ref(thr_best_classes[t]),
-                                              std::ref(thr_ll_diffs[t]) );
-        workers.push_back(worker);
-    }
-    for (int t=0; t<num_threads; t++) {
-        workers[t]->join();
-        if (thr_ll_diffs[t] > best_ll_diff) {
-            best_ll_diff = thr_ll_diffs[t];
-            best_class = thr_best_classes[t];
-        }
-    }
-}
-
-
-void
 Splitting::local_exchange_thr_worker(int num_threads,
                                     int thread_index,
                                     int curr_class,
