@@ -18,8 +18,7 @@ public:
               std::string class_fname="");
     Splitting(int num_classes,
               const std::map<std::string, int> &word_classes,
-              std::string fname="",
-              std::string vocab_fname="");
+              std::string fname="");
     ~Splitting() { };
 
     void read_corpus(std::string fname);

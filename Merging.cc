@@ -28,8 +28,8 @@ Merging::Merging(int num_classes,
     : m_num_classes(num_classes+2),
       m_num_special_classes(2)
 {
-    read_corpus(fname);
     initialize_classes_preset(word_classes);
+    read_corpus(fname);
     set_class_counts();
 }
 
@@ -111,30 +111,37 @@ Merging::write_class_mem_probs(string fname) const
 void
 Merging::initialize_classes_preset(const map<string, int> &word_classes)
 {
-    m_classes.resize(m_num_classes);
-    m_word_classes.resize(m_vocabulary.size(), -1);
+    int sos_idx = insert_word_to_vocab("<s>");
+    int eos_idx = insert_word_to_vocab("</s>");
+    int unk_idx = insert_word_to_vocab("<unk>");
+    m_word_classes[sos_idx] = START_CLASS;
+    m_word_classes[eos_idx] = START_CLASS;
+    m_word_classes[unk_idx] = UNK_CLASS;
+    m_classes.resize(2);
+    m_classes[START_CLASS].insert(sos_idx);
+    m_classes[START_CLASS].insert(eos_idx);
+    m_classes[UNK_CLASS].insert(unk_idx);
 
-    for (auto wit=m_vocabulary_lookup.begin(); wit != m_vocabulary_lookup.end(); ++wit)
-    {
-        if (wit->first == "<s>" || wit->first == "</s>") {
-            m_word_classes[wit->second] = START_CLASS;
-            m_classes[START_CLASS].insert(wit->second);
+
+    for (auto wit=word_classes.begin(); wit != word_classes.end(); ++wit) {
+        string word = wit->first;
+        if (word == "<s>" || word == "</s>" || word == "<unk>") {
+            cerr << "Warning: You have specified special tokens in the class "
+                 << "initialization. These will be ignored." << endl;
+            continue;
         }
-        else if (wit->first == "<unk>") {
-            m_word_classes[wit->second] = UNK_CLASS;
-            m_classes[UNK_CLASS].insert(wit->second);
-        }
-        else {
-            if (word_classes.at(wit->first) == START_CLASS ||
-                word_classes.at(wit->first) == UNK_CLASS)
-            {
-                cerr << "Error, assigning word to a reserved class: " << wit->first << endl;
-                exit(1);
-            }
-            m_word_classes[wit->second] = word_classes.at(wit->first);
-            m_classes[word_classes.at(wit->first)].insert(wit->second);
-        }
+
+        int word_idx = insert_word_to_vocab(word);
+        int class_idx = wit->second;
+        if (class_idx+1 > (int)m_classes.size())
+            m_classes.resize(class_idx+1);
+        m_classes[class_idx].insert(word_idx);
+        m_word_classes[word_idx] = class_idx;
     }
+
+    m_num_classes = m_classes.size();
+    cerr << "Read initialization for " << word_classes.size() << " words" << endl;
+    cerr << m_num_classes << " classes specified" << endl;
 }
 
 

@@ -12,7 +12,7 @@ objs = $(srcs:.cc=.o)
 test_progs = runtests
 test_progs_srcs = $(test_progs:=.cc)
 test_progs_objs = $(test_progs:=.o)
-test_srcs = ppltest.cc categorytest.cc exchangetest.cc mergetest.cc
+test_srcs = ppltest.cc categorytest.cc exchangetest.cc mergetest.cc splittest.cc
 test_objs = $(test_srcs:.cc=.o)
 
 ##################################################
