@@ -335,28 +335,6 @@ Merging::log_likelihood() const
 }
 
 
-inline void
-evaluate_ll_diff(double &ll_diff,
-                 int old_count,
-                 int new_count)
-{
-    if (old_count != 0)
-        ll_diff -= old_count * log(old_count);
-    if (new_count != 0)
-        ll_diff += new_count * log(new_count);
-}
-
-
-inline int
-get_count(const map<int, int> &ctxt,
-                     int element)
-{
-    auto it = ctxt.find(element);
-    if (it != ctxt.end()) return it->second;
-    else return 0;
-}
-
-
 double
 Merging::evaluate_merge(int class1,
                          int class2) const
