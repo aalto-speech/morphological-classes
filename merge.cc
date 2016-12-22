@@ -156,25 +156,24 @@ int main(int argc, char* argv[])
 {
     try {
         conf::Config config;
-        config("usage: merge [OPTION...] CORPUS CLASS_INIT MODEL\n")
+        config("usage: merge [OPTION...] CORPUS CLASS_INIT SUPER_CLASSES MODEL\n")
         ('c', "num-classes=INT", "arg", "1000", "Target number of classes, default: 1000")
         ('t', "num-threads=INT", "arg", "1", "Number of threads, default: 1")
         ('m', "num-merge-evals=INT", "arg", "1000", "Number of evaluations per merge, default: 1000")
         ('i', "model-write-interval=INT", "arg", "0", "Interval for writing temporary models, default: 0")
-        ('s', "super-classes=FILE", "arg", "", "Super class definitions")
         ('h', "help", "", "", "display help");
         config.default_parse(argc, argv);
-        if (config.arguments.size() != 3) config.print_help(stderr, 1);
+        if (config.arguments.size() != 4) config.print_help(stderr, 1);
 
         string corpus_fname = config.arguments[0];
         string class_init_fname = config.arguments[1];
-        string model_fname = config.arguments[2];
+        string super_class_fname = config.arguments[2];
+        string model_fname = config.arguments[3];
 
         int num_classes = config["num-classes"].get_int();
         int num_threads = config["num-threads"].get_int();
         int num_merge_evals = config["num-merge-evals"].get_int();
         int model_write_interval = config["model-write-interval"].get_int();
-        string super_class_fname = config["super-classes"].get_str();
 
         Merging merging;
         map<int,int> class_idx_mapping = merging.read_class_initialization(class_init_fname);
