@@ -6,7 +6,7 @@
 #include "io.hh"
 #include "defs.hh"
 #include "conf.hh"
-#include "ExchangeAlgorithm.hh"
+#include "Exchanging.hh"
 
 using namespace std;
 

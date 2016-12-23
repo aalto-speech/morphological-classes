@@ -6,7 +6,7 @@
 #include <ctime>
 
 #define private public
-#include "ExchangeAlgorithm.hh"
+#include "Exchanging.hh"
 #undef private
 
 using namespace std;

@@ -8,7 +8,7 @@
 #include <iterator>
 #include <algorithm>
 
-#include "ExchangeAlgorithm.hh"
+#include "Exchanging.hh"
 #include "io.hh"
 #include "defs.hh"
 
