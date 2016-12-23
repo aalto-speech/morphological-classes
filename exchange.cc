@@ -52,6 +52,7 @@ int main(int argc, char* argv[])
         ('i', "class-init=FILE", "arg", "", "Class initialization, same format as in model classes file")
         ('v', "vocabulary=FILE", "arg", "", "Vocabulary, one word per line")
         ('s', "super-classes=FILE", "arg", "", "Superclass definitions")
+        ('o', "old-init", "", "", "Use old initialization")
         ('h', "help", "", "", "display help");
         config.default_parse(argc, argv);
         if (config.arguments.size() != 2) config.print_help(stderr, 1);
@@ -67,6 +68,7 @@ int main(int argc, char* argv[])
         int model_write_interval = config["model-write-interval"].get_int();
         string class_init_fname = config["class-init"].get_str();
         string vocab_fname = config["vocabulary"].get_str();
+        bool old_init = config["old-init"].specified;
 
         if (config["super-classes"].specified && !config["class-init"].specified) {
             cerr << "Superclass definitions are only usable with a class initialization" << endl;
@@ -91,7 +93,7 @@ int main(int argc, char* argv[])
             exc->read_corpus(corpus_fname);
         }
         else
-            exc = new Exchanging(num_classes, corpus_fname, vocab_fname);
+            exc = new Exchanging(num_classes, corpus_fname, vocab_fname, old_init);
 
         time_t t1,t2;
         t1=time(0);

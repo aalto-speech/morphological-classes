@@ -14,7 +14,8 @@ public:
     Exchanging();
     Exchanging(int num_classes,
                std::string corpus_fname,
-               std::string vocab_fname="");
+               std::string vocab_fname="",
+               bool old_init=false);
     Exchanging(int num_classes,
                const std::map<std::string, int> &word_classes,
                std::string corpus_fname="");
@@ -22,6 +23,8 @@ public:
 
     void initialize_classes_by_freq(std::string corpus_fname,
                                     std::string vocab_fname);
+    void initialize_classes_by_freq_2(std::string corpus_fname,
+                                      std::string vocab_fname);
     double evaluate_exchange(int word,
                              int curr_class,
                              int tentative_class) const;
