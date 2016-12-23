@@ -1,12 +1,9 @@
 #include <algorithm>
 #include <sstream>
+#include <cassert>
 #include <cmath>
 #include <ctime>
-#include <cassert>
 #include <thread>
-#include <functional>
-#include <iterator>
-#include <algorithm>
 
 #include "Splitting.hh"
 #include "io.hh"

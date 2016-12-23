@@ -1,12 +1,7 @@
-#include <algorithm>
 #include <sstream>
 #include <cmath>
 #include <ctime>
-#include <cassert>
 #include <thread>
-#include <functional>
-#include <iterator>
-#include <algorithm>
 
 #include "Exchanging.hh"
 #include "io.hh"
