@@ -24,16 +24,18 @@ Exchanging::Exchanging(int num_classes,
 }
 
 Exchanging::Exchanging(int num_classes,
-                       string corpus_fname)
+                       string corpus_fname,
+                       string vocab_fname)
     : Merging(num_classes)
 {
-    initialize_classes_by_freq(corpus_fname);
+    initialize_classes_by_freq(corpus_fname, vocab_fname);
     read_corpus(corpus_fname);
 }
 
 
 void
-Exchanging::initialize_classes_by_freq(string corpus_fname)
+Exchanging::initialize_classes_by_freq(string corpus_fname,
+                                       string vocab_fname)
 {
     cerr << "Initializing classes by frequency order from corpus " << corpus_fname << endl;
 
@@ -47,6 +49,18 @@ Exchanging::initialize_classes_by_freq(string corpus_fname)
     m_classes[START_CLASS].insert(sos_idx);
     m_classes[START_CLASS].insert(eos_idx);
     m_classes[UNK_CLASS].insert(unk_idx);
+
+    set<string> constrained_vocab;
+    if (vocab_fname.length()) {
+        cerr << "Reading vocabulary from " << vocab_fname << endl;
+        SimpleFileInput vocabf(vocab_fname);
+        string line;
+        while (vocabf.getline(line)) {
+            stringstream ss(line);
+            string token;
+            while (ss >> token) constrained_vocab.insert(token);
+        }
+    }
 
     string line;
     SimpleFileInput corpusf(corpus_fname);
@@ -62,6 +76,8 @@ Exchanging::initialize_classes_by_freq(string corpus_fname)
     for (auto wit=word_counts.begin(); wit != word_counts.end(); ++wit) {
         string word = wit->first;
         if (word == "<s>" || word == "</s>" || word == "<unk>") continue;
+        if (vocab_fname.length() > 0 && constrained_vocab.find(word) == constrained_vocab.end())
+            continue;
         sorted_words.insert(make_pair(wit->second, word));
     }
 

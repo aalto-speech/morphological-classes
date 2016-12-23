@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
         ('p', "ll-print-interval=INT", "arg", "100000", "Likelihood print interval, default: 100000 (words)")
         ('w', "model-write-interval=INT", "arg", "3600", "Model write interval, default: 3600 (seconds)")
         ('i', "class-init=FILE", "arg", "", "Class initialization, same format as in model classes file")
+        ('v', "vocabulary=FILE", "arg", "", "Vocabulary, one word per line")
         ('s', "super-classes=FILE", "arg", "", "Superclass definitions")
         ('h', "help", "", "", "display help");
         config.default_parse(argc, argv);
@@ -65,6 +66,7 @@ int main(int argc, char* argv[])
         int num_threads = config["num-threads"].get_int();
         int model_write_interval = config["model-write-interval"].get_int();
         string class_init_fname = config["class-init"].get_str();
+        string vocab_fname = config["vocabulary"].get_str();
 
         if (config["super-classes"].specified && !config["class-init"].specified) {
             cerr << "Superclass definitions are only usable with a class initialization" << endl;
@@ -76,6 +78,11 @@ int main(int argc, char* argv[])
             exit(1);
         }
 
+        if (config["vocabulary"].specified && config["class-init"].specified) {
+            cerr << "Vocabulary should not be specified with the class initialization" << endl;
+            exit(1);
+        }
+
         Exchanging *exc = nullptr;
         map<int,int> class_idx_mapping;
         if (config["class-init"].specified) {
@@ -84,7 +91,7 @@ int main(int argc, char* argv[])
             exc->read_corpus(corpus_fname);
         }
         else
-            exc = new Exchanging(num_classes, corpus_fname);
+            exc = new Exchanging(num_classes, corpus_fname, vocab_fname);
 
         time_t t1,t2;
         t1=time(0);
