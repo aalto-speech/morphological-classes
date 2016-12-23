@@ -16,6 +16,7 @@ using namespace std;
 
 
 Splitting::Splitting()
+    : Merging()
 {
 }
 
@@ -23,6 +24,7 @@ Splitting::Splitting()
 Splitting::Splitting(int num_classes,
                      const std::map<std::string, int> &word_classes,
                      string corpus_fname)
+    : Merging(num_classes, word_classes, corpus_fname)
 {
 }
 
