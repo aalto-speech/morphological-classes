@@ -12,6 +12,7 @@ using namespace std;
 
 
 void read_super_classes(string scfname,
+                        map<int, int> &class_idx_mapping,
                         vector<vector<int> > &super_classes,
                         map<int, int> &super_class_lookup)
 {
@@ -28,6 +29,7 @@ void read_super_classes(string scfname,
         vector<int> curr_super_class;
         while(std::getline(liness, token, ',')) {
             int class_idx = str2int(token);
+            class_idx = class_idx_mapping[class_idx];
             curr_super_class.push_back(class_idx);
             super_class_lookup[class_idx] = super_classes.size();
         }
@@ -75,9 +77,10 @@ int main(int argc, char* argv[])
         }
 
         Exchanging *exc = nullptr;
+        map<int,int> class_idx_mapping;
         if (config["class-init"].specified) {
             exc = new Exchanging();
-            map<int,int> class_idx_mapping = exc->read_class_initialization(class_init_fname);
+            class_idx_mapping = exc->read_class_initialization(class_init_fname);
             exc->read_corpus(corpus_fname);
         }
         else
@@ -90,7 +93,8 @@ int main(int argc, char* argv[])
         if (config["super-classes"].specified) {
             vector<vector<int> > super_classes;
             map<int, int> super_class_lookup;
-            read_super_classes(config["super-classes"].get_str(), super_classes, super_class_lookup);
+            read_super_classes(config["super-classes"].get_str(), class_idx_mapping,
+                               super_classes, super_class_lookup);
             exc->iterate_exchange(super_classes, super_class_lookup,
                                   max_iter, max_seconds, ll_print_interval,
                                   model_write_interval,
