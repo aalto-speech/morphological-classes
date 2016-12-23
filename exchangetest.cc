@@ -13,8 +13,8 @@ using namespace std;
 
 
 void
-assert_same(Exchange &e1,
-            Exchange &e2)
+assert_same(Exchanging &e1,
+            Exchanging &e2)
 {
     BOOST_CHECK( e1.m_num_classes == e2.m_num_classes );
     BOOST_CHECK( e1.m_vocabulary == e2.m_vocabulary );
@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(DataRead)
     long unsigned int num_classes = 2;
     long unsigned int num_words = 8;
 
-    Exchange e(num_classes, "data/exchange1.txt");
+    Exchanging e(num_classes, "data/exchange1.txt");
 
     BOOST_CHECK_EQUAL( num_classes+2, (long unsigned int)e.m_num_classes );
     BOOST_CHECK_EQUAL( num_words, e.m_vocabulary.size() );
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(DataRead)
 BOOST_AUTO_TEST_CASE(DoExchange)
 {
     cerr << endl;
-    Exchange e(2, "data/exchange1.txt");
+    Exchanging e(2, "data/exchange1.txt");
 
     vector<int> orig_class_counts = e.m_class_counts;
     vector<vector<int> > orig_class_bigram_counts = e.m_class_bigram_counts;
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(DoExchange2)
 {
     cerr << endl;
 
-    Exchange e_ref(2);
+    Exchanging e_ref(2);
     e_ref.read_corpus("data/exchange1.txt");
     e_ref.initialize_classes_by_freq();
 
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(DoExchange2)
 
     e_ref.set_class_counts();
 
-    Exchange e_test(2, "data/exchange1.txt");
+    Exchanging e_test(2, "data/exchange1.txt");
     e_test.do_exchange(widx, curr_class, new_class);
 
     assert_same( e_ref, e_test );
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(DoExchange2)
 BOOST_AUTO_TEST_CASE(EvalExchange)
 {
     cerr << endl;
-    Exchange e(2, "data/exchange1.txt");
+    Exchanging e(2, "data/exchange1.txt");
 
     int widx = e.m_vocabulary_lookup["d"];
     int curr_class = e.m_word_classes[widx];
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(EvalExchange)
 BOOST_AUTO_TEST_CASE(EvalExchangeTime)
 {
     cerr << endl;
-    Exchange e(2, "data/exchange1.txt");
+    Exchanging e(2, "data/exchange1.txt");
 
     int widx = e.m_vocabulary_lookup["d"];
     int curr_class = e.m_word_classes[widx];
