@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
-#include "Merging.hh"
+#include "Exchanging.hh"
 
 
-class Splitting : public Merging {
+class Splitting : public Exchanging {
 public:
     Splitting();
     Splitting(int num_classes,
@@ -17,15 +17,6 @@ public:
               std::string corpus_fname="");
     ~Splitting() { };
 
-    double evaluate_exchange(int word,
-                             int curr_class,
-                             int tentative_class) const;
-    void do_exchange(int word,
-                     int prev_class,
-                     int new_class);
-    void random_split(const std::set<int> &words,
-                      std::set<int> &class1_words,
-                      std::set<int> &class2_words) const;
     void freq_split(const std::set<int> &words,
                     std::set<int> &class1_words,
                     std::set<int> &class2_words,

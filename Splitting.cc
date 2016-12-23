@@ -13,7 +13,7 @@ using namespace std;
 
 
 Splitting::Splitting()
-    : Merging()
+    : Exchanging()
 {
 }
 
@@ -21,158 +21,8 @@ Splitting::Splitting()
 Splitting::Splitting(int num_classes,
                      const std::map<std::string, int> &word_classes,
                      string corpus_fname)
-    : Merging(num_classes, word_classes, corpus_fname)
+    : Exchanging(num_classes, word_classes, corpus_fname)
 {
-}
-
-
-inline void
-evaluate_ll_diff(double &ll_diff,
-                 int old_count,
-                 int new_count)
-{
-    if (old_count != 0)
-        ll_diff -= old_count * log(old_count);
-    if (new_count != 0)
-        ll_diff += new_count * log(new_count);
-}
-
-
-inline int
-get_count(const map<int, int> &ctxt,
-          int element)
-{
-    auto it = ctxt.find(element);
-    if (it != ctxt.end()) return it->second;
-    else return 0;
-}
-
-
-double
-Splitting::evaluate_exchange(int word,
-                             int curr_class,
-                             int tentative_class) const
-{
-    double ll_diff = 0.0;
-    int wc = m_word_counts[word];
-    const map<int, int> &wb_ctxt = m_word_bigram_counts.at(word);
-    const map<int, int> &cw_counts = m_class_word_counts.at(word);
-    const map<int, int> &wc_counts = m_word_class_counts.at(word);
-
-    ll_diff += 2 * (m_class_counts[curr_class]) * log(m_class_counts[curr_class]);
-    ll_diff -= 2 * (m_class_counts[curr_class]-wc) * log(m_class_counts[curr_class]-wc);
-    ll_diff += 2 * (m_class_counts[tentative_class]) * log(m_class_counts[tentative_class]);
-    ll_diff -= 2 * (m_class_counts[tentative_class]+wc) * log(m_class_counts[tentative_class]+wc);
-
-    for (auto wcit=wc_counts.begin(); wcit != wc_counts.end(); ++wcit) {
-        if (wcit->first == curr_class) continue;
-        if (wcit->first == tentative_class) continue;
-
-        int curr_count = m_class_bigram_counts[curr_class][wcit->first];
-        int new_count = curr_count - wcit->second;
-        evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-        curr_count = m_class_bigram_counts[tentative_class][wcit->first];
-        new_count = curr_count + wcit->second;
-        evaluate_ll_diff(ll_diff, curr_count, new_count);
-    }
-
-    for (auto wcit=cw_counts.begin(); wcit != cw_counts.end(); ++wcit) {
-        if (wcit->first == curr_class) continue;
-        if (wcit->first == tentative_class) continue;
-
-        int curr_count = m_class_bigram_counts[wcit->first][curr_class];
-        int new_count = curr_count - wcit->second;
-        evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-        curr_count = m_class_bigram_counts[wcit->first][tentative_class];
-        new_count = curr_count + wcit->second;
-        evaluate_ll_diff(ll_diff, curr_count, new_count);
-    }
-
-    int self_count = 0;
-    auto scit = wb_ctxt.find(word);
-    if (scit != wb_ctxt.end()) self_count = scit->second;
-
-    int curr_count = m_class_bigram_counts[curr_class][tentative_class];
-    int new_count = curr_count - get_count(wc_counts, tentative_class)
-            + get_count(cw_counts, curr_class) - self_count;
-    evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-    curr_count = m_class_bigram_counts[tentative_class][curr_class];
-    new_count = curr_count - get_count(cw_counts, tentative_class)
-            + get_count(wc_counts, curr_class) - self_count;
-    evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-    curr_count = m_class_bigram_counts[curr_class][curr_class];
-    new_count = curr_count - get_count(wc_counts, curr_class)
-            - get_count(cw_counts, curr_class) + self_count;
-    evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-    curr_count = m_class_bigram_counts[tentative_class][tentative_class];
-    new_count = curr_count + get_count(wc_counts, tentative_class)
-            + get_count(cw_counts, tentative_class) + self_count;
-    evaluate_ll_diff(ll_diff, curr_count, new_count);
-
-    return ll_diff;
-}
-
-
-void
-Splitting::do_exchange(int word,
-                      int prev_class,
-                      int new_class)
-{
-    int wc = m_word_counts[word];
-    m_class_counts[prev_class] -= wc;
-    m_class_counts[new_class] += wc;
-
-    map<int, int> &bctxt = m_word_bigram_counts[word];
-    for (auto wit = bctxt.begin(); wit != bctxt.end(); ++wit) {
-        if (wit->first == word) continue;
-        int tgt_class = m_word_classes[wit->first];
-        m_class_bigram_counts[prev_class][tgt_class] -= wit->second;
-        m_class_bigram_counts[new_class][tgt_class] += wit->second;
-        m_class_word_counts[wit->first][prev_class] -= wit->second;
-        m_class_word_counts[wit->first][new_class] += wit->second;
-    }
-
-    map<int, int> &rbctxt = m_word_rev_bigram_counts[word];
-    for (auto wit = rbctxt.begin(); wit != rbctxt.end(); ++wit) {
-        if (wit->first == word) continue;
-        int src_class = m_word_classes[wit->first];
-        m_class_bigram_counts[src_class][prev_class] -= wit->second;
-        m_class_bigram_counts[src_class][new_class] += wit->second;
-        m_word_class_counts[wit->first][prev_class] -= wit->second;
-        m_word_class_counts[wit->first][new_class] += wit->second;
-    }
-
-    auto wit = bctxt.find(word);
-    if (wit != bctxt.end()) {
-        m_class_bigram_counts[prev_class][prev_class] -= wit->second;
-        m_class_bigram_counts[new_class][new_class] += wit->second;
-        m_class_word_counts[word][prev_class] -= wit->second;
-        m_class_word_counts[word][new_class] += wit->second;
-        m_word_class_counts[word][prev_class] -= wit->second;
-        m_word_class_counts[word][new_class] += wit->second;
-    }
-
-    m_classes[prev_class].erase(word);
-    m_classes[new_class].insert(word);
-    m_word_classes[word] = new_class;
-}
-
-
-void
-Splitting::random_split(const set<int> &words,
-                        set<int> &class1_words,
-                        set<int> &class2_words) const
-{
-    vector<int> _words(words.begin(), words.end());
-    std::random_shuffle(_words.begin(), _words.end());
-    class1_words.clear(); class2_words.clear();
-    class1_words.insert(_words.begin(), _words.begin() + _words.size()/2);
-    class2_words.insert(_words.begin() + _words.size()/2, _words.end());
 }
 
 
