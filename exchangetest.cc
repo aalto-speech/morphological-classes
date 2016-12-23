@@ -85,32 +85,6 @@ BOOST_AUTO_TEST_CASE(DoExchange)
 }
 
 
-// Another test for count updates
-BOOST_AUTO_TEST_CASE(DoExchange2)
-{
-    cerr << endl;
-
-    Exchanging e_ref(2);
-    e_ref.read_corpus("data/exchange1.txt");
-    e_ref.initialize_classes_by_freq();
-
-    int widx = e_ref.m_vocabulary_lookup["d"];
-    int curr_class = e_ref.m_word_classes[widx];
-    int new_class = (curr_class == 3) ? 2 : 3;
-
-    e_ref.m_classes[curr_class].erase(widx);
-    e_ref.m_classes[new_class].insert(widx);
-    e_ref.m_word_classes[widx] = new_class;
-
-    e_ref.set_class_counts();
-
-    Exchanging e_test(2, "data/exchange1.txt");
-    e_test.do_exchange(widx, curr_class, new_class);
-
-    assert_same( e_ref, e_test );
-}
-
-
 // Test for evaluating ll change for one exchange
 BOOST_AUTO_TEST_CASE(EvalExchange)
 {

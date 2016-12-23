@@ -13,6 +13,7 @@
 class Merging {
 public:
     Merging();
+    Merging(int num_classes);
     Merging(int num_classes,
             const std::map<std::string, int> &word_classes,
             std::string corpus_fname="");

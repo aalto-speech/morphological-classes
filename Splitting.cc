@@ -40,7 +40,7 @@ evaluate_ll_diff(double &ll_diff,
 
 inline int
 get_count(const map<int, int> &ctxt,
-                     int element)
+          int element)
 {
     auto it = ctxt.find(element);
     if (it != ctxt.end()) return it->second;

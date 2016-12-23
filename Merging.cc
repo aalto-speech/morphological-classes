@@ -15,6 +15,13 @@ Merging::Merging()
 }
 
 
+Merging::Merging(int num_classes)
+    : m_num_classes(num_classes+2),
+      m_num_special_classes(2)
+{
+}
+
+
 Merging::Merging(int num_classes,
                  const map<string, int> &word_classes,
                  string corpus_fname)
@@ -113,7 +120,6 @@ Merging::initialize_classes_preset(const map<string, int> &word_classes)
     m_classes[START_CLASS].insert(sos_idx);
     m_classes[START_CLASS].insert(eos_idx);
     m_classes[UNK_CLASS].insert(unk_idx);
-
 
     for (auto wit=word_classes.begin(); wit != word_classes.end(); ++wit) {
         string word = wit->first;

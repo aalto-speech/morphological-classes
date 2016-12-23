@@ -23,6 +23,63 @@ Exchanging::Exchanging(int num_classes,
 {
 }
 
+Exchanging::Exchanging(int num_classes,
+                       string corpus_fname)
+    : Merging(num_classes)
+{
+    initialize_classes_by_freq(corpus_fname);
+    read_corpus(corpus_fname);
+}
+
+
+void
+Exchanging::initialize_classes_by_freq(string corpus_fname)
+{
+    cerr << "Initializing classes by frequency order from corpus " << corpus_fname << endl;
+
+    int sos_idx = insert_word_to_vocab("<s>");
+    int eos_idx = insert_word_to_vocab("</s>");
+    int unk_idx = insert_word_to_vocab("<unk>");
+    m_word_classes[sos_idx] = START_CLASS;
+    m_word_classes[eos_idx] = START_CLASS;
+    m_word_classes[unk_idx] = UNK_CLASS;
+    m_classes.resize(m_num_classes);
+    m_classes[START_CLASS].insert(sos_idx);
+    m_classes[START_CLASS].insert(eos_idx);
+    m_classes[UNK_CLASS].insert(unk_idx);
+
+    string line;
+    SimpleFileInput corpusf(corpus_fname);
+    map<string, int> word_counts;
+    while (corpusf.getline(line)) {
+        vector<int> sent;
+        stringstream ss(line);
+        string token;
+        while (ss >> token) word_counts[token] += 1;
+    }
+
+    multimap<int, string> sorted_words;
+    for (auto wit=word_counts.begin(); wit != word_counts.end(); ++wit) {
+        string word = wit->first;
+        if (word == "<s>" || word == "</s>" || word == "<unk>") continue;
+        sorted_words.insert(make_pair(wit->second, word));
+    }
+
+    unsigned int class_idx_helper = m_num_special_classes;
+    for (auto swit=sorted_words.rbegin(); swit != sorted_words.rend(); ++swit) {
+        int widx = insert_word_to_vocab(swit->second);
+        if (m_word_classes[widx] != -1) continue;
+
+        unsigned int class_idx = class_idx_helper % m_num_classes;
+        m_word_classes[widx] = class_idx;
+        m_classes[class_idx].insert(widx);
+
+        class_idx_helper++;
+        while (class_idx_helper % m_num_classes < (unsigned int)m_num_special_classes)
+            class_idx_helper++;
+    }
+}
+
 
 inline void
 evaluate_ll_diff(double &ll_diff,

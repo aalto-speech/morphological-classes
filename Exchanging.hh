@@ -13,10 +13,13 @@ class Exchanging : public Merging {
 public:
     Exchanging();
     Exchanging(int num_classes,
+               std::string corpus_fname="");
+    Exchanging(int num_classes,
                const std::map<std::string, int> &word_classes,
                std::string corpus_fname="");
     ~Exchanging() { };
 
+    void initialize_classes_by_freq(std::string corpus_fname);
     double evaluate_exchange(int word,
                              int curr_class,
                              int tentative_class) const;
