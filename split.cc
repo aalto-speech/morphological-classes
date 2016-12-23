@@ -2,13 +2,9 @@
 #include <map>
 #include <set>
 #include <vector>
-#include <sstream>
 #include <iostream>
-#include <thread>
-#include <cstdlib>
 #include <ctime>
 #include <cfloat>
-#include <cassert>
 
 #include "io.hh"
 #include "defs.hh"
