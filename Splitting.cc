@@ -67,8 +67,7 @@ Splitting::do_split(int class_idx,
         m_classes.resize(m_classes.size()+1);
         m_class_counts.resize(m_classes.size(), 0);
         m_class_bigram_counts.resize(m_classes.size());
-        m_class_bigram_counts.back().resize(m_classes.size(), 0);
-        for (int i=0; i<(int)m_class_bigram_counts[i].size(); i++)
+        for (int i=0; i<(int)m_class_bigram_counts.size(); i++)
             m_class_bigram_counts[i].resize(m_classes.size(), 0);
     }
 
