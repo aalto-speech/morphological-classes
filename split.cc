@@ -45,7 +45,6 @@ void write_super_classes(string scfname,
 
 void find_candidate_classes(Splitting &e,
                             vector<int> &classes_to_evaluate,
-                            set<int> stoplist,
                             int num_classes)
 {
     double m_num_word_types=(double)e.m_vocabulary.size();
@@ -54,9 +53,8 @@ void find_candidate_classes(Splitting &e,
         m_num_word_tokens += (double)e.m_word_counts[i];
 
     multimap<double, int> class_order;
-    for (int i=2; i<(int)e.m_classes.size(); i++) {
+    for (int i=e.m_num_special_classes; i<(int)e.m_classes.size(); i++) {
         if (e.m_classes[i].size() < 2) continue;
-        if (stoplist.find(i) != stoplist.end()) continue;
         double score = 0.5 * (double)e.m_classes.size() / m_num_word_types;
         score += 0.5 * (double)e.m_class_counts[i] / m_num_word_tokens;
         class_order.insert(make_pair(score, i));
@@ -80,14 +78,10 @@ void split_classes(Splitting &e,
                    vector<set<int> > &super_classes,
                    map<int, int> &super_class_lookup)
 {
-    set<int> stoplist;
-    stoplist.insert(START_CLASS);
-    stoplist.insert(UNK_CLASS);
-
     while (e.num_classes() < target_num_classes)
     {
         vector<int> classes_to_evaluate;
-        find_candidate_classes(e, classes_to_evaluate, stoplist, 50);
+        find_candidate_classes(e, classes_to_evaluate, 50);
         SplitEvalTask best_split;
         best_split.cidx = classes_to_evaluate[0];
 
@@ -111,8 +105,6 @@ void split_classes(Splitting &e,
                 if (split_task.ll > best_split.ll)
                     best_split = split_task;
                 e.do_merge(split_task.cidx, class2_idx);
-                if (split_task.ll < ll_threshold)
-                    stoplist.insert(split_task.cidx);
             }
         }
 
