@@ -43,20 +43,20 @@ void write_super_classes(string scfname,
 }
 
 
-void find_candidate_classes(Splitting &e,
+void find_candidate_classes(Splitting &spl,
                             vector<int> &classes_to_evaluate,
                             int num_classes)
 {
-    double m_num_word_types=(double)e.m_vocabulary.size();
+    double m_num_word_types=(double)spl.m_vocabulary.size();
     double m_num_word_tokens=0.0;
-    for (int i=0; i<(int)e.m_word_counts.size(); i++)
-        m_num_word_tokens += (double)e.m_word_counts[i];
+    for (int i=0; i<(int)spl.m_word_counts.size(); i++)
+        m_num_word_tokens += (double)spl.m_word_counts[i];
 
     multimap<double, int> class_order;
-    for (int i=e.m_num_special_classes; i<(int)e.m_classes.size(); i++) {
-        if (e.m_classes[i].size() < 2) continue;
-        double score = 0.5 * (double)e.m_classes.size() / m_num_word_types;
-        score += 0.5 * (double)e.m_class_counts[i] / m_num_word_tokens;
+    for (int i=spl.m_num_special_classes; i<(int)spl.m_classes.size(); i++) {
+        if (spl.m_classes[i].size() < 2) continue;
+        double score = 0.5 * (double)spl.m_classes[i].size() / m_num_word_types;
+        score += 0.5 * (double)spl.m_class_counts[i] / m_num_word_tokens;
         class_order.insert(make_pair(score, i));
     }
 
@@ -69,7 +69,7 @@ void find_candidate_classes(Splitting &e,
 }
 
 
-void split_classes(Splitting &e,
+void split_classes(Splitting &spl,
                    int target_num_classes,
                    int num_eval_classes,
                    double ll_threshold,
@@ -78,16 +78,16 @@ void split_classes(Splitting &e,
                    vector<set<int> > &super_classes,
                    map<int, int> &super_class_lookup)
 {
-    while (e.num_classes() < target_num_classes)
+    while (spl.num_classes() < target_num_classes)
     {
         vector<int> classes_to_evaluate;
-        find_candidate_classes(e, classes_to_evaluate, 50);
+        find_candidate_classes(spl, classes_to_evaluate, 50);
         SplitEvalTask best_split;
         best_split.cidx = classes_to_evaluate[0];
 
         if (num_eval_classes < 2) {
-            cerr << "split class " << best_split.cidx << ", size: " << e.m_classes[best_split.cidx].size() << endl;
-            e.freq_split(e.m_classes[best_split.cidx],
+            cerr << "split class " << best_split.cidx << ", size: " << spl.m_classes[best_split.cidx].size() << endl;
+            spl.freq_split(spl.m_classes[best_split.cidx],
                          best_split.class1_words, best_split.class2_words,
                          best_split.ordered_words);
         }
@@ -95,37 +95,37 @@ void split_classes(Splitting &e,
             for (int ec=0; ec<num_eval_classes; ec++) {
                 SplitEvalTask split_task;
                 split_task.cidx = classes_to_evaluate[ec];
-                e.freq_split(e.m_classes[split_task.cidx],
+                spl.freq_split(spl.m_classes[split_task.cidx],
                              split_task.class1_words, split_task.class2_words, split_task.ordered_words);
-                double orig_ll = e.log_likelihood();
-                int class2_idx = e.do_split(split_task.cidx, split_task.class1_words, split_task.class2_words);
-                e.iterate_exchange_local(split_task.cidx, class2_idx, split_task.ordered_words, 1);
-                double split_ll = e.log_likelihood();
+                double orig_ll = spl.log_likelihood();
+                int class2_idx = spl.do_split(split_task.cidx, split_task.class1_words, split_task.class2_words);
+                spl.iterate_exchange_local(split_task.cidx, class2_idx, split_task.ordered_words, 1);
+                double split_ll = spl.log_likelihood();
                 split_task.ll = split_ll - orig_ll;
                 if (split_task.ll > best_split.ll)
                     best_split = split_task;
-                e.do_merge(split_task.cidx, class2_idx);
+                spl.do_merge(split_task.cidx, class2_idx);
             }
         }
 
         cerr << "splitting.." << endl;
-        int class2_idx = e.do_split(best_split.cidx, best_split.class1_words, best_split.class2_words);
-        cerr << e.num_classes() << "\t" << e.log_likelihood() << endl;
+        int class2_idx = spl.do_split(best_split.cidx, best_split.class1_words, best_split.class2_words);
+        cerr << spl.num_classes() << "\t" << spl.log_likelihood() << endl;
         cerr << "running local exchange algorithm.." << endl;
-        e.iterate_exchange_local(best_split.cidx, class2_idx, best_split.ordered_words);
-        cerr << "final class sizes: " << e.m_classes[best_split.cidx].size() << " "
-                << e.m_classes[class2_idx].size() << endl;
-        cerr << e.num_classes() << "\t" << e.log_likelihood() << endl;
+        spl.iterate_exchange_local(best_split.cidx, class2_idx, best_split.ordered_words);
+        cerr << "final class sizes: " << spl.m_classes[best_split.cidx].size() << " "
+                << spl.m_classes[class2_idx].size() << endl;
+        cerr << spl.num_classes() << "\t" << spl.log_likelihood() << endl;
 
         int sci = super_class_lookup[best_split.cidx];
         super_classes[sci].insert(class2_idx);
         super_class_lookup[class2_idx] = sci;
 
-        if (model_write_interval > 0 && e.num_classes() % model_write_interval == 0) {
-            write_super_classes(model_fname + "." + int2str(e.num_classes()) + ".superclasses.gz",
+        if (model_write_interval > 0 && spl.num_classes() % model_write_interval == 0) {
+            write_super_classes(model_fname + "." + int2str(spl.num_classes()) + ".superclasses.gz",
                                 super_classes,
                                 super_class_lookup);
-            e.write_class_mem_probs(model_fname + "." + int2str(e.num_classes()) + ".cmemprobs.gz");
+            spl.write_class_mem_probs(model_fname + "." + int2str(spl.num_classes()) + ".cmemprobs.gz");
         }
     }
 }
