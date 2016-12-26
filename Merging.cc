@@ -179,12 +179,17 @@ Merging::read_class_initialization(string class_fname)
     string line;
     map<int, int> file_to_class_idx;
     int wordc = 0;
+    int num_ignored_lines = 0;
     while (classf.getline(line)) {
         if (!line.length()) continue;
         stringstream ss(line);
 
         string word;
         ss >> word;
+        if (ss.fail()) {
+            num_ignored_lines++;
+            continue;
+        }
         if (word == "<s>" || word == "</s>" || word == "<unk>") {
             cerr << "Warning: You have specified special tokens in the class "
                  << "initialization file. These will be ignored." << endl;
@@ -195,6 +200,10 @@ Merging::read_class_initialization(string class_fname)
 
         int file_idx, class_idx;
         ss >> file_idx;
+        if (ss.fail()) {
+            num_ignored_lines++;
+            continue;
+        }
         auto cit = file_to_class_idx.find(file_idx);
         if (cit != file_to_class_idx.end()) {
             class_idx = cit->second;
@@ -213,6 +222,8 @@ Merging::read_class_initialization(string class_fname)
     m_num_classes = m_classes.size();
     cerr << "Read initialization for " << wordc << " words" << endl;
     cerr << m_num_classes << " classes specified" << endl;
+    if (num_ignored_lines > 0)
+        cerr << num_ignored_lines << " lines were ignored." << endl;
 
     return file_to_class_idx;
 }
