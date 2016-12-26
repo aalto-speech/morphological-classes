@@ -185,7 +185,8 @@ Merging::read_class_initialization(string class_fname)
         stringstream ss(line);
 
         string word;
-        ss >> word;
+        int file_idx;
+        ss >> word >> file_idx;
         if (ss.fail()) {
             num_ignored_lines++;
             continue;
@@ -197,13 +198,7 @@ Merging::read_class_initialization(string class_fname)
         }
 
         int widx = insert_word_to_vocab(word);
-
-        int file_idx, class_idx;
-        ss >> file_idx;
-        if (ss.fail()) {
-            num_ignored_lines++;
-            continue;
-        }
+        int class_idx;
         auto cit = file_to_class_idx.find(file_idx);
         if (cit != file_to_class_idx.end()) {
             class_idx = cit->second;
