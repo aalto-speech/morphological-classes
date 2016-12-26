@@ -47,18 +47,14 @@ void find_candidate_classes(Splitting &spl,
                             vector<int> &classes_to_evaluate,
                             int num_classes)
 {
-    double max_word_types=0.0;
     double max_word_tokens=0.0;
-    for (int i=spl.m_num_special_classes; i<(int)spl.m_classes.size(); i++) {
-        max_word_types = max(max_word_types, (double)spl.m_classes[i].size());
+    for (int i=spl.m_num_special_classes; i<(int)spl.m_classes.size(); i++)
         max_word_tokens = max(max_word_tokens, (double)spl.m_class_counts[i]);
-    }
 
     multimap<double, int> class_order;
     for (int i=spl.m_num_special_classes; i<(int)spl.m_classes.size(); i++) {
         if (spl.m_classes[i].size() < 2) continue;
-        double score = 0.5 * (double)spl.m_classes[i].size() / max_word_types;
-        score += 0.5 * (double)spl.m_class_counts[i] / max_word_tokens;
+        double score = (double)spl.m_class_counts[i] / max_word_tokens;
         class_order.insert(make_pair(score, i));
     }
 
