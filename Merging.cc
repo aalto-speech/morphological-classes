@@ -58,18 +58,24 @@ Merging::read_corpus(string fname)
 
         sent.push_back(ss_idx);
         while (ss >> token) {
-            auto vlit = m_vocabulary_lookup.find(token);
-            if (vlit != m_vocabulary_lookup.end()) {
-                sent.push_back(vlit->second);
-                num_iv_tokens++;
-            }
-            else {
+            if (token == "<s>" || token == "</s>") continue;
+            if (token == "<unk>" || token == "<UNK>") {
                 sent.push_back(unk_idx);
-                unk_types.insert(token);
                 num_unk_tokens++;
+            } else {
+                auto vlit = m_vocabulary_lookup.find(token);
+                if (vlit != m_vocabulary_lookup.end()) {
+                    sent.push_back(vlit->second);
+                    num_iv_tokens++;
+                }
+                else {
+                    sent.push_back(unk_idx);
+                    num_unk_tokens++;
+                }
             }
         }
         sent.push_back(se_idx);
+
 
         for (unsigned int i=0; i<sent.size(); i++)
             m_word_counts[sent[i]]++;
@@ -93,15 +99,13 @@ void
 Merging::write_class_mem_probs(string fname) const
 {
     SimpleFileOutput mfo(fname);
-    mfo << "<s>\t" << START_CLASS << " " << "0.000000" << "\n";
-    mfo << "<unk>\t" << UNK_CLASS << " " << "0.000000" << "\n";
-
     for (unsigned int widx = 0; widx < m_vocabulary.size(); widx++) {
-        string word = m_vocabulary[widx];
+        const string &word = m_vocabulary[widx];
         if (word == "<s>" || word == "</s>" || word == "<unk>") continue;
         double lp = log(m_word_counts[widx]);
         lp -= log(m_class_counts[m_word_classes[widx]]);
-        mfo << word << "\t" << m_word_classes[widx] << " " << lp << "\n";
+        mfo << word << "\t" << m_word_classes[widx]-m_num_special_classes
+            << " " << lp << "\n";
     }
     mfo.close();
 }
