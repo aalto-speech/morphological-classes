@@ -33,9 +33,8 @@ int main(int argc, char* argv[]) {
     int num_classes = read_class_memberships(classmfname, class_memberships);
 
     cerr << "Reading class n-gram model.." << endl;
-    Ngram ng;
+    LNNgram ng;
     ng.read_arpa(ngramfname);
-    int class_lm_start_node = ng.advance(ng.root_node, ng.vocabulary_lookup.at("<s>"));
 
     // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(num_classes);
@@ -78,7 +77,7 @@ int main(int argc, char* argv[]) {
 
         double sent_ll = 0.0;
 
-        int curr_node = class_lm_start_node;
+        int curr_node = ng.sentence_start_node;
         for (int i=0; i<(int)words.size(); i++) {
             if (words[i] == unk) {
                 if (root_unk_states) curr_node = ng.root_node;
@@ -90,12 +89,12 @@ int main(int argc, char* argv[]) {
             sent_ll += word_class.second;
             double ngram_score = 0.0;
             curr_node = ng.score(curr_node, indexmap[word_class.first], ngram_score);
-            sent_ll += log(10.0) * ngram_score;
+            sent_ll += ngram_score;
         }
 
         double ngram_score = 0.0;
-        curr_node = ng.score(curr_node, ng.vocabulary_lookup.at("</s>"), ngram_score);
-        sent_ll += log(10.0) * ngram_score;
+        curr_node = ng.score(curr_node, ng.sentence_end_symbol_idx, ngram_score);
+        sent_ll += ngram_score;
 
         total_ll += sent_ll;
         num_sents++;
@@ -116,4 +115,3 @@ int main(int argc, char* argv[]) {
 
     exit(0);
 }
-
