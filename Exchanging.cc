@@ -45,7 +45,7 @@ Exchanging::initialize_classes_by_freq(string corpus_fname,
     m_word_classes[sos_idx] = START_CLASS;
     m_word_classes[eos_idx] = START_CLASS;
     m_word_classes[unk_idx] = UNK_CLASS;
-    m_classes.resize(2);
+    m_classes.resize(m_num_classes);
     m_classes[START_CLASS].insert(sos_idx);
     m_classes[START_CLASS].insert(eos_idx);
     m_classes[UNK_CLASS].insert(unk_idx);
