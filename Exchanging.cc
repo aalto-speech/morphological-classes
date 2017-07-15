@@ -45,7 +45,7 @@ Exchanging::initialize_classes_by_freq(string corpus_fname,
     m_word_classes[sos_idx] = START_CLASS;
     m_word_classes[eos_idx] = START_CLASS;
     m_word_classes[unk_idx] = UNK_CLASS;
-    m_classes.resize(m_num_classes);
+    m_classes.resize(2);
     m_classes[START_CLASS].insert(sos_idx);
     m_classes[START_CLASS].insert(eos_idx);
     m_classes[UNK_CLASS].insert(unk_idx);
@@ -242,10 +242,8 @@ Exchanging::iterate_exchange(int max_iter,
                              string model_base,
                              int num_threads)
 {
-    time_t start_time, curr_time;
-    time_t last_model_write_time;
-    start_time = time(0);
-    last_model_write_time = start_time;
+    time_t start_time = time(0);
+    time_t last_model_write_time = start_time;
     int tmp_model_idx = 1;
 
     int curr_iter = 0;
@@ -293,7 +291,7 @@ Exchanging::iterate_exchange(int max_iter,
             }
 
             if (widx % 1000 == 0) {
-                curr_time = time(0);
+                time_t curr_time = time(0);
 
                 if (curr_time-start_time > max_seconds)
                     return log_likelihood();
@@ -310,8 +308,6 @@ Exchanging::iterate_exchange(int max_iter,
         curr_iter++;
         if (max_iter > 0 && curr_iter >= max_iter) return log_likelihood();
     }
-
-    return log_likelihood();
 }
 
 
