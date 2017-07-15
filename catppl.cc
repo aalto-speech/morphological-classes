@@ -15,42 +15,42 @@ using namespace std;
 int main(int argc, char* argv[]) {
 
     conf::Config config;
-    config("usage: cat2ppl2 [OPTION...] CLASS_ARPA CLASS_PROBS WORD_PROBS INPUT\n")
-    ('u', "use-ngram-unk-states", "", "", "Use unk symbols in class n-gram contexts with unks, DEFAULT: use root node")
+    config("usage: catppl [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT\n")
+    ('u', "use-ngram-unk-states", "", "", "Use unk symbols in category n-gram contexts with unks, DEFAULT: use root node")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 4) config.print_help(stderr, 1);
 
     string ngramfname = config.arguments[0];
-    string classpfname = config.arguments[1];
-    string wordpfname = config.arguments[2];
+    string cgenpfname = config.arguments[1];
+    string cmempfname = config.arguments[2];
     string infname = config.arguments[3];
 
     bool ngram_unk_states = config["use-ngram-unk-states"].specified;
 
     Categories wcs;
-    cerr << "Reading class probs.." << endl;
-    wcs.read_category_gen_probs(classpfname);
+    cerr << "Reading category probs.." << endl;
+    wcs.read_category_gen_probs(cgenpfname);
     cerr << "Reading word probs.." << endl;
-    wcs.read_category_mem_probs(wordpfname);
+    wcs.read_category_mem_probs(cmempfname);
 
-    cerr << "Asserting class generation probabilities.." << endl;
+    cerr << "Asserting category generation probabilities.." << endl;
     if (!wcs.assert_category_gen_probs()) {
-        cerr << "Problem in class generation probabilities" << endl;
+        cerr << "Problem in category generation probabilities" << endl;
         exit(1);
     }
 
-    cerr << "Asserting class membership probabilities.." << endl;
+    cerr << "Asserting category membership probabilities.." << endl;
     if (!wcs.assert_category_mem_probs()) {
-        cerr << "Problem in class membership probabilities" << endl;
-        //exit(1);
+        cerr << "Problem in category membership probabilities" << endl;
+        exit(1);
     }
 
-    cerr << "Reading class n-gram model.." << endl;
+    cerr << "Reading category n-gram model.." << endl;
     Ngram ng;
     ng.read_arpa(ngramfname);
 
-    // The class indexes are stored as strings in the n-gram class
+    // The category indexes are stored as strings in the n-gram category
     vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
         indexmap[i] = ng.vocabulary_lookup[int2str(i)];
