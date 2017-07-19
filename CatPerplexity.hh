@@ -1,37 +1,31 @@
-#ifndef CLASS_PPL
-#define CLASS_PPL
+#ifndef CATEGORY_PPL
+#define CATEGORY_PPL
 
-#include <vector>
+#include <cfloat>
 #include <string>
+#include <vector>
 
 #include "Ngram.hh"
 #include "Categories.hh"
 
 
-void score(const std::vector<CategoryProbs*> &probs,
-           const Ngram &ngram,
-           const std::vector<int> &indexmap,
-           int ngram_node,
-           bool sentence_end,
-           flt_type &total_score,
-           bool ngram_unk_states=false,
-           flt_type beam=100.0);
+namespace CatPerplexity {
 
-flt_type likelihood(std::string &sent,
-                    Ngram &ngram,
-                    Categories &wcs,
-                    std::vector<int> &intmap,
-                    int &num_words,
-                    int &num_oovs,
-                    bool ngram_unk_states=false);
+    struct Token {
+        double m_acc_ll;
+        int m_ngram_node;
+        std::vector<double> m_cat_gen_lls;
+    };
 
-flt_type likelihood(std::string &sent,
-                    Ngram &ngram,
-                    Categories &wcs,
-                    std::vector<int> &intmap,
-                    std::vector<flt_type> &word_lls,
-                    int &num_words,
-                    int &num_oovs,
-                    bool ngram_unk_states=false);
+    double likelihood(const Ngram &ngram,
+                      const Categories &wcs,
+                      const std::vector<int> &intmap,
+                      long long unsigned int &num_words,
+                      long long unsigned int &num_oovs,
+                      std::string word,
+                      std::vector <CatPerplexity::Token> &tokens,
+                      bool ngram_unk_states = true,
+                      double beam = FLT_MAX);
+}
 
 #endif
