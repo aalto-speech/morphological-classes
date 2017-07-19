@@ -2,6 +2,7 @@
 #define CATEGORY_PPL
 
 #include <cfloat>
+#include <list>
 #include <string>
 #include <vector>
 
@@ -14,7 +15,7 @@ namespace CatPerplexity {
     struct Token {
         double m_acc_ll;
         int m_ngram_node;
-        std::vector<double> m_cat_gen_lls;
+        std::list<double> m_cat_gen_lls;
     };
 
     double likelihood(const Ngram &ngram,
