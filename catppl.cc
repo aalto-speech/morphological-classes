@@ -1,92 +1,135 @@
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <thread>
+#include <functional>
 
 #include "defs.hh"
 #include "io.hh"
 #include "conf.hh"
 #include "Categories.hh"
 #include "Ngram.hh"
-#include "CatPerplexity.hh"
 
 using namespace std;
+
+
+bool
+process_sent(string line,
+             const set<string> &vocab,
+             const TrainingParameters &params,
+             vector<string> &sent)
+{
+    sent.clear();
+    stringstream ss(line);
+    string word;
+    while (ss >> word) {
+        if (word == "<s>" || word == "</s>") continue;
+        sent.push_back(word);
+    }
+    if (sent.size() > params.max_line_length) return false;
+    if (sent.size() == 0) return false;
+
+    for (auto wit=sent.begin(); wit != sent.end(); ++wit)
+        if (vocab.find(*wit) == vocab.end())
+            wit->assign("<unk>");
+
+    return true;
+}
+
+
+double
+catstats(string corpusfname,
+         const set<string> &vocab,
+         const Ngram &cngram,
+         const vector<int> &indexmap,
+         const Categories &categories,
+         const TrainingParameters &params,
+         unsigned long int &num_vocab_words,
+         unsigned long int &num_oov_words,
+         unsigned long int &num_sents)
+{
+    SimpleFileInput corpusf(corpusfname);
+    Categories stats;
+    unsigned long int senti = 0;
+    double total_ll = 0.0;
+    string line;
+    while (corpusf.getline(line)) {
+        senti++;
+        vector<string> sent;
+        if (!process_sent(line, vocab, params, sent)) continue;
+        total_ll += collect_stats(sent,
+                                  cngram, indexmap,
+                                  categories, params,
+                                  stats, nullptr,
+                                  &num_vocab_words, &num_oov_words);
+        num_sents++;
+    }
+
+    return total_ll;
+}
 
 
 int main(int argc, char* argv[]) {
 
     conf::Config config;
-    config("usage: catppl [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT\n")
-    ('u', "use-ngram-unk-states", "", "", "Use unk symbols in category n-gram contexts with unks, DEFAULT: use root node")
+    config("usage: catstats [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT [MODEL]\n")
+    ('n', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
+    ('f', "num-final-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the last position (DEFAULT: 10)")
+    ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words (DEFAULT: 100)")
+    ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
-    if (config.arguments.size() != 4) config.print_help(stderr, 1);
+    if (config.arguments.size() != 4)
+        config.print_help(stderr, 1);
 
-    string ngramfname = config.arguments[0];
+    string cngramfname = config.arguments[0];
     string cgenpfname = config.arguments[1];
     string cmempfname = config.arguments[2];
     string infname = config.arguments[3];
 
-    bool ngram_unk_states = config["use-ngram-unk-states"].specified;
+    TrainingParameters params;
+    params.num_tokens = config["num-tokens"].get_int();
+    params.num_final_tokens = config["num-final-tokens"].get_int();
+    params.max_line_length = config["max-line-length"].get_int();
+    params.prob_beam = config["prob-beam"].get_float();
 
     Categories wcs;
-    cerr << "Reading category probs.." << endl;
+    cerr << "Reading category generation probs.." << endl;
     wcs.read_category_gen_probs(cgenpfname);
-    cerr << "Reading word probs.." << endl;
+    cerr << "Reading category membership probs.." << endl;
     wcs.read_category_mem_probs(cmempfname);
 
-    cerr << "Asserting category generation probabilities.." << endl;
-    if (!wcs.assert_category_gen_probs()) {
-        cerr << "Problem in category generation probabilities" << endl;
-        exit(1);
-    }
-
-    cerr << "Asserting category membership probabilities.." << endl;
-    if (!wcs.assert_category_mem_probs()) {
-        cerr << "Problem in category membership probabilities" << endl;
-        exit(1);
-    }
-
     cerr << "Reading category n-gram model.." << endl;
-    Ngram ng;
-    ng.read_arpa(ngramfname);
+    Ngram cngram;
+    cngram.read_arpa(cngramfname);
+    params.max_order = cngram.max_order;
 
-    // The category indexes are stored as strings in the n-gram category
+    // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(wcs.num_categories());
     for (int i=0; i<(int)indexmap.size(); i++)
-        indexmap[i] = ng.vocabulary_lookup[int2str(i)];
+        if (cngram.vocabulary_lookup.find(int2str(i)) != cngram.vocabulary_lookup.end())
+            indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
 
-    cerr << "Reading input.." << endl;
-    SimpleFileInput infile(infname);
-    string line;
-    long int num_words = 0;
-    long int num_sents = 0;
-    long int num_oov = 0;
-    double total_ll = 0.0;
-    int linei = 0;
-    while (infile.getline(line)) {
+    set<string> vocab; wcs.get_words(vocab, params.tagging != NO);
 
-        linei++;
-        if (linei % 10000 == 0) cerr << "sentence " << linei << endl;
+    Categories stats(wcs);
 
-        int sent_words = 0;
-        int sent_oovs = 0;
-        flt_type sent_ll = likelihood(line, ng, wcs, indexmap, sent_words, sent_oovs, ngram_unk_states);
-        total_ll += sent_ll;
-        num_sents++;
-        num_words += sent_words;
-        num_oov += sent_oovs;
-    }
+    unsigned long int num_vocab_words=0;
+    unsigned long int num_oov_words=0;
+    unsigned long int num_sents=0;
+    double total_ll = catstats(infname, vocab,
+                               cngram, indexmap, wcs,
+                               params,
+                               num_vocab_words, num_oov_words, num_sents);
 
-    double ppl = exp(-1.0/double(num_words) * total_ll);
-    cerr << endl;
-    cerr << "Number of sentences: " << num_sents << endl;
-    cerr << "Number of in-vocabulary words excluding sentence ends: " << num_words-num_sents << endl;
-    cerr << "Number of in-vocabulary words including sentence ends: " << num_words << endl;
-    cerr << "Number of OOV words: " << num_oov << endl;
-    cerr << "Total log likelihood: " << total_ll << endl;
-    cerr << "Total log likelihood (log10): " << total_ll/2.302585092994046 << endl;
-    cerr << "Perplexity: " << ppl << endl;
+    cout << "Number of sentences processed: " << num_sents << endl;
+    cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
+    cout << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+num_sents << endl;
+    cout << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
+    cout << "Likelihood: " << total_ll << endl;
+    double ppl = exp(-1.0/double(num_vocab_words+num_sents) * total_ll);
+    cout << "Perplexity: " << ppl << endl;
 
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
-
