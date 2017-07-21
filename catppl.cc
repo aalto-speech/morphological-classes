@@ -9,6 +9,7 @@
 #include "io.hh"
 #include "conf.hh"
 #include "Categories.hh"
+#include "CatPerplexity.hh"
 #include "Ngram.hh"
 
 using namespace std;
@@ -33,6 +34,7 @@ process_sent(string line,
     for (auto wit=sent.begin(); wit != sent.end(); ++wit)
         if (vocab.find(*wit) == vocab.end())
             wit->assign("<unk>");
+    sent.push_back("</s>");
 
     return true;
 }
@@ -58,11 +60,23 @@ catstats(string corpusfname,
         senti++;
         vector<string> sent;
         if (!process_sent(line, vocab, params, sent)) continue;
+
+        vector<CatPerplexity::Token> tokens;
+        CatPerplexity::Token initial_tok(cngram);
+        tokens.push_back(initial_tok);
+        for (int i = 0; i < (int)sent.size(); i++) {
+            total_ll += likelihood(cngram, categories, indexmap,
+                                   num_vocab_words, num_oov_words,
+                                   sent[i], tokens, true, 100.0);
+        }
+
+        /*
         total_ll += collect_stats(sent,
                                   cngram, indexmap,
                                   categories, params,
                                   stats, nullptr,
                                   &num_vocab_words, &num_oov_words);
+        */
         num_sents++;
     }
 

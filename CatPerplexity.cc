@@ -12,8 +12,8 @@ namespace CatPerplexity {
     likelihood(const Ngram &ngram,
                const Categories &wcs,
                const vector<int> &intmap,
-               long long unsigned int &num_words,
-               long long unsigned int &num_oovs,
+               unsigned long int &num_words,
+               unsigned long int &num_oovs,
                string word,
                vector<CatPerplexity::Token> &tokens,
                bool ngram_unk_states,
@@ -26,7 +26,7 @@ namespace CatPerplexity {
 
         if (word == "</s>")
             sentence_end = true;
-        if (cgenit == wcs.m_category_gen_probs.end() || cgenit->second.size() == 0)
+        else if (cgenit == wcs.m_category_gen_probs.end() || cgenit->second.size() == 0)
             unk = true;
         else if (cmemit == wcs.m_category_mem_probs.end() || cmemit->second.size() == 0)
             unk = true;
@@ -48,6 +48,7 @@ namespace CatPerplexity {
                     tok.m_cat_gen_lls.pop_front();
                 propagated_tokens.push_back(tok);
             }
+            num_oovs++;
         }
         else if (sentence_end) {
             for (auto tit = tokens.begin(); tit != tokens.end(); ++tit) {
@@ -90,6 +91,7 @@ namespace CatPerplexity {
                     propagated_tokens.push_back(tok);
                 }
             }
+            num_words++;
         }
 
         tokens.clear();

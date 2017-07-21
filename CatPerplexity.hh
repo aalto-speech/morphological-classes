@@ -12,7 +12,11 @@
 
 namespace CatPerplexity {
 
-    struct Token {
+    class Token {
+    public:
+        Token(const Ngram &ngram)
+            : m_acc_ll(0.0),
+              m_ngram_node(ngram.sentence_start_node) { };
         double m_acc_ll;
         int m_ngram_node;
         std::list<double> m_cat_gen_lls;
@@ -21,8 +25,8 @@ namespace CatPerplexity {
     double likelihood(const Ngram &ngram,
                       const Categories &wcs,
                       const std::vector<int> &intmap,
-                      long long unsigned int &num_words,
-                      long long unsigned int &num_oovs,
+                      unsigned long int &num_words,
+                      unsigned long int &num_oovs,
                       std::string word,
                       std::vector <CatPerplexity::Token> &tokens,
                       bool ngram_unk_states = true,
