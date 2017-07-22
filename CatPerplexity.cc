@@ -26,6 +26,8 @@ namespace CatPerplexity {
 
         if (word == "</s>")
             sentence_end = true;
+        else if (word == "<unk>" || word == "<UNK>")
+            unk = true;
         else if (cgenit == wcs.m_category_gen_probs.end() || cgenit->second.size() == 0)
             unk = true;
         else if (cmemit == wcs.m_category_mem_probs.end() || cmemit->second.size() == 0)
