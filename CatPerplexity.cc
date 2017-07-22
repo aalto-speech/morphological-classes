@@ -30,12 +30,10 @@ namespace CatPerplexity {
             unk = true;
         else if (cmemit == wcs.m_category_mem_probs.end() || cmemit->second.size() == 0)
             unk = true;
-        else
-            unk = false;
 
         vector<CatPerplexity::Token> propagated_tokens;
         double best_acc_ll = -FLT_MAX;
-        double total_ll = -FLT_MAX;
+        double total_ll = -1000.0;
         if (unk) {
             for (auto tit = tokens.begin(); tit != tokens.end(); ++tit) {
                 CatPerplexity::Token tok = *tit;
@@ -71,18 +69,18 @@ namespace CatPerplexity {
         }
         else {
             for (auto tit = tokens.begin(); tit != tokens.end(); ++tit) {
-                CatPerplexity::Token tok = *tit;
                 double gen_ll = 0.0;
                 for (auto cgit = tit->m_cat_gen_lls.begin(); cgit != tit->m_cat_gen_lls.end(); ++cgit)
                     gen_ll += *cgit;
                 for (auto cit = cmemit->second.begin(); cit != cmemit->second.end(); ++cit) {
+                    CatPerplexity::Token tok = *tit;
                     double ll = gen_ll;
                     double ngram_ll = 0.0;
                     tok.m_ngram_node = ngram.score(tok.m_ngram_node,
                         intmap[cit->first], ngram_ll);
                     ll += ngram_ll * log(10.0);
                     ll += cit->second;
-                    tok.m_cat_gen_lls.push_back(cit->second);
+                    tok.m_cat_gen_lls.push_back(cgenit->second.at(cit->first));
                     while ((int)tok.m_cat_gen_lls.size() > (ngram.max_order - 1))
                         tok.m_cat_gen_lls.pop_front();
                     tok.m_acc_ll += ll;
