@@ -53,9 +53,10 @@ catppl(string corpusfname,
         vector<CatPerplexity::Token> tokens;
         tokens.push_back(CatPerplexity::Token(cngram));
         for (int i = 0; i < (int)sent.size(); i++)
-            total_ll += likelihood(cngram, categories, indexmap,
-                                   num_vocab_words, num_oov_words,
-                                   sent[i], tokens, true, 1000.0);
+            total_ll +=
+                    CatPerplexity::likelihood(cngram, categories, indexmap,
+                                              num_vocab_words, num_oov_words,
+                                              sent[i], tokens, true, 1000.0);
         num_sents++;
     }
 
