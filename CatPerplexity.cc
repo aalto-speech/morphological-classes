@@ -47,6 +47,7 @@ namespace CatPerplexity {
                 propagated_tokens.push_back(tok);
             }
             num_oovs++;
+            total_ll = 0.0;
         }
         else if (sentence_end) {
             for (auto tit = tokens.begin(); tit != tokens.end(); ++tit) {

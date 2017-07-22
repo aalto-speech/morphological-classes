@@ -17,7 +17,6 @@ using namespace std;
 
 bool
 process_sent(string line,
-             const set<string> &vocab,
              const TrainingParameters &params,
              vector<string> &sent)
 {
@@ -28,55 +27,35 @@ process_sent(string line,
         if (word == "<s>" || word == "</s>") continue;
         sent.push_back(word);
     }
+    sent.push_back("</s>");
     if (sent.size() > params.max_line_length) return false;
     if (sent.size() == 0) return false;
-
-    for (auto wit=sent.begin(); wit != sent.end(); ++wit)
-        if (vocab.find(*wit) == vocab.end())
-            wit->assign("<unk>");
-    sent.push_back("</s>");
-
     return true;
 }
 
 
 double
-catstats(string corpusfname,
-         const set<string> &vocab,
-         const Ngram &cngram,
-         const vector<int> &indexmap,
-         const Categories &categories,
-         const TrainingParameters &params,
-         unsigned long int &num_vocab_words,
-         unsigned long int &num_oov_words,
-         unsigned long int &num_sents)
+catppl(string corpusfname,
+       const Ngram &cngram,
+       const vector<int> &indexmap,
+       const Categories &categories,
+       const TrainingParameters &params,
+       unsigned long int &num_vocab_words,
+       unsigned long int &num_oov_words,
+       unsigned long int &num_sents)
 {
     SimpleFileInput corpusf(corpusfname);
-    Categories stats;
-    unsigned long int senti = 0;
     double total_ll = 0.0;
     string line;
     while (corpusf.getline(line)) {
-        senti++;
         vector<string> sent;
-        if (!process_sent(line, vocab, params, sent)) continue;
-
+        if (!process_sent(line, params, sent)) continue;
         vector<CatPerplexity::Token> tokens;
-        CatPerplexity::Token initial_tok(cngram);
-        tokens.push_back(initial_tok);
-        for (int i = 0; i < (int)sent.size(); i++) {
+        tokens.push_back(CatPerplexity::Token(cngram));
+        for (int i = 0; i < (int)sent.size(); i++)
             total_ll += likelihood(cngram, categories, indexmap,
                                    num_vocab_words, num_oov_words,
-                                   sent[i], tokens, true, 100.0);
-        }
-
-        /*
-        total_ll += collect_stats(sent,
-                                  cngram, indexmap,
-                                  categories, params,
-                                  stats, nullptr,
-                                  &num_vocab_words, &num_oov_words);
-        */
+                                   sent[i], tokens, true, 1000.0);
         num_sents++;
     }
 
@@ -121,28 +100,26 @@ int main(int argc, char* argv[]) {
 
     // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(wcs.num_categories());
-    for (int i=0; i<(int)indexmap.size(); i++)
+    for (int i = 0; i < (int) indexmap.size(); i++)
         if (cngram.vocabulary_lookup.find(int2str(i)) != cngram.vocabulary_lookup.end())
             indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
+        else
+            cerr << "warning, category not found in the n-gram: " << i << endl;
 
-    set<string> vocab; wcs.get_words(vocab, params.tagging != NO);
-
-    Categories stats(wcs);
-
-    unsigned long int num_vocab_words=0;
-    unsigned long int num_oov_words=0;
-    unsigned long int num_sents=0;
-    double total_ll = catstats(infname, vocab,
-                               cngram, indexmap, wcs,
-                               params,
-                               num_vocab_words, num_oov_words, num_sents);
+    unsigned long int num_vocab_words = 0;
+    unsigned long int num_oov_words = 0;
+    unsigned long int num_sents = 0;
+    double total_ll = catppl(infname,
+                             cngram, indexmap, wcs,
+                             params,
+                             num_vocab_words, num_oov_words, num_sents);
 
     cout << "Number of sentences processed: " << num_sents << endl;
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
-    cout << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+num_sents << endl;
+    cout << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words + num_sents << endl;
     cout << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
     cout << "Likelihood: " << total_ll << endl;
-    double ppl = exp(-1.0/double(num_vocab_words+num_sents) * total_ll);
+    double ppl = exp(-1.0 / double(num_vocab_words + num_sents) * total_ll);
     cout << "Perplexity: " << ppl << endl;
 
     exit(EXIT_SUCCESS);
