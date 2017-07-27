@@ -1,5 +1,6 @@
 #include <cfloat>
 #include <numeric>
+#include <queue>
 
 #include "CatPerplexity.hh"
 
@@ -25,14 +26,59 @@ namespace CatPerplexity {
         m_ngram_node = ngram.sentence_start_node;
     }
 
+    bool operator<(const HistoryToken& lhs, const HistoryToken& rhs)
+    {
+        return lhs.m_ll < rhs.m_ll;
+    }
+
     vector<HistoryToken>
     propagate_history(const Ngram &ngram,
                       const CategoryHistory &history,
+                      const vector<int> &intmap,
                       bool ngram_unk_states,
                       int num_tokens,
                       double beam)
     {
+        priority_queue<HistoryToken> init_tokens;
+        init_tokens.push(HistoryToken(ngram));
+
+        for (auto hit = history.m_history.begin(); hit != history.m_history.end(); ++hit) {
+            priority_queue<HistoryToken> propagated_tokens;
+            const CategoryProbs *cats = *hit;
+            int tcount = 0;
+            if (cats == nullptr) {
+                while (init_tokens.size() > 0  && tcount++ < num_tokens) {
+                    HistoryToken tok = init_tokens.top();
+                    init_tokens.pop();
+                    if (ngram_unk_states)
+                        tok.m_ngram_node = ngram.advance(tok.m_ngram_node, ngram.unk_symbol_idx);
+                    else
+                        tok.m_ngram_node = ngram.root_node;
+                    propagated_tokens.push(tok);
+                }
+            }
+            else {
+                while (init_tokens.size() > 0 && tcount++ < num_tokens) {
+                    HistoryToken tok = init_tokens.top();
+                    init_tokens.pop();
+                    for (auto cit = cats->begin(); cit != cats->end(); ++cit) {
+                        HistoryToken ctok = tok;
+                        ctok.m_ngram_node = ngram.advance(ctok.m_ngram_node, intmap[cit->first]);
+                        ctok.m_ll += cit->second;
+                        propagated_tokens.push(ctok);
+                    }
+                }
+            }
+
+            init_tokens = propagated_tokens;
+        }
+
+        int ftcount = 0;
         vector<HistoryToken> final_tokens;
+        while (init_tokens.size() > 0 && ftcount++ < num_tokens) {
+            final_tokens.push_back(init_tokens.top());
+            init_tokens.pop();
+        }
         return final_tokens;
     }
 
@@ -66,6 +112,7 @@ namespace CatPerplexity {
         vector<CatPerplexity::HistoryToken> tokens
                 = propagate_history(ngram,
                                     history,
+                                    intmap,
                                     ngram_unk_states,
                                     num_tokens,
                                     beam);

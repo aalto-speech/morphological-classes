@@ -27,9 +27,12 @@ namespace CatPerplexity {
         int m_ngram_node;
     };
 
+    bool operator<(const HistoryToken& lhs, const HistoryToken& rhs);
+
     std::vector<HistoryToken>
     propagate_history(const Ngram &ngram,
                       const CategoryHistory &history,
+                      const std::vector<int> &intmap,
                       bool ngram_unk_states = true,
                       int num_tokens = 100,
                       double beam = FLT_MAX);
