@@ -8,6 +8,18 @@ using namespace std;
 
 namespace CatPerplexity {
 
+    CategoryHistory::CategoryHistory(const Ngram &ngram) {
+        m_history_length = ngram.max_order - 1;
+    }
+
+    void
+    CategoryHistory::update(CategoryProbs *probs) {
+        m_history.push_back(probs);
+        while (m_history.size() > m_history_length) {
+            m_history.pop_front();
+        }
+    }
+
     double
     likelihood(const Ngram &ngram,
                const Categories &wcs,

@@ -12,6 +12,14 @@
 
 namespace CatPerplexity {
 
+    class CategoryHistory {
+    public:
+        CategoryHistory(const Ngram &ngram);
+        void update(CategoryProbs *probs);
+        std::list<CategoryProbs*> m_history;
+        unsigned int m_history_length;
+    };
+
     class Token {
     public:
         Token(const Ngram &ngram)
