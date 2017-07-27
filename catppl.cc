@@ -42,7 +42,8 @@ catppl(string corpusfname,
        const TrainingParameters &params,
        unsigned long int &num_vocab_words,
        unsigned long int &num_oov_words,
-       unsigned long int &num_sents)
+       unsigned long int &num_sents,
+       bool verbose)
 {
     SimpleFileInput corpusf(corpusfname);
     double total_ll = 0.0;
@@ -56,8 +57,9 @@ catppl(string corpusfname,
             total_ll +=
                     CatPerplexity::likelihood(cngram, categories, indexmap,
                                               num_vocab_words, num_oov_words,
-                                              sent[i], tokens, true, 1000.0);
+                                              sent[i], tokens, true, params.prob_beam);
         num_sents++;
+        if (verbose && num_sents % 5000 == 0) cerr << num_sents << endl;
     }
 
     return total_ll;
@@ -71,7 +73,8 @@ int main(int argc, char* argv[]) {
     ('n', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
     ('f', "num-final-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the last position (DEFAULT: 10)")
     ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words (DEFAULT: 100)")
-    ('b', "prob-beam=FLOAT", "arg", "100.0", "Probability beam (default 100.0)")
+    ('b', "prob-beam=FLOAT", "arg", "20.0", "Probability beam (default 20.0)")
+    ('v', "verbose", "", "", "Print some information")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 4)
@@ -87,6 +90,7 @@ int main(int argc, char* argv[]) {
     params.num_final_tokens = config["num-final-tokens"].get_int();
     params.max_line_length = config["max-line-length"].get_int();
     params.prob_beam = config["prob-beam"].get_float();
+    bool verbose = config["verbose"].specified;
 
     Categories wcs;
     cerr << "Reading category generation probs.." << endl;
@@ -113,7 +117,8 @@ int main(int argc, char* argv[]) {
     double total_ll = catppl(infname,
                              cngram, indexmap, wcs,
                              params,
-                             num_vocab_words, num_oov_words, num_sents);
+                             num_vocab_words, num_oov_words, num_sents,
+                             verbose);
 
     cout << "Number of sentences processed: " << num_sents << endl;
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
