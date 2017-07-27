@@ -51,13 +51,13 @@ catppl(string corpusfname,
     while (corpusf.getline(line)) {
         vector<string> sent;
         if (!process_sent(line, params, sent)) continue;
-        vector<CatPerplexity::Token> tokens;
-        tokens.push_back(CatPerplexity::Token(cngram));
+        CatPerplexity::CategoryHistory history(cngram);
         for (int i = 0; i < (int)sent.size(); i++)
             total_ll +=
                     CatPerplexity::likelihood(cngram, categories, indexmap,
                                               num_vocab_words, num_oov_words,
-                                              sent[i], tokens, true, params.prob_beam);
+                                              sent[i], history,
+                                              true, params.num_tokens, params.prob_beam);
         num_sents++;
         if (verbose && num_sents % 5000 == 0) cerr << num_sents << endl;
     }
