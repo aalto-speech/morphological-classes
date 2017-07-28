@@ -33,18 +33,18 @@ namespace CatPerplexity {
     propagate_history(const Ngram &ngram,
                       const CategoryHistory &history,
                       const std::vector<int> &intmap,
-                      bool ngram_unk_states = true,
+                      bool root_unk_states = false,
                       int num_tokens = 100,
                       double beam = FLT_MAX);
 
-    double likelihood(const Ngram &ngram,
+    double likelihood(const LNNgram &ngram,
                       const Categories &wcs,
                       const std::vector<int> &intmap,
                       unsigned long int &num_words,
                       unsigned long int &num_oovs,
                       std::string word,
                       CategoryHistory &history,
-                      bool ngram_unk_states = true,
+                      bool root_unk_states = false,
                       int num_tokens = 100,
                       double beam = FLT_MAX);
 }

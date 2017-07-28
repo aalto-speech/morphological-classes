@@ -35,7 +35,7 @@ namespace CatPerplexity {
     propagate_history(const Ngram &ngram,
                       const CategoryHistory &history,
                       const vector<int> &intmap,
-                      bool ngram_unk_states,
+                      bool root_unk_states,
                       int num_tokens,
                       double beam)
     {
@@ -50,10 +50,10 @@ namespace CatPerplexity {
                 while (init_tokens.size() > 0  && tcount++ < num_tokens) {
                     HistoryToken tok = init_tokens.top();
                     init_tokens.pop();
-                    if (ngram_unk_states)
-                        tok.m_ngram_node = ngram.advance(tok.m_ngram_node, ngram.unk_symbol_idx);
-                    else
+                    if (root_unk_states)
                         tok.m_ngram_node = ngram.root_node;
+                    else
+                        tok.m_ngram_node = ngram.advance(tok.m_ngram_node, ngram.unk_symbol_idx);
                     propagated_tokens.push(tok);
                 }
             }
@@ -83,14 +83,14 @@ namespace CatPerplexity {
     }
 
     double
-    likelihood(const Ngram &ngram,
+    likelihood(const LNNgram &ngram,
                const Categories &wcs,
                const vector<int> &intmap,
                unsigned long int &num_words,
                unsigned long int &num_oovs,
                string word,
                CategoryHistory &history,
-               bool ngram_unk_states,
+               bool root_unk_states,
                int num_tokens,
                double beam)
     {
@@ -113,7 +113,7 @@ namespace CatPerplexity {
                 = propagate_history(ngram,
                                     history,
                                     intmap,
-                                    ngram_unk_states,
+                                    root_unk_states,
                                     num_tokens,
                                     beam);
 
@@ -126,9 +126,7 @@ namespace CatPerplexity {
             double total_ll = -FLT_MAX;
             for (auto tit = tokens.begin(); tit != tokens.end(); ++tit) {
                 double ll = tit->m_ll;
-                double ngram_ll = 0.0;
-                ngram.score(tit->m_ngram_node, ngram.sentence_end_symbol_idx, ngram_ll);
-                ll += ngram_ll * log(10.0);
+                ngram.score(tit->m_ngram_node, ngram.sentence_end_symbol_idx, ll);
                 total_ll = add_log_domain_probs(total_ll, ll);
             }
             return total_ll;
@@ -138,9 +136,7 @@ namespace CatPerplexity {
             for (auto tit = tokens.begin(); tit != tokens.end(); ++tit) {
                 for (auto cit = cmemit->second.begin(); cit != cmemit->second.end(); ++cit) {
                     double ll = tit->m_ll;
-                    double ngram_ll = 0.0;
-                    ngram.score(tit->m_ngram_node, intmap[cit->first], ngram_ll);
-                    ll += ngram_ll * log(10.0);
+                    ngram.score(tit->m_ngram_node, intmap[cit->first], ll);
                     ll += cit->second;
                     total_ll = add_log_domain_probs(total_ll, ll);
                 }

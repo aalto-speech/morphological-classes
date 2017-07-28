@@ -17,7 +17,6 @@ using namespace std;
 
 bool
 process_sent(string line,
-             const TrainingParameters &params,
              vector<string> &sent)
 {
     sent.clear();
@@ -27,39 +26,38 @@ process_sent(string line,
         if (word == "<s>" || word == "</s>") continue;
         sent.push_back(word);
     }
-    sent.push_back("</s>");
-    if (sent.size() > params.max_line_length) return false;
     if (sent.size() == 0) return false;
+    sent.push_back("</s>");
     return true;
 }
 
 
 double
 catppl(string corpusfname,
-       const Ngram &cngram,
+       const LNNgram &cngram,
        const vector<int> &indexmap,
        const Categories &categories,
-       const TrainingParameters &params,
        unsigned long int &num_vocab_words,
        unsigned long int &num_oov_words,
        unsigned long int &num_sents,
-       bool verbose)
+       bool root_unk_states=false,
+       int max_tokens=100,
+       double beam=20.0)
 {
     SimpleFileInput corpusf(corpusfname);
     double total_ll = 0.0;
     string line;
     while (corpusf.getline(line)) {
         vector<string> sent;
-        if (!process_sent(line, params, sent)) continue;
+        if (!process_sent(line, sent)) continue;
         CatPerplexity::CategoryHistory history(cngram);
         for (int i = 0; i < (int)sent.size(); i++)
             total_ll +=
                     CatPerplexity::likelihood(cngram, categories, indexmap,
                                               num_vocab_words, num_oov_words,
                                               sent[i], history,
-                                              true, params.num_tokens, params.prob_beam);
+                                              false, max_tokens, beam);
         num_sents++;
-        if (verbose && num_sents % 5000 == 0) cerr << num_sents << endl;
     }
 
     return total_ll;
@@ -70,11 +68,9 @@ int main(int argc, char* argv[]) {
 
     conf::Config config;
     config("usage: catppl [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT\n")
+    ('r', "unk-root-node", "", "", "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
     ('n', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
-    ('f', "num-final-tokens=INT", "arg", "10", "Upper limit for the number of tokens in the last position (DEFAULT: 10)")
-    ('l', "max-line-length=INT", "arg", "100", "Maximum sentence length as number of words (DEFAULT: 100)")
-    ('b', "prob-beam=FLOAT", "arg", "20.0", "Probability beam (default 20.0)")
-    ('v', "verbose", "", "", "Print some information")
+    ('b', "prob-beam=FLOAT", "arg", "20.0", "Probability beam (DEFAULT: 20.0)")
     ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
     if (config.arguments.size() != 4)
@@ -85,12 +81,9 @@ int main(int argc, char* argv[]) {
     string cmempfname = config.arguments[2];
     string infname = config.arguments[3];
 
-    TrainingParameters params;
-    params.num_tokens = config["num-tokens"].get_int();
-    params.num_final_tokens = config["num-final-tokens"].get_int();
-    params.max_line_length = config["max-line-length"].get_int();
-    params.prob_beam = config["prob-beam"].get_float();
-    bool verbose = config["verbose"].specified;
+    bool root_unk_states = config["unk-root-node"].specified;
+    int max_tokens = config["num-tokens"].get_int();
+    double prob_beam = config["prob-beam"].get_float();
 
     Categories wcs;
     cerr << "Reading category generation probs.." << endl;
@@ -99,9 +92,8 @@ int main(int argc, char* argv[]) {
     wcs.read_category_mem_probs(cmempfname);
 
     cerr << "Reading category n-gram model.." << endl;
-    Ngram cngram;
+    LNNgram cngram;
     cngram.read_arpa(cngramfname);
-    params.max_order = cngram.max_order;
 
     // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(wcs.num_categories());
@@ -116,9 +108,8 @@ int main(int argc, char* argv[]) {
     unsigned long int num_sents = 0;
     double total_ll = catppl(infname,
                              cngram, indexmap, wcs,
-                             params,
                              num_vocab_words, num_oov_words, num_sents,
-                             verbose);
+                             root_unk_states, max_tokens, prob_beam);
 
     cout << "Number of sentences processed: " << num_sents << endl;
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
