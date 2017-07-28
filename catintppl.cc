@@ -17,7 +17,6 @@ using namespace std;
 
 bool
 process_sent(string line,
-             const TrainingParameters &params,
              vector<string> &sent)
 {
     sent.clear();
@@ -27,39 +26,41 @@ process_sent(string line,
         if (word == "<s>" || word == "</s>") continue;
         sent.push_back(word);
     }
-    sent.push_back("</s>");
-    if (sent.size() > params.max_line_length) return false;
     if (sent.size() == 0) return false;
+    sent.push_back("</s>");
     return true;
 }
 
 
 double
-catppl(string corpusfname,
-       const Ngram &cngram,
-       const vector<int> &indexmap,
-       const Categories &categories,
-       unsigned long int &num_vocab_words,
-       unsigned long int &num_oov_words,
-       unsigned long int &num_sents,
-       int max_tokens=100,
-       double beam=20.0)
+catintppl(string corpusfname,
+          const LNNgram &lm,
+          const LNNgram &cngram,
+          const vector<int> &indexmap,
+          const Categories &categories,
+          double word_iw,
+          double cat_iw,
+          unsigned long int &num_vocab_words,
+          unsigned long int &num_oov_words,
+          unsigned long int &num_sents,
+          bool root_unk_states=false,
+          int max_tokens=100,
+          double beam=20.0)
 {
     SimpleFileInput corpusf(corpusfname);
     double total_ll = 0.0;
     string line;
     while (corpusf.getline(line)) {
         vector<string> sent;
-        if (!process_sent(line, params, sent)) continue;
+        if (!process_sent(line, sent)) continue;
         CatPerplexity::CategoryHistory history(cngram);
         for (int i = 0; i < (int)sent.size(); i++)
             total_ll +=
                     CatPerplexity::likelihood(cngram, categories, indexmap,
                                               num_vocab_words, num_oov_words,
                                               sent[i], history,
-                                              true, params.num_tokens, params.prob_beam);
+                                              false, max_tokens, beam);
         num_sents++;
-        if (verbose && num_sents % 5000 == 0) cerr << num_sents << endl;
     }
 
     return total_ll;
@@ -69,8 +70,9 @@ catppl(string corpusfname,
 int main(int argc, char* argv[]) {
 
     conf::Config config;
-    config("usage: catppl [OPTION...] ARPAFILE CAT_ARPA CGENPROBS CMEMPROBS INPUT\n")
+    config("usage: catintppl [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT\n")
     ('i', "weight=FLOAT", "arg", "0.5", "Interpolation weight [0.0,1.0] for the word ARPA model")
+    ('r', "unk-root-node", "", "", "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
     ('n', "num-tokens=INT", "arg", "100", "Upper limit for the number of tokens in each position (DEFAULT: 100)")
     ('b', "prob-beam=FLOAT", "arg", "20.0", "Probability beam (DEFAULT: 20.0)")
     ('h', "help", "", "", "display help");
@@ -84,17 +86,21 @@ int main(int argc, char* argv[]) {
     string cmempfname = config.arguments[3];
     string infname = config.arguments[4];
 
+    bool root_unk_states = config["unk-root-node"].specified;
     int max_tokens = config["num-tokens"].get_int();
     double prob_beam = config["prob-beam"].get_float();
 
     double iw = config["weight"].get_float();
     if (iw < 0.0 || iw > 1.0) {
         cerr << "Invalid interpolation weight: " << iw << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     cerr << "Interpolation weight: " << iw << endl;
     double word_iw = log(iw);
-    double class_iw = log(1.0-iw);
+    double cat_iw = log(1.0-iw);
+
+    LNNgram lm;
+    lm.read_arpa(arpafname);
 
     Categories wcs;
     cerr << "Reading category generation probs.." << endl;
@@ -103,7 +109,7 @@ int main(int argc, char* argv[]) {
     wcs.read_category_mem_probs(cmempfname);
 
     cerr << "Reading category n-gram model.." << endl;
-    Ngram cngram;
+    LNNgram cngram;
     cngram.read_arpa(cngramfname);
 
     // The class indexes are stored as strings in the n-gram class
@@ -117,10 +123,12 @@ int main(int argc, char* argv[]) {
     unsigned long int num_vocab_words = 0;
     unsigned long int num_oov_words = 0;
     unsigned long int num_sents = 0;
-    double total_ll = catppl(infname,
-                             cngram, indexmap, wcs,
-                             num_vocab_words, num_oov_words, num_sents,
-                             max_tokens, prob_beam);
+    double total_ll = catintppl(infname,
+                                lm,
+                                cngram, indexmap, wcs,
+                                word_iw, cat_iw,
+                                num_vocab_words, num_oov_words, num_sents,
+                                root_unk_states, max_tokens, prob_beam);
 
     cout << "Number of sentences processed: " << num_sents << endl;
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
