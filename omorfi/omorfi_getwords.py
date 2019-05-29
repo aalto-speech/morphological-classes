@@ -1,28 +1,37 @@
-#!/usr/bin/python
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
+import argparse
+import codecs
 import sys
 import locale
 
 # locale -a
-locale.setlocale(locale.LC_ALL, 'en_US.UTF8')
+locale.setlocale(locale.LC_ALL, 'fi_FI.utf8')
 
 
-vocab = set()
-if (len(sys.argv) > 1):
-    vocabf = open(sys.argv[1])
-    for line in vocabf:
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Prints a vocabulary of capitalized words for Omorfi analysis")
+    parser.add_argument("-v", "--vocabulary",
+                        help="Utf-8 encoded vocabulary file. \
+                              Only the words present in the vocabulary file and the corpus are printed")
+    args = parser.parse_args()
+
+    vocab = set()
+    if args.vocabulary:
+        vocabf = codecs.open(args.vocabulary, encoding="utf-8")
+        for line in vocabf:
+            line = line.strip()
+            vocab.add(line.lower())
+
+    read_words = set()
+    for line in sys.stdin:
         line = line.strip()
-        vocab.add(line)
+        words = line.split()
+        for word in words:
+            if len(vocab) and word not in vocab: continue
+            read_words.add(word.capitalize())
 
-
-read_words = set()
-for line in sys.stdin:
-    line = line.strip()
-    words = line.split()
-    for word in words:
-        if len(vocab) and word not in vocab: continue
-        read_words.add(word.capitalize())
-
-for word in read_words:
-    print word
-
+    for word in sorted(read_words):
+        print(word)
