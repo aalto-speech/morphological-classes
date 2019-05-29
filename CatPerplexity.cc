@@ -9,6 +9,23 @@ using namespace std;
 
 namespace CatPerplexity {
 
+    bool process_sent(string line, vector<string> &sent) {
+        sent.clear();
+        stringstream ss(line);
+        string word;
+        while (ss >> word) {
+            if (word == "<s>" || word == "</s>") continue;
+            sent.push_back(word);
+            if (ss.fail()) return false;
+        }
+        if (sent.size() == 0)
+            return false;
+        else {
+            sent.push_back("</s>");
+            return true;
+        }
+    }
+
     CategoryHistory::CategoryHistory(const Ngram &ngram) {
         m_history_length = ngram.max_order - 1;
     }

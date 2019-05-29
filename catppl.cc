@@ -15,23 +15,6 @@
 using namespace std;
 
 
-bool
-process_sent(string line,
-             vector<string> &sent)
-{
-    sent.clear();
-    stringstream ss(line);
-    string word;
-    while (ss >> word) {
-        if (word == "<s>" || word == "</s>") continue;
-        sent.push_back(word);
-    }
-    if (sent.size() == 0) return false;
-    sent.push_back("</s>");
-    return true;
-}
-
-
 double
 catppl(string corpusfname,
        const LNNgram &cngram,
@@ -49,13 +32,13 @@ catppl(string corpusfname,
     string line;
     while (corpusf.getline(line)) {
         vector<string> sent;
-        if (!process_sent(line, sent)) continue;
+        if (!CatPerplexity::process_sent(line, sent)) continue;
         CatPerplexity::CategoryHistory history(cngram);
-        for (int i = 0; i < (int)sent.size(); i++)
+        for (auto wit = sent.begin(); wit != sent.end(); ++wit)
             total_ll +=
                     CatPerplexity::likelihood(cngram, categories, indexmap,
                                               num_vocab_words, num_oov_words,
-                                              sent[i], history,
+                                              *wit, history,
                                               false, max_tokens, beam);
         num_sents++;
     }

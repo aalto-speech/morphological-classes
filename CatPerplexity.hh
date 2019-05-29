@@ -12,6 +12,8 @@
 
 namespace CatPerplexity {
 
+    bool process_sent(std::string line, std::vector<std::string> &sent);
+
     class CategoryHistory {
     public:
         CategoryHistory(const Ngram &ngram);
