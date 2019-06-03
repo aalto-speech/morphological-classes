@@ -5,14 +5,14 @@ import codecs
 import locale
 import re
 import sys
+from collections import defaultdict
 
-excluded_fields = ["BLACKLIST", "COMPOUND_WORD_ID"]
+# excluded_fields = ["BLACKLIST", "COMPOUND_WORD_ID"]
+excluded_fields = ["BLACKLIST"]
 
 
-def parse_analyses(fname, encoding="utf8"):
-    analysisFile = codecs.open(fname, encoding=encoding)
-    analyses = dict()
-
+def read_analyses_file(analysisFname, analyses, encoding="utf8"):
+    analysisFile = codecs.open(analysisFname, encoding=encoding)
     for line in analysisFile:
         line = line.strip()
         if not len(line): continue
@@ -35,71 +35,47 @@ def parse_analyses(fname, encoding="utf8"):
     return analyses
 
 
-def analysis_counts(analyses):
-    words_w_analyses = set()
-    words_wo_analyses = set()
-    words_w_uc_analysis = set()
-    words_w_lc_analysis = set()
-
-    for word, word_analyses in analyses.items():
-        if len(word_analyses):
-            words_w_analyses.add(word)
-
-            uc_analysis_found = False
-            lc_analysis_found = False
-            for word_analysis in word_analyses:
-                if "UPOS=PROPN" in word_analysis:
-                    uc_analysis_found = True
-                else:
-                    lc_analysis_found = True
-            if uc_analysis_found:
-                words_w_uc_analysis.add(word)
-            if lc_analysis_found:
-                words_w_lc_analysis.add(word)
-        else:
-            words_wo_analyses.add(word)
-
-    num_uc = len(words_w_uc_analysis)
-    num_lc = len(words_w_lc_analysis)
-    num_both = len(words_w_uc_analysis & words_w_lc_analysis)
-
-    return len(words_w_analyses), num_uc, num_lc, num_both
-
-
 def get_num_analyses_per_word(analyses):
-    analysis_counts = dict()
-    for word, word_analyses in analyses.items():
-        if not word_analyses: continue
-        word_analysis_count = len(word_analyses)
-        if not word_analysis_count in analysis_counts:
-            analysis_counts[word_analysis_count] = 0
-        analysis_counts[word_analysis_count] += 1
-
+    analysis_counts = defaultdict(int)
+    word_analysis_counts = [len(x) for x in analyses.values() if x]
+    for count in word_analysis_counts:
+        analysis_counts[count] += 1
     return analysis_counts
 
 
 def get_analysis_classes(analyses):
-    analysis_types = dict()
-    for word, word_analyses in analyses.items():
+    analysis_types = defaultdict(int)
+    for word_analyses in analyses.values():
         if not word_analyses: continue
-        for analysis in word_analyses:
-            if not analysis in analysis_types:
-                analysis_types[analysis] = 0
-            analysis_types[analysis] += 1
-
+        for word_analysis in word_analyses:
+            analysis_types[word_analysis] += 1
     return analysis_types
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Prints statistics about the Omorfi analyses")
-    parser.add_argument("ANALYSES", help="Output from the Omorfi analyzer.")
+    parser.add_argument("ANALYSES", help="Output from the Omorfi analyzer without the -X switch.")
+    parser.add_argument("LARGE_COVERAGE_ANALYSES", help="Output from the Omorfi analyzer with the -X switch.")
     args = parser.parse_args()
 
     locale.setlocale(locale.LC_ALL, 'en_US.utf8')
-    analyses = parse_analyses(args.ANALYSES)
+    analyses = dict()
+    read_analyses_file(args.ANALYSES, analyses)
+#    large_coverage_analyses = dict()
+#    read_analyses_file(args.LARGE_COVERAGE_ANALYSES, large_coverage_analyses)
+    large_coverage_analyses = analyses
 
-    num_w_analyses, num_uc, num_lc, num_both = analysis_counts(analyses)
+    if len(analyses) != len(large_coverage_analyses):
+        raise Exception("number of analyses don't match, (%i and %i)" % (len(analyses), len(large_coverage_analyses)))
+
+    num_w_analyses = len([x for x in analyses.values() if len(x)])
+    case_info = dict()
+    for word, word_analyses in analyses.items():
+        case_info[word] = list(map(lambda x: "UPOS=PROPN" in x, list(word_analyses)))
+    num_uc = len([x for x in case_info.values() if x.count(True) > 0])
+    num_lc = len([x for x in case_info.values() if x.count(False) > 0])
+    num_both = len([x for x in case_info.values() if x.count(False) > 0 and x.count(True) > 0])
 
     print("Number of words: %i" % len(analyses), file=sys.stderr)
     print("Words with analysis: %i" % num_w_analyses, file=sys.stderr)
