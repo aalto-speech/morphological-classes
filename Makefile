@@ -3,16 +3,37 @@ cxxflags = -O3 -DNDEBUG -std=gnu++0x -Wall -Wno-unused-function
 
 ##################################################
 
-progs = init catstats ngramppl classppl classintppl catppl catintppl exchange merge split
-progs_srcs = $(progs:=.cc)
-progs_objs = $(progs:=.o)
-srcs = conf.cc io.cc Categories.cc Ngram.cc CatPerplexity.cc Exchanging.cc Merging.cc Splitting.cc
+progs = init\
+	catstats\
+	ngramppl\
+	classppl\
+	classintppl\
+	catppl\
+	catintppl\
+	exchange\
+	merge\
+	split
+progs_srcs = $(addsuffix .cc,$(addprefix src/,$(progs)))
+progs_objs = $(addsuffix .o,$(addprefix src/,$(progs)))
+
+srcs = util/conf.cc\
+	util/io.cc\
+	src/Categories.cc\
+	src/Ngram.cc\
+	src/CatPerplexity.cc\
+	src/Exchanging.cc\
+	src/Merging.cc\
+	src/Splitting.cc
 objs = $(srcs:.cc=.o)
 
 test_progs = runtests
 test_progs_srcs = $(test_progs:=.cc)
 test_progs_objs = $(test_progs:=.o)
-test_srcs = ppltest.cc categorytest.cc exchangetest.cc mergetest.cc splittest.cc
+test_srcs = test/ppltest.cc\
+	test/categorytest.cc\
+	test/exchangetest.cc\
+	test/mergetest.cc\
+	test/splittest.cc
 test_objs = $(test_srcs:.cc=.o)
 
 ##################################################
@@ -22,24 +43,25 @@ test_objs = $(test_srcs:.cc=.o)
 all: $(progs) $(test_progs)
 
 %.o: %.cc
-	$(CXX) -c $(cxxflags) $< -o $@
+	$(CXX) -c $(cxxflags) $< -o $@ -I./util
 
-$(progs): %: %.o $(objs)
-	$(CXX) $(cxxflags) $< -o $@ $(objs) -lz -pthread
+$(progs): $(progs_objs) $(objs)
+	$(CXX) $(cxxflags) -o $@ src/$@.cc $(objs) -lz -pthread -I./util -I./src
 
 %: %.o $(objs)
 	$(CXX) $(cxxflags) $< -o $@ $(objs)
 
-$(test_progs): %: %.o $(objs) $(test_objs)
-	$(CXX) $(cxxflags) $< -o $@ $(objs) $(test_objs) -lboost_unit_test_framework -lz -pthread
+$(test_progs): $(test_objs)
+	$(CXX) $(cxxflags) -o $@ test/$@.cc $(objs) $(test_objs)\
+	 -lboost_unit_test_framework -lz -pthread -I./util -I./src
 
-test_objs: $(test_srcs)
-
-test_progs: $(objs) $(test_objs)
+$(test_objs): %.o: %.cc $(objs)
+	$(CXX) -c $(cxxflags) $< -o $@ -I./util -I./src
 
 .PHONY: clean
 clean:
-	rm -f $(objs) *.o $(progs) $(progs_objs) .depend *~ *.exe
+	rm -f $(objs) $(progs_objs) $(test_objs)\
+	 $(progs) $(test_progs)  .depend *~ *.exe
 
 dep:
 	$(CXX) -MM $(cxxflags) $(DEPFLAGS) $(all_srcs) > dep
