@@ -6,11 +6,10 @@ import locale
 import re
 import sys
 
-
 excluded_fields = ["BLACKLIST", "COMPOUND_WORD_ID"]
 
-def parse_analyses(fname, encoding="utf8"):
 
+def parse_analyses(fname, encoding="utf8"):
     analysisFile = codecs.open(fname, encoding=encoding)
     analyses = dict()
 
@@ -37,7 +36,6 @@ def parse_analyses(fname, encoding="utf8"):
 
 
 def analysis_counts(analyses):
-
     words_w_analyses = set()
     words_wo_analyses = set()
     words_w_uc_analysis = set()
@@ -111,8 +109,8 @@ if __name__ == "__main__":
 
     print("", file=sys.stderr)
     counts = get_num_analyses_per_word(analyses)
-    for analysis_count, word_count in counts.items():
-        print("Words with %i analyses: %i" % (analysis_count, word_count), file=sys.stderr)
+    for analysis_count in sorted(counts):
+        print("Words with %i analyses: %i" % (analysis_count, counts[analysis_count]), file=sys.stderr)
 
     print("", file=sys.stderr)
     analysis_types = get_analysis_classes(analyses)
