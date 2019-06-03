@@ -15,10 +15,10 @@ classppl
 classintppl
 catppl
 catintppl
-catintppl2
 runtests
 .nfs*
 *~
 *.exe
 zconf.h
 zlib.h
+Makefile.local
