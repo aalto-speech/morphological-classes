@@ -9,16 +9,17 @@
 
 using namespace std;
 
-
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
 
     conf::Config config;
     config("usage: ngramppl [OPTION...] ARPAFILE INPUT\n")
-    ('r', "use-root-node", "", "", "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
-    ('w', "num-words=INT", "arg", "", "Number of words for computing word-normalized perplexity")
-    ('h', "help", "", "", "display help");
+            ('r', "use-root-node", "", "",
+                    "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
+            ('w', "num-words=INT", "arg", "", "Number of words for computing word-normalized perplexity")
+            ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
-    if (config.arguments.size() != 2) config.print_help(stderr, 1);
+    if (config.arguments.size()!=2) config.print_help(stderr, 1);
 
     string arpafname = config.arguments[0];
     string infname = config.arguments[1];
@@ -39,26 +40,25 @@ int main(int argc, char* argv[]) {
     while (infile.getline(line)) {
 
         line = str::cleaned(line);
-        if (line.length() == 0) continue;
-        if (++linei % 10000 == 0) cerr << "sentence " << linei << endl;
+        if (line.length()==0) continue;
+        if (++linei%10000==0) cerr << "sentence " << linei << endl;
 
         stringstream ss(line);
         vector<string> words;
         string word;
         while (ss >> word) {
-            if (word == "<s>") continue;
-            if (word == "</s>") continue;
+            if (word=="<s>") continue;
+            if (word=="</s>") continue;
             words.push_back(word);
         }
         words.push_back(lm.sentence_end_symbol);
 
         double sent_ll = 0.0;
         int node_id = lm.sentence_start_node;
-        for (auto wit=words.begin(); wit != words.end(); ++wit) {
+        for (auto wit = words.begin(); wit!=words.end(); ++wit) {
             double score = 0.0;
-            if (lm.vocabulary_lookup.find(*wit) != lm.vocabulary_lookup.end()
-                && lm.vocabulary_lookup.at(*wit) != lm.unk_symbol_idx)
-            {
+            if (lm.vocabulary_lookup.find(*wit)!=lm.vocabulary_lookup.end()
+                    && lm.vocabulary_lookup.at(*wit)!=lm.unk_symbol_idx) {
                 int sym = lm.vocabulary_lookup[*wit];
                 node_id = lm.score(node_id, sym, score);
                 sent_ll += score;
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
 
     if (config["num-words"].specified)
         num_words = config["num-words"].get_int();
-    double ppl = exp(-1.0/double(num_words) * total_ll);
+    double ppl = exp(-1.0/double(num_words)*total_ll);
     cerr << "Perplexity: " << ppl << endl;
 
     exit(0);

@@ -10,58 +10,51 @@
 #include "zlib.h"
 #endif
 
-
-class FileInputType
-{
+class FileInputType {
 public:
-    virtual bool getline(std::string &line) = 0;
+    virtual bool getline(std::string& line) = 0;
     virtual ~FileInputType() { };
 };
 
-class IFStreamInput : public FileInputType
-{
+class IFStreamInput : public FileInputType {
 public:
     IFStreamInput(std::string filename) { ifstr.open(filename.c_str(), std::ios_base::in); };
     ~IFStreamInput() { ifstr.close(); }
-    bool getline(std::string &line) { return (bool)std::getline(ifstr, line); }
+    bool getline(std::string& line) { return (bool) std::getline(ifstr, line); }
 private:
     std::ifstream ifstr;
 };
 
 #ifndef NO_ZLIB
-class GZipFileInput : public FileInputType
-{
+class GZipFileInput : public FileInputType {
 public:
     GZipFileInput(std::string filename);
     ~GZipFileInput();
-    bool getline(std::string &line);
+    bool getline(std::string& line);
 private:
     gzFile gzf;
 };
 #endif
 
-class SimpleFileInput
-{
+class SimpleFileInput {
 public:
     SimpleFileInput(std::string filename);
     ~SimpleFileInput();
-    bool getline(std::string &line) { return infs->getline(line); }
+    bool getline(std::string& line) { return infs->getline(line); }
 private:
-    bool ends_with(std::string const &filename,
-                   std::string const &suffix)
+    bool ends_with(std::string const& filename,
+            std::string const& suffix)
     {
-        if (filename.length() < suffix.length()) return false;
-        return (0 == filename.compare(filename.length()-suffix.length(), suffix.length(), suffix));
+        if (filename.length()<suffix.length()) return false;
+        return (0==filename.compare(filename.length()-suffix.length(), suffix.length(), suffix));
     }
-    FileInputType *infs;
+    FileInputType* infs;
 };
 
-
-class FileOutputType
-{
+class FileOutputType {
 public:
     virtual void close() = 0;
-    virtual FileOutputType& operator<<(const std::string &str) = 0;
+    virtual FileOutputType& operator<<(const std::string& str) = 0;
     virtual FileOutputType& operator<<(int) = 0;
     virtual FileOutputType& operator<<(long int) = 0;
     virtual FileOutputType& operator<<(unsigned int) = 0;
@@ -71,14 +64,12 @@ public:
     virtual ~FileOutputType() { };
 };
 
-
-class OFStream: public FileOutputType
-{
+class OFStream : public FileOutputType {
 public:
     OFStream(std::string filename);
     ~OFStream();
     void close();
-    OFStream& operator<<(const std::string &str);
+    OFStream& operator<<(const std::string& str);
     OFStream& operator<<(int);
     OFStream& operator<<(long int);
     OFStream& operator<<(unsigned int);
@@ -89,15 +80,13 @@ private:
     std::ofstream ofstr;
 };
 
-
 #ifndef NO_ZLIB
-class GZipFileOutput: public FileOutputType
-{
+class GZipFileOutput : public FileOutputType {
 public:
     GZipFileOutput(std::string filename);
     ~GZipFileOutput();
     void close();
-    GZipFileOutput& operator<<(const std::string &str);
+    GZipFileOutput& operator<<(const std::string& str);
     GZipFileOutput& operator<<(int);
     GZipFileOutput& operator<<(long int);
     GZipFileOutput& operator<<(unsigned int);
@@ -110,14 +99,12 @@ private:
 };
 #endif
 
-
-class SimpleFileOutput
-{
+class SimpleFileOutput {
 public:
     SimpleFileOutput(std::string filename);
     ~SimpleFileOutput();
     void close();
-    SimpleFileOutput& operator<<(const std::string &str);
+    SimpleFileOutput& operator<<(const std::string& str);
     SimpleFileOutput& operator<<(int);
     SimpleFileOutput& operator<<(long int);
     SimpleFileOutput& operator<<(unsigned int);
@@ -125,14 +112,13 @@ public:
     SimpleFileOutput& operator<<(float);
     SimpleFileOutput& operator<<(double);
 private:
-    bool ends_with(std::string const &filename,
-                   std::string const &suffix)
+    bool ends_with(std::string const& filename,
+            std::string const& suffix)
     {
-        if (filename.length() < suffix.length()) return false;
-        return (0 == filename.compare(filename.length()-suffix.length(), suffix.length(), suffix));
+        if (filename.length()<suffix.length()) return false;
+        return (0==filename.compare(filename.length()-suffix.length(), suffix.length(), suffix));
     }
-    FileOutputType *outfs;
+    FileOutputType* outfs;
 };
-
 
 #endif

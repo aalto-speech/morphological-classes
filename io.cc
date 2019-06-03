@@ -6,11 +6,9 @@
 
 using namespace std;
 
-
 SimpleFileInput::SimpleFileInput(string filename)
 {
-    if (ends_with(filename, ".gz"))
-    {
+    if (ends_with(filename, ".gz")) {
 #ifndef NO_ZLIB
         infs = new GZipFileInput(filename);
 #else
@@ -39,11 +37,11 @@ GZipFileInput::~GZipFileInput()
 }
 
 bool
-GZipFileInput::getline(string &line)
+GZipFileInput::getline(string& line)
 {
     char buffer[GZIP_BUFFER_SIZE];
-    char *res = gzgets(gzf, buffer, GZIP_BUFFER_SIZE-1);
-    if (res != NULL) {
+    char* res = gzgets(gzf, buffer, GZIP_BUFFER_SIZE-1);
+    if (res!=NULL) {
         strtok(buffer, "\r\n");
         line.assign(buffer);
         return true;
@@ -52,11 +50,9 @@ GZipFileInput::getline(string &line)
 }
 #endif
 
-
 SimpleFileOutput::SimpleFileOutput(string filename)
 {
-    if (ends_with(filename, ".gz"))
-    {
+    if (ends_with(filename, ".gz")) {
 #ifndef NO_ZLIB
         outfs = new GZipFileOutput(filename);
 #else
@@ -83,9 +79,8 @@ SimpleFileOutput::close()
     }
 }
 
-
 SimpleFileOutput&
-SimpleFileOutput::operator<<(const std::string &str)
+SimpleFileOutput::operator<<(const std::string& str)
 {
     *outfs << str;
     return *this;
@@ -104,7 +99,6 @@ SimpleFileOutput::operator<<(long int lintr)
     *outfs << lintr;
     return *this;
 }
-
 
 SimpleFileOutput&
 SimpleFileOutput::operator<<(unsigned int uintr)
@@ -134,7 +128,6 @@ SimpleFileOutput::operator<<(double dfltn)
     return *this;
 }
 
-
 OFStream::OFStream(string filename)
 {
     ofstr.open(filename.c_str(), ios_base::out);
@@ -152,7 +145,7 @@ OFStream::close()
 }
 
 OFStream&
-OFStream::operator<<(const std::string &str)
+OFStream::operator<<(const std::string& str)
 {
     ofstr << str;
     return *this;
@@ -171,7 +164,6 @@ OFStream::operator<<(long int lintr)
     ofstr << lintr;
     return *this;
 }
-
 
 OFStream&
 OFStream::operator<<(unsigned int uintr)
@@ -201,7 +193,6 @@ OFStream::operator<<(double dfltn)
     return *this;
 }
 
-
 #ifndef NO_ZLIB
 GZipFileOutput::GZipFileOutput(string filename)
 {
@@ -218,14 +209,14 @@ void
 GZipFileOutput::close()
 {
     if (file_open) {
-         gzclose(gzf);
-         gzf = NULL;
+        gzclose(gzf);
+        gzf = NULL;
     }
     file_open = false;
 }
 
 GZipFileOutput&
-GZipFileOutput::operator<<(const std::string &str)
+GZipFileOutput::operator<<(const std::string& str)
 {
     gzprintf(gzf, "%s", str.c_str());
     return *this;
@@ -244,7 +235,6 @@ GZipFileOutput::operator<<(long int lintr)
     gzprintf(gzf, "%ld", lintr);
     return *this;
 }
-
 
 GZipFileOutput&
 GZipFileOutput::operator<<(unsigned int uintr)

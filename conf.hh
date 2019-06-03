@@ -50,7 +50,8 @@ public:
      * \param choice_name = Choice name string
      * \param value = Interpreted value
      */
-    Choice& operator()(std::string choice_name, int value) {
+    Choice& operator()(std::string choice_name, int value)
+    {
         choice_map.insert(ChoiceMapType::value_type(choice_name, value));
         return *this;
     }
@@ -60,9 +61,10 @@ public:
      * \param result = Where the result value is stored to
      * \returns true if choice was found and result set, false otherwise.
      */
-    bool parse(std::string choice, int &result) {
+    bool parse(std::string choice, int& result)
+    {
         ChoiceMapType::iterator it = choice_map.find(choice);
-        if (it == choice_map.end())
+        if (it==choice_map.end())
             return false;
         result = (*it).second;
         return true;
@@ -74,24 +76,25 @@ private:
 
 /** An option */
 struct Option {
-    Option() : short_name(0), required(false), needs_argument(false),
-        specified(false) { }
-    unsigned char short_name; //!< The short name used for command line
-    std::string long_name; //!< The long name used also in configuration files
-    std::string value; //!< The value parsed from command line or file
-    bool required; //!< Is the option required
-    bool needs_argument; //!< Does the option need an argument
-    bool specified; //!< Has the user specified the option
-    std::string help; //!< The help string of the option
+  Option()
+          :short_name(0), required(false), needs_argument(false),
+           specified(false) { }
+  unsigned char short_name; //!< The short name used for command line
+  std::string long_name; //!< The long name used also in configuration files
+  std::string value; //!< The value parsed from command line or file
+  bool required; //!< Is the option required
+  bool needs_argument; //!< Does the option need an argument
+  bool specified; //!< Has the user specified the option
+  std::string help; //!< The help string of the option
 
-    /** The name string of the option: "-h --help", for example. */
-    std::string name;
+  /** The name string of the option: "-h --help", for example. */
+  std::string name;
 
-    int get_int() const; //!< Return the integer value of the option
-    float get_float() const; //!< Return the float value of the option
-    double get_double() const; //!< Return the double value of the option
-    const std::string &get_str() const; //!< Return the string of the option
-    const char *get_c_str() const; //!< Return the string of the option
+  int get_int() const; //!< Return the integer value of the option
+  float get_float() const; //!< Return the float value of the option
+  double get_double() const; //!< Return the double value of the option
+  const std::string& get_str() const; //!< Return the string of the option
+  const char* get_c_str() const; //!< Return the string of the option
 };
 
 /** A class for defining, storing and querying options.
@@ -117,23 +120,23 @@ public:
      * \param help = the help string of the option
      */
     Config& operator()(unsigned char short_name,
-                       std::string long_name,
-                       std::string type = "",
-                       std::string default_value = "",
-                       std::string help = "");
+            std::string long_name,
+            std::string type = "",
+            std::string default_value = "",
+            std::string help = "");
 
     /** Parse command line arguments.
      * \param argc = the number of arguments
      * \param argv = the arguments
      * \param override = should we override options specified already
      */
-    void parse(int argc, char *argv[], bool override = true);
+    void parse(int argc, char* argv[], bool override = true);
 
     /** Default parsing with "help" option.
      * \param argc = the number of arguments
      * \param argv = the arguments
      */
-    void default_parse(int argc, char *argv[]);
+    void default_parse(int argc, char* argv[]);
 
     /** Read a config file.
      *
@@ -148,13 +151,13 @@ public:
      * \param file = file to read from
      * \param override = should we override options specified already
      */
-    void read(FILE *file, bool override = false);
+    void read(FILE* file, bool override = false);
 
     /** Check if all required options are specified. */
     void check_required() const;
 
     /** Prints usage information. */
-    void print_help(FILE *file = stdout, int exit_value = 0) const;
+    void print_help(FILE* file = stdout, int exit_value = 0) const;
 
     /** Returns the usage information */
     std::string help_string() const;
@@ -180,7 +183,7 @@ public:
 
 private:
     /** The actual parsing of command line (or config file) options */
-    void parse_aux(std::deque<std::string> &argument_queue, bool override);
+    void parse_aux(std::deque<std::string>& argument_queue, bool override);
 };
 
 };

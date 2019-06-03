@@ -10,49 +10,52 @@
 #include "io.hh"
 
 typedef float flt_type;
-typedef std::map<int,std::map<int,std::map<int,flt_type> > > ngram_t;
+typedef std::map<int, std::map<int, std::map<int, flt_type> > >
+ngram_t;
 
 #define MIN_LOG_PROB -1000.0
 #define LP_PRUNE_LIMIT -50.0
 
 // Return log(X+Y) where a=log(X) b=log(Y)
-static flt_type add_log_domain_probs(flt_type a, flt_type b) {
-    flt_type delta = a - b;
-    if (delta > 0) {
-      b = a;
-      delta = -delta;
+static flt_type add_log_domain_probs(flt_type a, flt_type b)
+{
+    flt_type delta = a-b;
+    if (delta>0) {
+        b = a;
+        delta = -delta;
     }
-    return b + log1p(exp(delta));
+    return b+log1p(exp(delta));
 }
 
 // Return log(X-Y) where a=log(X) b=log(Y)
-static flt_type sub_log_domain_probs(flt_type a, flt_type b) {
-    flt_type delta = b - a;
-    if (delta > 0) {
-      fprintf(stderr, "invalid call to sub_log_domain_probs, a should be bigger than b (a=%f,b=%f)\n",a,b);
-      exit(1);
+static flt_type sub_log_domain_probs(flt_type a, flt_type b)
+{
+    flt_type delta = b-a;
+    if (delta>0) {
+        fprintf(stderr, "invalid call to sub_log_domain_probs, a should be bigger than b (a=%f,b=%f)\n", a, b);
+        exit(1);
     }
-    return a + log1p(-exp(delta));
+    return a+log1p(-exp(delta));
 }
 
-static int str2int(std::string str) {
+static int str2int(std::string str)
+{
     int val;
     std::istringstream numstr(str);
     numstr >> val;
     return val;
 }
 
-
 static std::string int2str(int a)
 {
     std::ostringstream temp;
-    temp<<a;
+    temp << a;
     return temp.str();
 }
 
 static int
 read_class_memberships(std::string fname,
-                       std::map<std::string, std::pair<int, flt_type> > &class_memberships)
+        std::map<std::string, std::pair<int, flt_type>>& class_memberships)
 {
     SimpleFileInput wcf(fname);
 

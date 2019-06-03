@@ -11,10 +11,9 @@
 
 using namespace std;
 
-
 // Category test 1
 BOOST_AUTO_TEST_CASE(CategoryTest1)
-{
-    Categories wcs;
-}
+        {
+                Categories wcs;
+        }
 

@@ -24,8 +24,8 @@
 namespace str {
 
 /** Convert anything to std::string using std::ostringstream. */
-template <typename T>
-inline std::string str(const T &t)
+template<typename T>
+inline std::string str(const T& t)
 {
     std::ostringstream o;
     o << t;
@@ -37,11 +37,11 @@ inline std::string str(const T &t)
  * \param fmt = the format string as in standard printf()
  * \return the formatted string
  */
-inline std::string fmt(size_t size, const char *fmt, ...)
+inline std::string fmt(size_t size, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    char *buf = new char[size];
+    char* buf = new char[size];
     vsnprintf(buf, size, fmt, ap);
     va_end(ap);
 
@@ -54,20 +54,20 @@ inline std::string fmt(size_t size, const char *fmt, ...)
  * \param str = the string to be cleaned
  * \param chars = the characters to clean from the string
  */
-inline void clean(std::string &str, const char *chars = " \n\t")
+inline void clean(std::string& str, const char* chars = " \n\t")
 {
     int i;
 
     // Clean trailing chars
     //
-    for (i = str.length(); i > 0; i--)
-        if (!strchr(chars, str[i - 1]))
+    for (i = str.length(); i>0; i--)
+        if (!strchr(chars, str[i-1]))
             break;
     str.erase(i);
 
     // Clean leading chars
     //
-    for (i = 0; i < (int)str.length(); i++)
+    for (i = 0; i<(int) str.length(); i++)
         if (!strchr(chars, str[i]))
             break;
     str.erase(0, i);
@@ -83,19 +83,19 @@ inline void clean(std::string &str, const char *chars = " \n\t")
  * the return value (but is still removed)
  */
 
-inline std::string pop(std::string &str, const std::string &chars,
-                       bool include = false)
+inline std::string pop(std::string& str, const std::string& chars,
+        bool include = false)
 {
     std::string ret;
     std::string::size_type pos = str.find_first_of(chars);
-    if (pos == str.npos)
+    if (pos==str.npos)
         ret.swap(str);
     else {
         if (include)
-            ret = str.substr(0, pos + 1);
+            ret = str.substr(0, pos+1);
         else
             ret = str.substr(0, pos);
-        str.erase(0, pos + 1);
+        str.erase(0, pos+1);
     }
     return ret;
 }
@@ -105,8 +105,8 @@ inline std::string pop(std::string &str, const std::string &chars,
  * \param chars = the characters to clean from the string
  * \return the cleaned string
  */
-inline std::string cleaned(const std::string &str,
-                           const char *chars = " \n\t")
+inline std::string cleaned(const std::string& str,
+        const char* chars = " \n\t")
 {
     std::string ret = str;
     clean(ret, chars);
@@ -117,12 +117,12 @@ inline std::string cleaned(const std::string &str,
  * \param str = the string to be modified
  * \param chars = the characters to be removed
  */
-inline void remove(std::string &str, const char *chars)
+inline void remove(std::string& str, const char* chars)
 {
     size_t src = 0;
     size_t tgt = 0;
     while (1) {
-        if (src == str.length())
+        if (src==str.length())
             break;
         str[tgt] = str[src];
         if (!strchr(chars, str[src]))
@@ -144,8 +144,8 @@ inline void remove(std::string &str, const char *chars)
  * \return fields the vector containing the resulting fields
  */
 inline std::vector<std::string>
-split(const std::string &str, const char *delims, bool group,
-      unsigned int num_fields = 0)
+split(const std::string& str, const char* delims, bool group,
+        unsigned int num_fields = 0)
 {
     std::vector<std::string> fields;
     size_t begin = 0;
@@ -153,10 +153,10 @@ split(const std::string &str, const char *delims, bool group,
 
     fields.clear();
     bool delim_pending = false;
-    while (begin < str.length()) {
+    while (begin<str.length()) {
         // If 'fields' fields was requested and, this is the last field,
         // include the rest.
-        if (num_fields > 0 && fields.size() == num_fields - 1) {
+        if (num_fields>0 && fields.size()==num_fields-1) {
             delim_pending = false;
             fields.push_back(str.substr(begin));
             break;
@@ -164,19 +164,19 @@ split(const std::string &str, const char *delims, bool group,
 
         // Find the string before the next delim
         delim_pending = false;
-        while (end < str.length()) {
+        while (end<str.length()) {
             if (strchr(delims, str[end])) {
                 delim_pending = true;
                 break;
             }
             end++;
         }
-        fields.push_back(str.substr(begin, end - begin));
+        fields.push_back(str.substr(begin, end-begin));
 
         // Eat the delim or group of delims
         end++;
         if (group)
-            while (end < str.length() && strchr(delims, str[end]))
+            while (end<str.length() && strchr(delims, str[end]))
                 end++;
 
         begin = end;
@@ -196,8 +196,8 @@ split(const std::string &str, const char *delims, bool group,
  * \return vector of lines
  */
 inline std::vector<std::string>
-split_lines(const std::string &str, bool skip_empty = true,
-            const char *delims = "\n\r")
+split_lines(const std::string& str, bool skip_empty = true,
+        const char* delims = "\n\r")
 {
     std::vector<std::string> lines = str::split(str, "\n\r", skip_empty);
     if (!lines.empty()) {
@@ -217,15 +217,15 @@ split_lines(const std::string &str, bool skip_empty = true,
  * \throw std::out_of_range if argument was out of range
  * \throw std::invalid_argument if conversion error occured
  */
-inline long str2long(const std::string &str, int base = 10)
+inline long str2long(const std::string& str, int base = 10)
 {
-    char *endptr;
-    const char *c_str = str.c_str();
+    char* endptr;
+    const char* c_str = str.c_str();
 
     long value = strtol(c_str, &endptr, base);
-    if (value == LONG_MIN || value == LONG_MAX)
+    if (value==LONG_MIN || value==LONG_MAX)
         throw std::out_of_range("str::str2long: argument out of range");
-    if (*c_str == '\0' || *endptr != '\0')
+    if (*c_str=='\0' || *endptr!='\0')
         throw std::invalid_argument("str::str2long: invalid string");
 
     return value;
@@ -241,15 +241,15 @@ inline long str2long(const std::string &str, int base = 10)
  * \throw std::out_of_range if argument was out of range
  * \throw std::invalid_argument if conversion error occured
  */
-inline unsigned long str2ulong(const std::string &str, int base = 10)
+inline unsigned long str2ulong(const std::string& str, int base = 10)
 {
-    char *endptr;
-    const char *c_str = str.c_str();
+    char* endptr;
+    const char* c_str = str.c_str();
 
     unsigned long value = strtoul(c_str, &endptr, base);
-    if (value == ULONG_MAX)
+    if (value==ULONG_MAX)
         throw std::out_of_range("str::str2ulong: argument out of range");
-    if (*c_str == '\0' || *endptr != '\0')
+    if (*c_str=='\0' || *endptr!='\0')
         throw std::invalid_argument("str::str2ulong: invalid string");
 
     return value;
@@ -263,36 +263,35 @@ inline unsigned long str2ulong(const std::string &str, int base = 10)
  * \throw std::out_of_range if argument was out of range
  * \throw std::invalid_argument if conversion error occured
  */
-inline float str2float(const std::string &str)
+inline float str2float(const std::string& str)
 {
-    char *endptr;
-    const char *c_str = str.c_str();
+    char* endptr;
+    const char* c_str = str.c_str();
 
     double dbl_value = strtod(c_str, &endptr);
 
-    if (*c_str == '\0' || *endptr != '\0')
+    if (*c_str=='\0' || *endptr!='\0')
         throw std::invalid_argument("str::str2float: invalid string");
-    if (dbl_value == -HUGE_VAL || dbl_value == HUGE_VAL ||
-            dbl_value < -FLT_MAX || dbl_value > FLT_MAX)
+    if (dbl_value==-HUGE_VAL || dbl_value==HUGE_VAL ||
+            dbl_value<-FLT_MAX || dbl_value>FLT_MAX)
         throw std::out_of_range("str::str2float: argument out of range");
-    float value = (float)dbl_value;
+    float value = (float) dbl_value;
 
     return value;
 }
-
 
 /** Convert a string to a vector of integers using str2long().
  * \param str = the string to convert
  * \return a vector of integers
  * \throw exceptions as described in str2long()
  */
-template <class T>
-std::vector<T> long_vec(const std::string &str)
+template<class T>
+std::vector<T> long_vec(const std::string& str)
 {
     std::vector<std::string> str_vec(
-        str::split(str::cleaned(str), " \t\n", true));
+            str::split(str::cleaned(str), " \t\n", true));
     std::vector<T> vec(str_vec.size());
-    for (size_t i = 0; i < str_vec.size(); i++)
+    for (size_t i = 0; i<str_vec.size(); i++)
         vec[i] = str::str2long(str_vec[i]);
     return vec;
 }
@@ -302,12 +301,12 @@ std::vector<T> long_vec(const std::string &str)
  * \return a vector of floats
  * \throw exceptions as described in str2float()
  */
-inline std::vector<float> float_vec(const std::string &str)
+inline std::vector<float> float_vec(const std::string& str)
 {
     std::vector<std::string> str_vec(
-        str::split(str::cleaned(str), " \t\n", true));
+            str::split(str::cleaned(str), " \t\n", true));
     std::vector<float> vec(str_vec.size());
-    for (size_t i = 0; i < str_vec.size(); i++)
+    for (size_t i = 0; i<str_vec.size(); i++)
         vec[i] = str::str2float(str_vec[i]);
     return vec;
 }
@@ -317,10 +316,10 @@ inline std::vector<float> float_vec(const std::string &str)
  * \param chars = characters to remove
  * \return the string without trailing newline
  */
-inline std::string chomped(const std::string &str, const char *chars = "\n")
+inline std::string chomped(const std::string& str, const char* chars = "\n")
 {
-    if (!str.empty() && strchr(chars, str[str.length() - 1]))
-        return str.substr(0, str.length() - 1);
+    if (!str.empty() && strchr(chars, str[str.length()-1]))
+        return str.substr(0, str.length()-1);
     return str;
 }
 
@@ -329,10 +328,10 @@ inline std::string chomped(const std::string &str, const char *chars = "\n")
  * \param chars = characters to remove
  * \return reference to modified \c str
  */
-inline std::string &chomp(std::string &str, const char *chars = "\n")
+inline std::string& chomp(std::string& str, const char* chars = "\n")
 {
-    if (!str.empty() && strchr(chars, str[str.length() - 1]))
-        str.erase(str.end() - 1);
+    if (!str.empty() && strchr(chars, str[str.length()-1]))
+        str.erase(str.end()-1);
     return str;
 }
 
@@ -342,23 +341,23 @@ inline std::string &chomp(std::string &str, const char *chars = "\n")
  * \param file = the file to read from
  * \return false if could not read length bytes
  */
-inline bool read_string(std::string &str, size_t length, FILE *file)
+inline bool read_string(std::string& str, size_t length, FILE* file)
 {
-    assert(length >= 0);
+    assert(length>=0);
 
     str.erase();
-    if (length == 0)
+    if (length==0)
         return true;
     str.reserve(length);
 
     // Read the string
     char buf[4096];
     size_t buf_size = 4096;
-    while (length > 0) {
-        if (length < buf_size)
+    while (length>0) {
+        if (length<buf_size)
             buf_size = length;
         size_t ret = fread(buf, buf_size, 1, file);
-        if (ret != 1)
+        if (ret!=1)
             return false;
 
         str.append(buf, buf_size);
@@ -376,9 +375,9 @@ inline bool read_string(std::string &str, size_t length, FILE *file)
  * \throw str::io_error if read failed
  */
 inline bool
-read_line(std::string &str, FILE *file = stdin, bool do_chomp = false)
+read_line(std::string& str, FILE* file = stdin, bool do_chomp = false)
 {
-    char *ptr;
+    char* ptr;
     char buf[4096];
 
     str.erase();
@@ -388,12 +387,12 @@ read_line(std::string &str, FILE *file = stdin, bool do_chomp = false)
             break;
 
         str.append(buf);
-        if (str[str.length() - 1] == '\n') {
+        if (str[str.length()-1]=='\n') {
             break;
         }
     }
 
-    if (ferror(file) || str.length() == 0)
+    if (ferror(file) || str.length()==0)
         return false;
 
     if (do_chomp)
@@ -410,7 +409,7 @@ read_line(std::string &str, FILE *file = stdin, bool do_chomp = false)
  * \throw std::runtime_error if io error occurs
  */
 inline std::string
-read_file(FILE *file = stdin, bool rewind = false)
+read_file(FILE* file = stdin, bool rewind = false)
 {
     if (rewind)
         ::rewind(file);
@@ -421,7 +420,7 @@ read_file(FILE *file = stdin, bool rewind = false)
     std::string str;
     while (!end) {
         size_t ret = fread(buf, 1, buf_size, file);
-        if (ret < buf_size) {
+        if (ret<buf_size) {
             if (ferror(file))
                 throw std::runtime_error("str::read_file() read error");
             end = true;
@@ -439,8 +438,8 @@ inline std::string
 read_file(std::string file_name)
 {
     std::string str;
-    FILE *file = fopen(file_name.c_str(), "r");
-    if (file == NULL)
+    FILE* file = fopen(file_name.c_str(), "r");
+    if (file==NULL)
         throw std::runtime_error("str::read_file() open error");
     try {
         str = read_file(file);
@@ -457,10 +456,10 @@ read_file(std::string file_name)
  * rewinded to the beginning of the file.  The file is deleted
  * automatically upon close.  See system's tmpfile() for details. */
 inline FILE*
-temp_file(const std::string &str)
+temp_file(const std::string& str)
 {
-    FILE *file = tmpfile();
-    if (file == NULL)
+    FILE* file = tmpfile();
+    if (file==NULL)
         throw std::runtime_error("temp_file(): tmpfile() failed");
     fputs(str.c_str(), file);
     rewind(file);
@@ -477,26 +476,25 @@ temp_file(const std::string &str)
  * \return the last substring delimited by the delimiting characters
  */
 inline std::string
-pop_back(std::string &str, const char *delims = " \t")
+pop_back(std::string& str, const char* delims = " \t")
 {
     while (!str.empty()) {
         std::string::size_type pos = str.find_last_of(delims);
-        if (pos == str.npos) {
+        if (pos==str.npos) {
             std::string ret = str;
             str.clear();
             return ret;
         }
-        if (pos == str.length() - 1) {
-            str.resize(str.length() - 1);
+        if (pos==str.length()-1) {
+            str.resize(str.length()-1);
             continue;
         }
-        std::string ret = str.substr(pos + 1);
+        std::string ret = str.substr(pos+1);
         str.resize(pos);
         return ret;
     }
     return str;
 }
-
 
 /** Pop a delimited substring from the beginning of a string.
  * Possible delimiters at the beginning of string are removed before
@@ -508,21 +506,21 @@ pop_back(std::string &str, const char *delims = " \t")
  * \return the first substring delimited by the delimiting characters
  */
 inline std::string
-pop_front(std::string &str, const char *delims = " \t")
+pop_front(std::string& str, const char* delims = " \t")
 {
     while (!str.empty()) {
         std::string::size_type pos = str.find_first_of(delims);
-        if (pos == str.npos) {
+        if (pos==str.npos) {
             std::string ret = str;
             str.clear();
             return ret;
         }
-        if (pos == 0) {
+        if (pos==0) {
             str.erase(str.begin());
             continue;
         }
         std::string ret = str.substr(0, pos);
-        str.erase(0, pos + 1);
+        str.erase(0, pos+1);
         return ret;
     }
     return str;
@@ -530,15 +528,14 @@ pop_front(std::string &str, const char *delims = " \t")
 
 /** Create vector from one parameter. */
 inline std::vector<std::string>
-vec(const std::string &s1)
+vec(const std::string& s1)
 {
     return std::vector<std::string>(1, s1);
 }
 
-
 /** Create vector from two parameters. */
 inline std::vector<std::string>
-vec(const std::string &s1, const std::string &s2)
+vec(const std::string& s1, const std::string& s2)
 {
     std::vector<std::string> vec(2);
     vec[0] = s1;
@@ -548,7 +545,7 @@ vec(const std::string &s1, const std::string &s2)
 
 /** Create vector from three parameters. */
 inline std::vector<std::string>
-vec(const std::string &s1, const std::string &s2, const std::string &s3)
+vec(const std::string& s1, const std::string& s2, const std::string& s3)
 {
     std::vector<std::string> vec(3);
     vec[0] = s1;
@@ -559,8 +556,8 @@ vec(const std::string &s1, const std::string &s2, const std::string &s3)
 
 /** Create vector from four parameters. */
 inline std::vector<std::string>
-vec(const std::string &s1, const std::string &s2,
-    const std::string &s3, const std::string &s4)
+vec(const std::string& s1, const std::string& s2,
+        const std::string& s3, const std::string& s4)
 {
     std::vector<std::string> vec(4);
     vec[0] = s1;
@@ -570,15 +567,13 @@ vec(const std::string &s1, const std::string &s2,
     return vec;
 }
 
-
-inline std::string str(const std::vector<int> &vec)
+inline std::string str(const std::vector<int>& vec)
 {
     std::string str;
-    for (std::vector<int>::size_type i = 0; i < vec.size(); i++)
-        str.append(fmt(256, "%s%d", i > 0 ? " " : "", vec[i]));
+    for (std::vector<int>::size_type i = 0; i<vec.size(); i++)
+        str.append(fmt(256, "%s%d", i>0 ? " " : "", vec[i]));
     return str;
 }
-
 
 /** Split a string to fields while processing quotes \, ', ".
  *
@@ -595,8 +590,8 @@ inline std::string str(const std::vector<int> &vec)
  * \param fields = the vector containing the resulting fields
  */
 inline void
-split_with_quotes(std::string *str, const char *delims, bool group,
-                  std::vector<std::string> *fields)
+split_with_quotes(std::string* str, const char* delims, bool group,
+        std::vector<std::string>* fields)
 {
     enum { NONE, BACKSLASH, SINGLE, DOUBLE } mode = NONE;
     size_t begin = 0;
@@ -604,60 +599,59 @@ split_with_quotes(std::string *str, const char *delims, bool group,
     size_t tgt = 0;
 
     fields->clear();
-    while (src < str->length()) {
+    while (src<str->length()) {
 
         // Find the string before the next delim while processing
         // quotes.
-        while (src < str->length()) {
+        while (src<str->length()) {
 
             switch ((*str)[src]) {
 
             case '\\':
-                if (mode == NONE)
+                if (mode==NONE)
                     mode = BACKSLASH;
                 else
                     (*str)[tgt++] = '\\';
                 break;
 
             case '\'':
-                if (mode == NONE)
+                if (mode==NONE)
                     mode = SINGLE;
-                else if (mode == SINGLE)
+                else if (mode==SINGLE)
                     mode = NONE;
                 else
                     (*str)[tgt++] = '\'';
                 break;
 
             case '"':
-                if (mode == NONE)
+                if (mode==NONE)
                     mode = DOUBLE;
-                else if (mode == DOUBLE)
+                else if (mode==DOUBLE)
                     mode = NONE;
                 else
                     (*str)[tgt++] = '"';
                 break;
 
-            default:
-                (*str)[tgt++] = (*str)[src];
-                if (mode == NONE && strchr(delims, (*str)[src])) {
+            default:(*str)[tgt++] = (*str)[src];
+                if (mode==NONE && strchr(delims, (*str)[src])) {
                     src++;
                     tgt--;
                     goto end_of_field;
                 }
                 break;
             }
-            if (mode == BACKSLASH && (*str)[src] != '\\')
+            if (mode==BACKSLASH && (*str)[src]!='\\')
                 mode = NONE;
             src++;
         }
 
-end_of_field:
-        fields->push_back(str->substr(begin, tgt - begin));
+        end_of_field:
+        fields->push_back(str->substr(begin, tgt-begin));
         tgt++;
 
         // Eat the delim or group of delims
         if (group)
-            while (src < str->length() && strchr(delims, (*str)[src]))
+            while (src<str->length() && strchr(delims, (*str)[src]))
                 src++;
         begin = tgt;
     }

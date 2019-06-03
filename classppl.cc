@@ -10,16 +10,16 @@
 
 using namespace std;
 
-
-int main(int argc, char* argv[]) {
-
+int main(int argc, char* argv[])
+{
     conf::Config config;
     config("usage: classppl [OPTION...] CLASS_ARPA CLASS_MEMBERSHIPS INPUT\n")
-    ('r', "use-root-node", "", "", "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
-    ('w', "num-words=INT", "arg", "", "Number of words for computing word-normalized perplexity")
-    ('h', "help", "", "", "display help");
+            ('r', "use-root-node", "", "",
+                    "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
+            ('w', "num-words=INT", "arg", "", "Number of words for computing word-normalized perplexity")
+            ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
-    if (config.arguments.size() != 3) config.print_help(stderr, 1);
+    if (config.arguments.size()!=3) config.print_help(stderr, 1);
 
     string ngramfname = config.arguments[0];
     string classmfname = config.arguments[1];
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     string unk = "<unk>";
     bool root_unk_states = config["use-root-node"].specified;
 
-    map<string, pair<int, flt_type> > class_memberships;
+    map<string, pair<int, flt_type>> class_memberships;
     cerr << "Reading class memberships.." << endl;
     int num_classes = read_class_memberships(classmfname, class_memberships);
 
@@ -38,8 +38,8 @@ int main(int argc, char* argv[]) {
 
     // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(num_classes);
-    for (int i=0; i<(int)indexmap.size(); i++)
-        if (ng.vocabulary_lookup.find(int2str(i)) != ng.vocabulary_lookup.end())
+    for (int i = 0; i<(int) indexmap.size(); i++)
+        if (ng.vocabulary_lookup.find(int2str(i))!=ng.vocabulary_lookup.end())
             indexmap[i] = ng.vocabulary_lookup[int2str(i)];
 
     cerr << "Scoring sentences.." << endl;
@@ -53,18 +53,17 @@ int main(int argc, char* argv[]) {
     while (infile.getline(line)) {
 
         line = str::cleaned(line);
-        if (line.length() == 0) continue;
-        if (++linei % 10000 == 0) cerr << "sentence " << linei << endl;
+        if (line.length()==0) continue;
+        if (++linei%10000==0) cerr << "sentence " << linei << endl;
 
         stringstream ss(line);
         vector<string> words;
         string word;
         while (ss >> word) {
-            if (word == "<s>") continue;
-            if (word == "</s>") continue;
-            if (class_memberships.find(word) == class_memberships.end()
-                || word == "<unk>"  || word == "<UNK>")
-            {
+            if (word=="<s>") continue;
+            if (word=="</s>") continue;
+            if (class_memberships.find(word)==class_memberships.end()
+                    || word=="<unk>" || word=="<UNK>") {
                 words.push_back(unk);
                 num_oovs++;
             }
@@ -78,8 +77,8 @@ int main(int argc, char* argv[]) {
         double sent_ll = 0.0;
 
         int curr_node = ng.sentence_start_node;
-        for (int i=0; i<(int)words.size(); i++) {
-            if (words[i] == unk) {
+        for (int i = 0; i<(int) words.size(); i++) {
+            if (words[i]==unk) {
                 if (root_unk_states) curr_node = ng.root_node;
                 else curr_node = ng.advance(curr_node, ng.unk_symbol_idx);
                 continue;
@@ -110,7 +109,7 @@ int main(int argc, char* argv[]) {
 
     if (config["num-words"].specified)
         num_words = config["num-words"].get_int();
-    double ppl = exp(-1.0/double(num_words) * total_ll);
+    double ppl = exp(-1.0/double(num_words)*total_ll);
     cerr << "Perplexity: " << ppl << endl;
 
     exit(0);

@@ -10,25 +10,23 @@
 
 using namespace std;
 
-
 void preprocess_sent(string line,
-                     const Ngram &lm,
-                     const map<string, pair<int, flt_type> > &class_memberships,
-                     string unk_symbol,
-                     vector<string> &words,
-                     long int &num_words,
-                     long int &num_oovs)
+        const Ngram& lm,
+        const map<string, pair<int, flt_type>>& class_memberships,
+        string unk_symbol,
+        vector<string>& words,
+        long int& num_words,
+        long int& num_oovs)
 {
     stringstream ss(line);
     words.clear();
     string word;
     while (ss >> word) {
-        if (word == "<s>") continue;
-        if (word == "</s>") continue;
-        if (lm.vocabulary_lookup.find(word) == lm.vocabulary_lookup.end()
-            || class_memberships.find(word) == class_memberships.end()
-            || word == "<unk>"  || word == "<UNK>")
-        {
+        if (word=="<s>") continue;
+        if (word=="</s>") continue;
+        if (lm.vocabulary_lookup.find(word)==lm.vocabulary_lookup.end()
+                || class_memberships.find(word)==class_memberships.end()
+                || word=="<unk>" || word=="<UNK>") {
             words.push_back(unk_symbol);
             num_oovs++;
         }
@@ -40,17 +38,18 @@ void preprocess_sent(string line,
     num_words++;
 }
 
-
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
 
     conf::Config config;
     config("usage: classintppl [OPTION...] ARPAFILE CLASS_ARPA CLASS_MEMBERSHIPS INPUT\n")
-    ('i', "weight=FLOAT", "arg", "0.5", "Interpolation weight [0.0,1.0] for the word ARPA model")
-    ('r', "unk-root-node", "", "", "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
-    ('w', "num-words=INT", "arg", "", "Number of words for computing word-normalized perplexity")
-    ('h', "help", "", "", "display help");
+            ('i', "weight=FLOAT", "arg", "0.5", "Interpolation weight [0.0,1.0] for the word ARPA model")
+            ('r', "unk-root-node", "", "",
+                    "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
+            ('w', "num-words=INT", "arg", "", "Number of words for computing word-normalized perplexity")
+            ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
-    if (config.arguments.size() != 4) config.print_help(stderr, 1);
+    if (config.arguments.size()!=4) config.print_help(stderr, 1);
 
     string arpafname = config.arguments[0];
     string classngramfname = config.arguments[1];
@@ -61,7 +60,7 @@ int main(int argc, char* argv[]) {
     bool root_unk_states = config["unk-root-node"].specified;
 
     double iw = config["weight"].get_float();
-    if (iw < 0.0 || iw > 1.0) {
+    if (iw<0.0 || iw>1.0) {
         cerr << "Invalid interpolation weight: " << iw << endl;
         exit(1);
     }
@@ -72,7 +71,7 @@ int main(int argc, char* argv[]) {
     LNNgram lm;
     lm.read_arpa(arpafname);
 
-    map<string, pair<int, flt_type> > class_memberships;
+    map<string, pair<int, flt_type>> class_memberships;
     cerr << "Reading class memberships.." << endl;
     int num_classes = read_class_memberships(classmfname, class_memberships);
 
@@ -82,8 +81,8 @@ int main(int argc, char* argv[]) {
 
     // The class indexes are stored as strings in the n-gram class
     vector<int> indexmap(num_classes);
-    for (int i=0; i<(int)indexmap.size(); i++)
-        if (class_ng.vocabulary_lookup.find(int2str(i)) != class_ng.vocabulary_lookup.end())
+    for (int i = 0; i<(int) indexmap.size(); i++)
+        if (class_ng.vocabulary_lookup.find(int2str(i))!=class_ng.vocabulary_lookup.end())
             indexmap[i] = class_ng.vocabulary_lookup[int2str(i)];
         else indexmap[i] = -1;
 
@@ -98,8 +97,8 @@ int main(int argc, char* argv[]) {
     while (infile.getline(line)) {
 
         line = str::cleaned(line);
-        if (line.length() == 0) continue;
-        if (++linei % 10000 == 0) cerr << "sentence " << linei << endl;
+        if (line.length()==0) continue;
+        if (++linei%10000==0) cerr << "sentence " << linei << endl;
 
         double sent_ll = 0.0;
 
@@ -109,8 +108,8 @@ int main(int argc, char* argv[]) {
         int curr_lm_node = lm.sentence_start_node;
         int curr_class_lm_node = class_ng.sentence_start_node;
 
-        for (int i=0; i<(int)words.size(); i++) {
-            if (words[i] == unk) {
+        for (int i = 0; i<(int) words.size(); i++) {
+            if (words[i]==unk) {
                 if (root_unk_states) {
                     curr_lm_node = lm.root_node;
                     curr_class_lm_node = class_ng.root_node;
@@ -119,7 +118,8 @@ int main(int argc, char* argv[]) {
                     curr_lm_node = lm.advance(curr_lm_node, lm.unk_symbol_idx);
                     curr_class_lm_node = class_ng.advance(curr_class_lm_node, class_ng.unk_symbol_idx);
                 }
-            } else {
+            }
+            else {
                 double ngram_score = 0.0;
                 curr_lm_node = lm.score(curr_lm_node, lm.vocabulary_lookup.at(words[i]), ngram_score);
                 ngram_score += word_iw;
@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
 
     if (config["num-words"].specified)
         num_words = config["num-words"].get_int();
-    double ppl = exp(-1.0/double(num_words) * total_ll);
+    double ppl = exp(-1.0/double(num_words)*total_ll);
     cerr << "Perplexity: " << ppl << endl;
 
     exit(0);

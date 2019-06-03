@@ -7,50 +7,47 @@
 
 using namespace std;
 
-
 void
-write_class_unigram_counts(const map<string, int> &word_counts,
-                           const Categories &wcl,
-                           string countfname)
+write_class_unigram_counts(const map<string, int>& word_counts,
+        const Categories& wcl,
+        string countfname)
 {
     map<string, flt_type> category_counts;
-    for (auto wit=word_counts.cbegin(); wit != word_counts.cend(); ++wit) {
-        if (wit->first == "<s>" || wit->first == "</s>"
-            || wit->first == "<unk>")
-        {
+    for (auto wit = word_counts.cbegin(); wit!=word_counts.cend(); ++wit) {
+        if (wit->first=="<s>" || wit->first=="</s>"
+                || wit->first=="<unk>") {
             category_counts[wit->first] += wit->second;
             continue;
         }
-        else if (wit->first == "<UNK>") {
+        else if (wit->first=="<UNK>") {
             category_counts["<unk>"] += wit->second;
             continue;
         }
-        if (wcl.m_category_gen_probs.find(wit->first) == wcl.m_category_gen_probs.end())
+        if (wcl.m_category_gen_probs.find(wit->first)==wcl.m_category_gen_probs.end())
             continue;
-        const CategoryProbs &cprobs = wcl.m_category_gen_probs.at(wit->first);
-        if (cprobs.size() == 0)
+        const CategoryProbs& cprobs = wcl.m_category_gen_probs.at(wit->first);
+        if (cprobs.size()==0)
             category_counts["<unk>"] += wit->second;
         else {
-            flt_type tmp = 1.0 / (flt_type)cprobs.size();
-            for (auto catit = cprobs.cbegin(); catit != cprobs.end(); ++catit)
-                category_counts[int2str(catit->first)] += wit->second * tmp;
+            flt_type tmp = 1.0/(flt_type) cprobs.size();
+            for (auto catit = cprobs.cbegin(); catit!=cprobs.end(); ++catit)
+                category_counts[int2str(catit->first)] += wit->second*tmp;
         }
     }
 
     SimpleFileOutput countf(countfname);
-    for (auto cit = category_counts.begin(); cit != category_counts.end(); ++cit)
+    for (auto cit = category_counts.begin(); cit!=category_counts.end(); ++cit)
         countf << cit->first << "\t" << cit->second << "\n";
     countf.close();
 }
-
 
 int main(int argc, char* argv[])
 {
     conf::Config config;
     config("usage: init [OPTION...] INIT_WORDS CORPUS MODEL\n")
-    ('h', "help", "", "", "display help");
+            ('h', "help", "", "", "display help");
     config.default_parse(argc, argv);
-    if (config.arguments.size() != 3) config.print_help(stderr, 1);
+    if (config.arguments.size()!=3) config.print_help(stderr, 1);
 
     try {
         string init_words_fname = config.arguments[0];
@@ -70,11 +67,12 @@ int main(int argc, char* argv[])
         cerr << "Number of category generation probabilities: " << wcl.num_category_gen_probs() << endl;
         cerr << "Number of category membership probabilities: " << wcl.num_category_mem_probs() << endl;
 
-        wcl.write_category_gen_probs(model_fname + ".cgenprobs.gz");
-        wcl.write_category_mem_probs(model_fname + ".cmemprobs.gz");
-        write_class_unigram_counts(word_counts, wcl, model_fname + ".ccounts.gz");
+        wcl.write_category_gen_probs(model_fname+".cgenprobs.gz");
+        wcl.write_category_mem_probs(model_fname+".cmemprobs.gz");
+        write_class_unigram_counts(word_counts, wcl, model_fname+".ccounts.gz");
 
-    } catch (string &e) {
+    }
+    catch (string& e) {
         cerr << e << endl;
     }
 
