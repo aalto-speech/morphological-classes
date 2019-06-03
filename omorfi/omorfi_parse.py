@@ -7,8 +7,7 @@ import re
 import sys
 from collections import defaultdict
 
-# excluded_fields = ["BLACKLIST", "COMPOUND_WORD_ID"]
-excluded_fields = ["BLACKLIST"]
+excluded_fields = ["BLACKLIST", "WORD_ID"]
 
 MAX_NUM_ANALYSES_PER_WORD = 15
 
@@ -31,7 +30,7 @@ def read_analyses_file(analysisFname, analyses, encoding="utf8"):
         if analysis_tokens:
             analysis_tokens = analysis_tokens[1:]
             analysis_tokens = list(filter(lambda x: x.split("=")[0] not in excluded_fields, analysis_tokens))
-            word_analysis = "_".join(analysis_tokens)
+            word_analysis = ",".join(analysis_tokens)
             if len(word_analysis): analyses[word].add(word_analysis)
 
     return analyses
@@ -41,13 +40,15 @@ def merge_large_coverage_analyses(analyses, large_coverage_analyses):
     extra_words = 0
     extra_analyses = 0
     for word, word_analyses in analyses.items():
+        is_number = len([x for x in large_coverage_word_analyses if "UPOS=NUM" in x]) > 0
         large_coverage_word_analyses = large_coverage_analyses[word]
         if (len(large_coverage_word_analyses)) <= MAX_NUM_ANALYSES_PER_WORD:
             if not len(word_analyses) and len(large_coverage_word_analyses):
                 extra_words += 1
                 analyses[word] = large_coverage_word_analyses
-            elif len(large_coverage_word_analyses) > len(word_analyses):
+            elif not is_number and len(large_coverage_word_analyses) > len(word_analyses):
                 extra_analyses += 1
+                analyses[word] = large_coverage_word_analyses
     return extra_words, extra_analyses
 
 
@@ -118,4 +119,5 @@ if __name__ == "__main__":
     print("Distinct morphological classes: %i" % len(analysis_types), file=sys.stderr)
 
 #    for analysis_type, count in analysis_types.items():
+#        print("")
 #        print("%s\t%i" % (analysis_type, count))
