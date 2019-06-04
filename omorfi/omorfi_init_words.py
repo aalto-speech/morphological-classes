@@ -1,20 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-import sys
+import codecs
 import locale
 import argparse
-from omorfi_parse import parse_analyses
+from omorfi_parse import read_analyses
 from omorfi_parse import get_analysis_classes
-from omorfi_parse import merge_uc_lc
-
-
-def get_class_idx_map(classes):
-    idx = 0
-    idx_map = dict()
-    for clss in classes:
-        idx_map[clss] = idx
-        idx += 1
-    return idx_map
 
 
 def state_with_analyses(word_analyses, clsmap):
@@ -39,27 +30,31 @@ def initialize(analyses, clsmap):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Initialize word categories with Omorfi analyses')
-    parser.add_argument('analyses', help='Omorfi analyses')
-    parser.add_argument('word_init', help='Word initializations to be written')
-    parser.add_argument('class_defs', help='Class information to be written')
+    parser.add_argument("ANALYSES", help="Output from the Omorfi analyzer without the -X switch.")
+    parser.add_argument("LARGE_COVERAGE_ANALYSES", help="Output from the Omorfi analyzer with the -X switch.")
+    parser.add_argument('WORD_INIT', help='Word initializations to be written')
+    parser.add_argument('CLASS_DEFS', help='Class information to be written')
     parser.add_argument("--encoding", action="store", type=str, default="utf-8")
     args = parser.parse_args()
 
-    analyses = parse_analyses(args.analyses, encoding=args.encoding)
-    analyses = merge_uc_lc(analyses)
+    locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+
+    analyses = read_analyses(args.ANALYSES, args.LARGE_COVERAGE_ANALYSES, True)
+
     classes = get_analysis_classes(analyses)
-    clsmap = get_class_idx_map(classes)
+    clsmap = dict(map(reversed, enumerate(sorted(classes))))
+
     word_state_vectors = initialize(analyses, clsmap)
 
-    wordf = open(args.word_init, "w")
+    wordf = codecs.open(args.WORD_INIT, "w", encoding=args.encoding)
     for word, vector in word_state_vectors.items():
-        print >>wordf, "%s\t%s" % (word.encode(args.encoding), " ".join(map(str, vector)))
+        print("%s\t%s" % (word, " ".join(map(str, vector))), file=wordf)
     wordf.close()
 
-    classf = open(args.class_defs, "w")
+    classf = open(args.CLASS_DEFS, "w")
     rev_clsmap = dict()
     for clss, idx in clsmap.items():
         rev_clsmap[idx] = clss
     for idx, clss in rev_clsmap.items():
-        print >>classf, "%i\t%s" % (idx, clss)
+        print("%i\t%s" % (idx, clss), file=classf)
     classf.close()
