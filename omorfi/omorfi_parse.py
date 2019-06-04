@@ -15,7 +15,7 @@ MAX_NUM_ANALYSES_PER_WORD = 15
 TAG_SEPARATOR = ","
 
 
-def _read_analyses_file(analysisFname, analyses, encoding="utf8"):
+def _read_analyses_file(analysisFname, analyses, shortenLongNumberAnalysis=True, encoding="utf8"):
     if analysisFname.endswith(".gz"):
         analysisFile = gzip.open(analysisFname, "rt", encoding=encoding)
     else:
@@ -34,8 +34,14 @@ def _read_analyses_file(analysisFname, analyses, encoding="utf8"):
 
         analysis_tokens = re.findall("\[(.*?)\]", tokens[1])
         if analysis_tokens:
-            analysis_tokens = analysis_tokens[1:]
             analysis_tokens = list(filter(lambda x: x.split("=")[0] not in excluded_fields, analysis_tokens))
+
+            # In this case, keep only the analysis tags after the last BOUNDARY=COMPOUND tag
+            if shortenLongNumberAnalysis and "UPOS=NUM" in analysis_tokens[0]:
+                compound_sep_poss = [i for i, x in enumerate(analysis_tokens) if x == "BOUNDARY=COMPOUND"]
+                if len(compound_sep_poss):
+                    analysis_tokens = analysis_tokens[compound_sep_poss[-1]+1:]
+
             word_analysis = TAG_SEPARATOR.join(analysis_tokens)
             if len(word_analysis): analyses[word].add(word_analysis)
 
@@ -58,16 +64,16 @@ def _merge_large_coverage_analyses(analyses, large_coverage_analyses):
     return extra_words, extra_analyses
 
 
-def read_analyses(analysisFname, largeCoverageAnalysisFname, verbose=True):
+def read_analyses(analysisFname, largeCoverageAnalysisFname, shortenLongNumberAnalysis=True, verbose=True):
     analyses = dict()
     if verbose:
         print("Reading default vocabulary Omorfi analyses..", file=sys.stderr)
-    _read_analyses_file(analysisFname, analyses)
+    _read_analyses_file(analysisFname, analyses, shortenLongNumberAnalysis)
 
     large_coverage_analyses = dict()
     if verbose:
         print("Reading extended vocabulary Omorfi analyses..", file=sys.stderr)
-    _read_analyses_file(largeCoverageAnalysisFname, large_coverage_analyses)
+    _read_analyses_file(largeCoverageAnalysisFname, large_coverage_analyses, shortenLongNumberAnalysis)
 
     if len(analyses) != len(large_coverage_analyses):
         raise Exception("number of analyses don't match, (%i and %i)" % (len(analyses), len(large_coverage_analyses)))
@@ -109,7 +115,7 @@ if __name__ == "__main__":
 
     locale.setlocale(locale.LC_ALL, 'en_US.utf8')
 
-    analyses = read_analyses(args.ANALYSES, args.LARGE_COVERAGE_ANALYSES, True)
+    analyses = read_analyses(args.ANALYSES, args.LARGE_COVERAGE_ANALYSES, True, True)
 
     num_w_analyses = len([x for x in analyses.values() if len(x)])
     case_info = dict()
