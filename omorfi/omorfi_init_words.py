@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     locale.setlocale(locale.LC_ALL, 'en_US.utf8')
 
-    analyses = read_analyses(args.ANALYSES, args.LARGE_COVERAGE_ANALYSES, True)
+    analyses = read_analyses(args.ANALYSES, args.LARGE_COVERAGE_ANALYSES, True, True)
 
     classes = get_analysis_classes(analyses)
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     wordf = codecs.open(args.WORD_INIT, "w", encoding=args.encoding)
     for word, word_analyses in sorted(analyses.items()):
-        word_class_idxs = map(lambda x: clsmap[x], word_analyses)
+        word_class_idxs = sorted(map(lambda x: clsmap[x], word_analyses))
         print("%s\t%s" % (word, " ".join(map(str, word_class_idxs))), file=wordf)
     wordf.close()
 
