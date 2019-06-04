@@ -94,8 +94,6 @@ public:
     int num_category_mem_probs() const;
     int num_stats() const;
     void get_words(std::set<std::string>& words, bool get_unanalyzed = true);
-    void get_unanalyzed_words(std::set<std::string>& words);
-    void get_unanalyzed_words(std::map<std::string, flt_type>& words);
     flt_type log_likelihood(int c, std::string word) const;
     flt_type log_likelihood(int c, const CategoryProbs* wcp) const;
     const CategoryProbs* get_category_gen_probs(std::string word) const;
@@ -119,7 +117,8 @@ public:
     std::map<std::string, CategoryProbs> m_category_mem_probs;
 };
 
-void segment_sent(const std::vector<std::string>& sent,
+void segment_sent(
+        const std::vector<std::string>& sent,
         const Ngram& ngram,
         const std::vector<int>& indexmap,
         const Categories& categories,
@@ -131,7 +130,8 @@ void segment_sent(const std::vector<std::string>& sent,
         unsigned long int* num_unpruned_tokens = nullptr,
         unsigned long int* num_pruned_tokens = nullptr);
 
-flt_type collect_stats(const std::vector<std::string>& sent,
+flt_type collect_stats(
+        const std::vector<std::string>& sent,
         const Ngram& ngram,
         const std::vector<int>& indexmap,
         const Categories& categories,
@@ -143,15 +143,18 @@ flt_type collect_stats(const std::vector<std::string>& sent,
         unsigned long int* num_unpruned_tokens = nullptr,
         unsigned long int* num_pruned_tokens = nullptr);
 
-void limit_num_categories(std::map<std::string, CategoryProbs>& probs,
+void limit_num_categories(
+        std::map<std::string, CategoryProbs>& probs,
         int num_categories);
 
-void histogram_prune(std::vector<Token*>& tokens,
+void histogram_prune(
+        std::vector<Token*>& tokens,
         int num_tokens,
         flt_type worst_score,
         flt_type best_score);
 
-int get_word_counts(std::string corpusfname,
+int get_word_counts(
+        std::string corpusfname,
         std::map<std::string, int>& counts);
 
 #endif /* CATEGORIES */

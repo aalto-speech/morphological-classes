@@ -191,24 +191,6 @@ Categories::get_words(set<string>& words,
             words.insert(wit->first);
 }
 
-void
-Categories::get_unanalyzed_words(set<string>& words)
-{
-    words.clear();
-    for (auto wit = m_category_mem_probs.begin(); wit!=m_category_mem_probs.end(); ++wit)
-        if (wit->second.size()==0)
-            words.insert(wit->first);
-}
-
-void
-Categories::get_unanalyzed_words(map<string, flt_type>& words)
-{
-    words.clear();
-    for (auto wit = m_category_mem_probs.begin(); wit!=m_category_mem_probs.end(); ++wit)
-        if (wit->second.size()==0)
-            words.insert(make_pair(wit->first, 0.0));
-}
-
 flt_type
 Categories::log_likelihood(int c, std::string word) const
 {
