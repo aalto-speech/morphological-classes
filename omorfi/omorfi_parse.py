@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
 import argparse
 import codecs
@@ -12,7 +13,7 @@ excluded_fields = ["BLACKLIST", "WORD_ID"]
 MAX_NUM_ANALYSES_PER_WORD = 15
 
 
-def read_analyses_file(analysisFname, analyses, encoding="utf8"):
+def _read_analyses_file(analysisFname, analyses, encoding="utf8"):
     analysisFile = codecs.open(analysisFname, encoding=encoding)
     for line in analysisFile:
         line = line.strip()
@@ -36,13 +37,13 @@ def read_analyses_file(analysisFname, analyses, encoding="utf8"):
     return analyses
 
 
-def merge_large_coverage_analyses(analyses, large_coverage_analyses):
+def _merge_large_coverage_analyses(analyses, large_coverage_analyses):
     extra_words = 0
     extra_analyses = 0
     for word, word_analyses in analyses.items():
-        is_number = len([x for x in large_coverage_word_analyses if "UPOS=NUM" in x]) > 0
         large_coverage_word_analyses = large_coverage_analyses[word]
-        if (len(large_coverage_word_analyses)) <= MAX_NUM_ANALYSES_PER_WORD:
+        is_number = len([x for x in large_coverage_word_analyses if "UPOS=NUM" in x]) > 0
+        if len(large_coverage_word_analyses) <= MAX_NUM_ANALYSES_PER_WORD:
             if not len(word_analyses) and len(large_coverage_word_analyses):
                 extra_words += 1
                 analyses[word] = large_coverage_word_analyses
@@ -50,6 +51,31 @@ def merge_large_coverage_analyses(analyses, large_coverage_analyses):
                 extra_analyses += 1
                 analyses[word] = large_coverage_word_analyses
     return extra_words, extra_analyses
+
+
+def read_analyses(analysisFname, largeCoverageAnalysisFname, verbose=True):
+    analyses = dict()
+    if verbose:
+        print("Reading default vocabulary Omorfi analyses..", file=sys.stderr)
+    _read_analyses_file(analysisFname, analyses)
+
+    large_coverage_analyses = dict()
+    if verbose:
+        print("Reading extended vocabulary Omorfi analyses..", file=sys.stderr)
+    _read_analyses_file(largeCoverageAnalysisFname, large_coverage_analyses)
+
+    if len(analyses) != len(large_coverage_analyses):
+        raise Exception("number of analyses don't match, (%i and %i)" % (len(analyses), len(large_coverage_analyses)))
+
+    if verbose:
+        print("Merging analysis outputs..", file=sys.stderr)
+    extra_words, extra_analyses = _merge_large_coverage_analyses(analyses, large_coverage_analyses)
+    if verbose:
+        print("Number of new words with analyses in the extended vocabulary: %i" % extra_words, file=sys.stderr)
+        print("Number of words with more analyses in the extended vocabulary: %i" % extra_analyses, file=sys.stderr)
+        print("")
+
+    return analyses
 
 
 def get_num_analyses_per_word(analyses):
@@ -63,9 +89,9 @@ def get_num_analyses_per_word(analyses):
 def get_analysis_classes(analyses):
     analysis_types = defaultdict(int)
     for word_analyses in analyses.values():
-        if not word_analyses: continue
-        for word_analysis in word_analyses:
-            analysis_types[word_analysis] += 1
+        if word_analyses:
+            for word_analysis in word_analyses:
+                analysis_types[word_analysis] += 1
     return analysis_types
 
 
@@ -78,22 +104,7 @@ if __name__ == "__main__":
 
     locale.setlocale(locale.LC_ALL, 'en_US.utf8')
 
-    analyses = dict()
-    print("Reading default vocabulary Omorfi analyses..", file=sys.stderr)
-    read_analyses_file(args.ANALYSES, analyses)
-
-    large_coverage_analyses = dict()
-    print("Reading extended vocabulary Omorfi analyses..", file=sys.stderr)
-    read_analyses_file(args.LARGE_COVERAGE_ANALYSES, large_coverage_analyses)
-
-    if len(analyses) != len(large_coverage_analyses):
-        raise Exception("number of analyses don't match, (%i and %i)" % (len(analyses), len(large_coverage_analyses)))
-
-    print("Merging analysis outputs..", file=sys.stderr)
-    extra_words, extra_analyses = merge_large_coverage_analyses(analyses, large_coverage_analyses)
-    print("Number of new words with analyses in the extended vocabulary: %i" % extra_words, file=sys.stderr)
-    print("Number of words with more analyses in the extended vocabulary: %i" % extra_analyses, file=sys.stderr)
-    print("")
+    analyses = read_analyses(args.ANALYSES, args.LARGE_COVERAGE_ANALYSES, True)
 
     num_w_analyses = len([x for x in analyses.values() if len(x)])
     case_info = dict()
