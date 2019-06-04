@@ -24,8 +24,8 @@ if __name__ == "__main__":
 
     classes = get_analysis_classes(analyses)
 
-    rev_clsmap = dict(enumerate(sorted(classes.keys())))
     clsmap = dict(map(reversed, enumerate(sorted(classes.keys()))))
+    rev_clsmap = dict(enumerate(sorted(classes.keys())))
 
     wordf = codecs.open(args.WORD_INIT, "w", encoding=args.encoding)
     for word, word_analyses in sorted(analyses.items()):

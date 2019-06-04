@@ -6,6 +6,7 @@ import codecs
 import locale
 import re
 import sys
+import gzip
 from collections import defaultdict
 
 excluded_fields = ["BLACKLIST", "WORD_ID"]
@@ -15,7 +16,10 @@ TAG_SEPARATOR = ","
 
 
 def _read_analyses_file(analysisFname, analyses, encoding="utf8"):
-    analysisFile = codecs.open(analysisFname, encoding=encoding)
+    if analysisFname.endswith(".gz"):
+        analysisFile = gzip.open(analysisFname, "rt", encoding=encoding)
+    else:
+        analysisFile = codecs.open(analysisFname, encoding=encoding)
     for line in analysisFile:
         line = line.strip()
         if not len(line): continue
