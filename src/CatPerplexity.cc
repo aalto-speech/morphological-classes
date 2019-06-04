@@ -114,7 +114,6 @@ likelihood(const LNNgram& ngram,
         int num_tokens,
         double beam)
 {
-
     bool sentence_end = false;
     bool unk = false;
     auto cgenit = wcs.m_category_gen_probs.find(word);
