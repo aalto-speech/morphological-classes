@@ -11,6 +11,7 @@ from collections import defaultdict
 excluded_fields = ["BLACKLIST", "WORD_ID"]
 
 MAX_NUM_ANALYSES_PER_WORD = 15
+TAG_SEPARATOR = ","
 
 
 def _read_analyses_file(analysisFname, analyses, encoding="utf8"):
@@ -24,14 +25,14 @@ def _read_analyses_file(analysisFname, analyses, encoding="utf8"):
         if len(tokens) != 2:
             raise Exception("Erroneous Omorfi analysis: %s" % line)
 
-        word = tokens[0]
+        word = tokens[0].lower()
         if not word in analyses: analyses[word] = set()
 
         analysis_tokens = re.findall("\[(.*?)\]", tokens[1])
         if analysis_tokens:
             analysis_tokens = analysis_tokens[1:]
             analysis_tokens = list(filter(lambda x: x.split("=")[0] not in excluded_fields, analysis_tokens))
-            word_analysis = ",".join(analysis_tokens)
+            word_analysis = TAG_SEPARATOR.join(analysis_tokens)
             if len(word_analysis): analyses[word].add(word_analysis)
 
     return analyses
