@@ -1,34 +1,53 @@
-#!/usr/bin/python
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-import gzip
 import sys
+import gzip
+import argparse
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Converts a text corpus to corresponding class sequences.')
+    parser.add_argument('class_memberships', action="store",
+                        help='Class membership file written by exchange (.gz supported)')
+    parser.add_argument('--cap_unk', action="store_true", default=False,
+                        help='Unk symbol should be written in capitals i.e. <UNK>')
+    parser.add_argument('--lc_unk', action="store_true", default=False,
+                        help='Unk symbol should be written in lowercase i.e. <unk>')
+    args = parser.parse_args()
 
-vocabfname = sys.argv[1]
+    unk = None
+    if args.cap_unk:
+        unk = "<UNK>"
+    elif args.lc_unk:
+        unk = "<unk>"
+    else:
+        print("Define either cap_unk or lc_unk option", file=sys.stderr)
+        sys.exit(0)
 
-if vocabfname.endswith(".gz"):
-    vocabf = gzip.GzipFile(vocabfname)
-else:
-    vocabf = open(vocabfname)
+    if args.class_memberships.endswith(".gz"):
+        vocabf = gzip.open(args.class_memberships, "r")
+    else:
+        vocabf = open(args.class_memberships)
 
-vocab = dict()
-for line in vocabf:
-    line = line.strip()
-    parts = line.split()
-    vocab[parts[0]] = parts[1]
-
-for line in sys.stdin:
-    line = line.strip()
-    words = line.split()
-    sent = []
-    for word in words:
-        if word == "<s>" or word == "</s>":
+    vocab = dict()
+    for line in vocabf:
+        line = line.strip()
+        tokens = line.split()
+        if len(tokens) != 2:
+            print("Problem in line: %s" % line, file=sys.stderr)
             continue
-        elif word in vocab:
-            sent.append(vocab[word])
-        else:
-            sent.append("1")
+        vocab[tokens[0]] = int(tokens[1])
 
-    print "<s> %s </s>" % (" ".join(sent))
+    for line in sys.stdin:
+        line = line.strip()
+        words = line.split()
+        sent = []
+        for word in words:
+            if word == "<s>": continue
+            if word == "</s>": continue
+            if word in vocab:
+                sent.append(str(vocab[word]))
+            else:
+                sent.append(unk)
 
-
+        print("<s> %s </s>" % (" ".join(sent)))
