@@ -42,7 +42,9 @@ if __name__ == "__main__":
     analyses = read_analyses(args.ANALYSES, args.LARGE_COVERAGE_ANALYSES, True)
 
     classes = get_analysis_classes(analyses)
-    clsmap = dict(map(reversed, enumerate(sorted(classes))))
+
+    rev_clsmap = dict(enumerate(sorted(classes.keys())))
+    clsmap = dict(map(reversed, enumerate(sorted(classes.keys()))))
 
     word_state_vectors = initialize(analyses, clsmap)
 
@@ -52,9 +54,6 @@ if __name__ == "__main__":
     wordf.close()
 
     classf = open(args.CLASS_DEFS, "w")
-    rev_clsmap = dict()
-    for clss, idx in clsmap.items():
-        rev_clsmap[idx] = clss
     for idx, clss in rev_clsmap.items():
         print("%i\t%s" % (idx, clss), file=classf)
     classf.close()
