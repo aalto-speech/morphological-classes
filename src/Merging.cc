@@ -38,9 +38,9 @@ Merging::read_corpus(string fname)
     m_word_rev_bigram_counts.resize(m_vocabulary.size());
     SimpleFileInput corpusf2(fname);
 
-    int ss_idx = m_vocabulary_lookup["<s>"];
-    int se_idx = m_vocabulary_lookup["</s>"];
-    int unk_idx = m_vocabulary_lookup["<unk>"];
+    int ss_idx = m_vocabulary_lookup[SENTENCE_BEGIN_SYMBOL];
+    int se_idx = m_vocabulary_lookup[SENTENCE_END_SYMBOL];
+    int unk_idx = m_vocabulary_lookup[UNK_SYMBOL];
 
     string line;
     set<string> unk_types;
@@ -54,8 +54,8 @@ Merging::read_corpus(string fname)
 
         sent.push_back(ss_idx);
         while (ss >> token) {
-            if (token=="<s>" || token=="</s>") continue;
-            if (token=="<unk>" || token=="<UNK>") {
+            if (token==SENTENCE_BEGIN_SYMBOL || token==SENTENCE_END_SYMBOL) continue;
+            if (token==UNK_SYMBOL || token==CAP_UNK_SYMBOL) {
                 sent.push_back(unk_idx);
                 num_unk_tokens++;
             }
@@ -96,7 +96,7 @@ Merging::write_class_mem_probs(string fname) const
     SimpleFileOutput mfo(fname);
     for (unsigned int widx = 0; widx<m_vocabulary.size(); widx++) {
         const string& word = m_vocabulary[widx];
-        if (word=="<s>" || word=="</s>" || word=="<unk>") continue;
+        if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL || word==UNK_SYMBOL) continue;
         double lp = log(m_word_counts[widx]);
         lp -= log(m_class_counts[m_word_classes[widx]]);
         mfo << word << "\t" << m_word_classes[widx]-m_num_special_classes
@@ -108,9 +108,9 @@ Merging::write_class_mem_probs(string fname) const
 void
 Merging::initialize_classes_preset(const map<string, int>& word_classes)
 {
-    int sos_idx = insert_word_to_vocab("<s>");
-    int eos_idx = insert_word_to_vocab("</s>");
-    int unk_idx = insert_word_to_vocab("<unk>");
+    int sos_idx = insert_word_to_vocab(SENTENCE_BEGIN_SYMBOL);
+    int eos_idx = insert_word_to_vocab(SENTENCE_END_SYMBOL);
+    int unk_idx = insert_word_to_vocab(UNK_SYMBOL);
     m_word_classes[sos_idx] = START_CLASS;
     m_word_classes[eos_idx] = START_CLASS;
     m_word_classes[unk_idx] = UNK_CLASS;
@@ -121,7 +121,7 @@ Merging::initialize_classes_preset(const map<string, int>& word_classes)
 
     for (auto wit = word_classes.begin(); wit!=word_classes.end(); ++wit) {
         string word = wit->first;
-        if (word=="<s>" || word=="</s>" || word=="<unk>") {
+        if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL || word==UNK_SYMBOL) {
             cerr << "Warning: You have specified special tokens in the class "
                  << "initialization. These will be ignored." << endl;
             continue;
@@ -160,9 +160,9 @@ Merging::read_class_initialization(string class_fname)
 {
     cerr << "Reading class initialization from " << class_fname << endl;
 
-    int sos_idx = insert_word_to_vocab("<s>");
-    int eos_idx = insert_word_to_vocab("</s>");
-    int unk_idx = insert_word_to_vocab("<unk>");
+    int sos_idx = insert_word_to_vocab(SENTENCE_BEGIN_SYMBOL);
+    int eos_idx = insert_word_to_vocab(SENTENCE_END_SYMBOL);
+    int unk_idx = insert_word_to_vocab(UNK_SYMBOL);
     m_word_classes[sos_idx] = START_CLASS;
     m_word_classes[eos_idx] = START_CLASS;
     m_word_classes[unk_idx] = UNK_CLASS;
@@ -187,7 +187,7 @@ Merging::read_class_initialization(string class_fname)
             num_ignored_lines++;
             continue;
         }
-        if (word=="<s>" || word=="</s>" || word=="<unk>") {
+        if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL || word==UNK_SYMBOL) {
             cerr << "Warning: You have specified special tokens in the class "
                  << "initialization file. These will be ignored." << endl;
             continue;

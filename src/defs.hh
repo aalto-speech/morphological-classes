@@ -16,6 +16,11 @@ ngram_t;
 #define MIN_LOG_PROB -1000.0
 #define LP_PRUNE_LIMIT -50.0
 
+#define SENTENCE_BEGIN_SYMBOL "<s>"
+#define SENTENCE_END_SYMBOL "</s>"
+#define UNK_SYMBOL "<unk>"
+#define CAP_UNK_SYMBOL "<UNK>"
+
 // Return log(X+Y) where a=log(X) b=log(Y)
 static flt_type add_log_domain_probs(flt_type a, flt_type b)
 {

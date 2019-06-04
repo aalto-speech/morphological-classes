@@ -23,7 +23,7 @@ process_sent(string line,
     stringstream ss(line);
     string word;
     while (ss >> word) {
-        if (word=="<s>" || word=="</s>") continue;
+        if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL) continue;
         sent.push_back(word);
     }
     if (sent.size()>params.max_line_length) return false;
@@ -31,7 +31,7 @@ process_sent(string line,
 
     for (auto wit = sent.begin(); wit!=sent.end(); ++wit)
         if (vocab.find(*wit)==vocab.end())
-            wit->assign("<unk>");
+            wit->assign(UNK_SYMBOL);
 
     return true;
 }

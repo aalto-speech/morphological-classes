@@ -22,11 +22,11 @@ process_sent(string line,
     stringstream ss(line);
     string word;
     while (ss >> word) {
-        if (word=="<s>" || word=="</s>") continue;
+        if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL) continue;
         sent.push_back(word);
     }
     if (sent.size()==0) return false;
-    sent.push_back("</s>");
+    sent.push_back(SENTENCE_END_SYMBOL);
     return true;
 }
 

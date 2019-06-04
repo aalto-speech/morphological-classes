@@ -37,9 +37,9 @@ Exchanging::initialize_classes_by_freq(string corpus_fname,
 {
     cerr << "Initializing classes by frequency order from corpus " << corpus_fname << endl;
 
-    int sos_idx = insert_word_to_vocab("<s>");
-    int eos_idx = insert_word_to_vocab("</s>");
-    int unk_idx = insert_word_to_vocab("<unk>");
+    int sos_idx = insert_word_to_vocab(SENTENCE_BEGIN_SYMBOL);
+    int eos_idx = insert_word_to_vocab(SENTENCE_END_SYMBOL);
+    int unk_idx = insert_word_to_vocab(UNK_SYMBOL);
     m_word_classes[sos_idx] = START_CLASS;
     m_word_classes[eos_idx] = START_CLASS;
     m_word_classes[unk_idx] = UNK_CLASS;
@@ -77,7 +77,7 @@ Exchanging::initialize_classes_by_freq(string corpus_fname,
     for (auto wit = word_counts.begin(); wit!=word_counts.end(); ++wit)
     {
         string word = wit->first;
-        if (word=="<s>" || word=="</s>" || word=="<unk>") continue;
+        if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL || word==UNK_SYMBOL) continue;
         if (vocab_fname.length()>0 && constrained_vocab.find(word)==constrained_vocab.end())
             continue;
         sorted_words.insert(make_pair(wit->second, word));

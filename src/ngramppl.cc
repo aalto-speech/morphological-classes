@@ -24,7 +24,6 @@ int main(int argc, char* argv[])
     string arpafname = config.arguments[0];
     string infname = config.arguments[1];
 
-    string unk = "<unk>";
     bool root_unk_states = config["use-root-node"].specified;
 
     LNNgram lm;
@@ -47,8 +46,8 @@ int main(int argc, char* argv[])
         vector<string> words;
         string word;
         while (ss >> word) {
-            if (word=="<s>") continue;
-            if (word=="</s>") continue;
+            if (word==SENTENCE_BEGIN_SYMBOL) continue;
+            if (word==SENTENCE_END_SYMBOL) continue;
             words.push_back(word);
         }
         words.push_back(lm.sentence_end_symbol);

@@ -600,12 +600,12 @@ collect_stats(const vector<string>& sent,
         if (seqf!=nullptr) {
             if (i<params.num_parses) {
                 if (params.num_parses>1) *seqf << weight << " ";
-                *seqf << "<s>";
+                *seqf << SENTENCE_BEGIN_SYMBOL;
                 for (unsigned int c = 1; c<catseq.size()-1; c++) {
-                    if (catseq[c]==-1) *seqf << " <unk>";
+                    if (catseq[c]==-1) *seqf << " " << UNK_SYMBOL;
                     else *seqf << " " << catseq[c];
                 }
-                *seqf << " </s>\n";
+                *seqf << " " << SENTENCE_END_SYMBOL << "\n";
             }
         }
     }
@@ -697,15 +697,15 @@ get_word_counts(string corpusfname,
         stringstream ss(line);
         string word;
         while (ss >> word) {
-            if (word=="<s>" || word=="</s>") continue;
+            if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL) continue;
             counts[word]++;
             wc++;
         }
         lc++;
     }
 
-    counts["<s>"] = lc;
-    counts["</s>"] = lc;
+    counts[SENTENCE_BEGIN_SYMBOL] = lc;
+    counts[SENTENCE_END_SYMBOL] = lc;
 
     return wc;
 }

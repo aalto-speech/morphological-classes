@@ -13,7 +13,6 @@ using namespace std;
 void preprocess_sent(string line,
         const Ngram& lm,
         const map<string, pair<int, flt_type>>& class_memberships,
-        string unk_symbol,
         vector<string>& words,
         long int& num_words,
         long int& num_oovs)
@@ -22,12 +21,12 @@ void preprocess_sent(string line,
     words.clear();
     string word;
     while (ss >> word) {
-        if (word=="<s>") continue;
-        if (word=="</s>") continue;
+        if (word==SENTENCE_BEGIN_SYMBOL) continue;
+        if (word==SENTENCE_END_SYMBOL) continue;
         if (lm.vocabulary_lookup.find(word)==lm.vocabulary_lookup.end()
                 || class_memberships.find(word)==class_memberships.end()
-                || word=="<unk>" || word=="<UNK>") {
-            words.push_back(unk_symbol);
+                || word==UNK_SYMBOL || word==CAP_UNK_SYMBOL) {
+            words.push_back(UNK_SYMBOL);
             num_oovs++;
         }
         else {
@@ -56,7 +55,6 @@ int main(int argc, char* argv[])
     string classmfname = config.arguments[2];
     string infname = config.arguments[3];
 
-    string unk = "<unk>";
     bool root_unk_states = config["unk-root-node"].specified;
 
     double iw = config["weight"].get_float();
@@ -103,13 +101,13 @@ int main(int argc, char* argv[])
         double sent_ll = 0.0;
 
         vector<string> words;
-        preprocess_sent(line, lm, class_memberships, unk, words, num_words, num_oovs);
+        preprocess_sent(line, lm, class_memberships, words, num_words, num_oovs);
 
         int curr_lm_node = lm.sentence_start_node;
         int curr_class_lm_node = class_ng.sentence_start_node;
 
         for (int i = 0; i<(int) words.size(); i++) {
-            if (words[i]==unk) {
+            if (words[i]==UNK_SYMBOL) {
                 if (root_unk_states) {
                     curr_lm_node = lm.root_node;
                     curr_class_lm_node = class_ng.root_node;

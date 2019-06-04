@@ -25,7 +25,6 @@ int main(int argc, char* argv[])
     string classmfname = config.arguments[1];
     string infname = config.arguments[2];
 
-    string unk = "<unk>";
     bool root_unk_states = config["use-root-node"].specified;
 
     map<string, pair<int, flt_type>> class_memberships;
@@ -60,11 +59,11 @@ int main(int argc, char* argv[])
         vector<string> words;
         string word;
         while (ss >> word) {
-            if (word=="<s>") continue;
-            if (word=="</s>") continue;
+            if (word==SENTENCE_BEGIN_SYMBOL) continue;
+            if (word==SENTENCE_END_SYMBOL) continue;
             if (class_memberships.find(word)==class_memberships.end()
-                    || word=="<unk>" || word=="<UNK>") {
-                words.push_back(unk);
+                    || word==UNK_SYMBOL || word==CAP_UNK_SYMBOL) {
+                words.push_back(UNK_SYMBOL);
                 num_oovs++;
             }
             else {
@@ -78,7 +77,7 @@ int main(int argc, char* argv[])
 
         int curr_node = ng.sentence_start_node;
         for (int i = 0; i<(int) words.size(); i++) {
-            if (words[i]==unk) {
+            if (words[i]==UNK_SYMBOL) {
                 if (root_unk_states) curr_node = ng.root_node;
                 else curr_node = ng.advance(curr_node, ng.unk_symbol_idx);
                 continue;

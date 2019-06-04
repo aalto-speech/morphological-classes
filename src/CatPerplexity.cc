@@ -14,14 +14,14 @@ bool process_sent(string line, vector<string>& sent)
     stringstream ss(line);
     string word;
     while (ss >> word) {
-        if (word=="<s>" || word=="</s>") continue;
+        if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL) continue;
         sent.push_back(word);
         if (ss.fail()) return false;
     }
     if (sent.size()==0)
         return false;
     else {
-        sent.push_back("</s>");
+        sent.push_back(SENTENCE_END_SYMBOL);
         return true;
     }
 }
@@ -120,9 +120,9 @@ likelihood(const LNNgram& ngram,
     auto cgenit = wcs.m_category_gen_probs.find(word);
     auto cmemit = wcs.m_category_mem_probs.find(word);
 
-    if (word=="</s>")
+    if (word==SENTENCE_END_SYMBOL)
         sentence_end = true;
-    else if (word=="<unk>" || word=="<UNK>")
+    else if (word==UNK_SYMBOL || word==CAP_UNK_SYMBOL)
         unk = true;
     else if (cgenit==wcs.m_category_gen_probs.end() || cgenit->second.size()==0)
         unk = true;

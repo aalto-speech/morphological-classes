@@ -14,20 +14,20 @@ write_class_unigram_counts(const map<string, int>& word_counts,
 {
     map<string, flt_type> category_counts;
     for (auto wit = word_counts.cbegin(); wit!=word_counts.cend(); ++wit) {
-        if (wit->first=="<s>" || wit->first=="</s>"
-                || wit->first=="<unk>") {
+        if (wit->first==SENTENCE_BEGIN_SYMBOL || wit->first==SENTENCE_END_SYMBOL
+                || wit->first==UNK_SYMBOL) {
             category_counts[wit->first] += wit->second;
             continue;
         }
-        else if (wit->first=="<UNK>") {
-            category_counts["<unk>"] += wit->second;
+        else if (wit->first==CAP_UNK_SYMBOL) {
+            category_counts[UNK_SYMBOL] += wit->second;
             continue;
         }
         if (wcl.m_category_gen_probs.find(wit->first)==wcl.m_category_gen_probs.end())
             continue;
         const CategoryProbs& cprobs = wcl.m_category_gen_probs.at(wit->first);
         if (cprobs.size()==0)
-            category_counts["<unk>"] += wit->second;
+            category_counts[UNK_SYMBOL] += wit->second;
         else {
             flt_type tmp = 1.0/(flt_type) cprobs.size();
             for (auto catit = cprobs.cbegin(); catit!=cprobs.end(); ++catit)
