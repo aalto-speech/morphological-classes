@@ -1,9 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
 import sys
 import argparse
 from collections import defaultdict
-
 
 if __name__ == "__main__":
 
@@ -22,8 +22,7 @@ if __name__ == "__main__":
         idx, omorfi_class = line.split()
         idx = int(idx)
         if expected_idx != idx:
-            print >>sys.stderr, "Problem in class indexing."
-            exit(1)
+            raise Exception("Problem in class indexing: %s" % line)
         expected_idx += 1
 
         omorfi_tags = omorfi_class.split("_")
@@ -31,7 +30,6 @@ if __name__ == "__main__":
 
     sclassf = open(args.super_classes, "w")
     for class_label, subclasses in super_classes.items():
-        print >>sclassf, ",".join(subclasses)
-        print >>sys.stderr, "%s: %i" % (class_label, len(subclasses))
+        print(",".join(subclasses), file=sclassf)
+        print("%s: %i" % (class_label, len(subclasses)), file=sys.stderr)
     sclassf.close()
-
