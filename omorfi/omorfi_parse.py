@@ -30,8 +30,8 @@ def _read_analyses_file(analysisFname, analyses, shortenLongNumberAnalysis=True,
             raise Exception("Erroneous Omorfi analysis: %s" % line)
 
         word = tokens[0].lower()
-        if not word in analyses: analyses[word] = set()
-
+        if word not in analyses:
+            analyses[word] = list()
         analysis_tokens = re.findall("\[(.*?)\]", tokens[1])
         if analysis_tokens:
             analysis_tokens = list(filter(lambda x: x.split("=")[0] not in excluded_fields, analysis_tokens))
@@ -43,7 +43,8 @@ def _read_analyses_file(analysisFname, analyses, shortenLongNumberAnalysis=True,
                     analysis_tokens = analysis_tokens[compound_sep_poss[-1]+1:]
 
             word_analysis = TAG_SEPARATOR.join(analysis_tokens)
-            if len(word_analysis): analyses[word].add(word_analysis)
+            if len(word_analysis) and word_analysis not in analyses[word]:
+                analyses[word].append(word_analysis)
 
     return analyses
 
@@ -61,6 +62,7 @@ def _merge_large_coverage_analyses(analyses, large_coverage_analyses):
             elif not is_number and len(large_coverage_word_analyses) > len(word_analyses):
                 extra_analyses += 1
                 analyses[word] = large_coverage_word_analyses
+
     return extra_words, extra_analyses
 
 

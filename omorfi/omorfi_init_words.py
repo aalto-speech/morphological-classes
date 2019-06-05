@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     wordf = codecs.open(args.WORD_INIT, "w", encoding=args.encoding)
     for word, word_analyses in sorted(analyses.items()):
-        word_class_idxs = sorted(map(lambda x: clsmap[x], word_analyses))
+        word_class_idxs = map(lambda x: clsmap[x], word_analyses)
         print("%s\t%s" % (word, " ".join(map(str, word_class_idxs))), file=wordf)
     wordf.close()
 
