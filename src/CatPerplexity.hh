@@ -15,7 +15,7 @@ bool process_sent(std::string line, std::vector<std::string>& sent);
 
 class CategoryHistory {
 public:
-    CategoryHistory(const Ngram& ngram);
+    CategoryHistory(const LNNgram& ngram);
     void update(const CategoryProbs* probs);
     std::list<const CategoryProbs*> m_history;
     unsigned int m_history_length;
@@ -23,7 +23,7 @@ public:
 
 class HistoryToken {
 public:
-    HistoryToken(const Ngram& ngram);
+    HistoryToken(const LNNgram& ngram);
     double m_ll;
     int m_ngram_node;
 };
@@ -31,14 +31,16 @@ public:
 bool operator<(const HistoryToken& lhs, const HistoryToken& rhs);
 
 std::vector<HistoryToken>
-propagate_history(const Ngram& ngram,
+propagate_history(
+        const LNNgram& ngram,
         const CategoryHistory& history,
         const std::vector<int>& intmap,
         bool root_unk_states = false,
         int num_tokens = 100,
         double beam = FLT_MAX);
 
-double likelihood(const LNNgram& ngram,
+double likelihood(
+        const LNNgram& ngram,
         const Categories& wcs,
         const std::vector<int>& intmap,
         unsigned long int& num_words,

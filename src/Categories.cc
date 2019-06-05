@@ -374,7 +374,8 @@ get_cat_gen_lp(Token* tok,
 }
 
 multimap<flt_type, int>
-get_cat_tag_hypotheses(const Ngram& ngram,
+get_cat_tag_hypotheses(
+        const LNNgram& ngram,
         const vector<int>& indexmap,
         int cng_node,
         int num_hypotheses = 10)
@@ -405,8 +406,9 @@ get_cat_tag_hypotheses(const Ngram& ngram,
 }
 
 void
-segment_sent(const std::vector<std::string>& words,
-        const Ngram& ngram,
+segment_sent(
+        const std::vector<std::string>& words,
+        const LNNgram& ngram,
         const vector<int>& indexmap,
         const Categories& categories,
         const TrainingParameters& params,
@@ -420,7 +422,6 @@ segment_sent(const std::vector<std::string>& words,
     pointers.clear();
     tokens.clear();
     tokens.resize(words.size()+2);
-    static double log10_to_ln = log(10.0);
     bool tag_word = params.tagging!=NO;
     bool tagged = false;
 
@@ -456,9 +457,7 @@ segment_sent(const std::vector<std::string>& words,
                     int c = cit->first;
 
                     flt_type curr_score = tok.m_lp+cat_gen_lp;
-                    flt_type ngram_lp = 0.0;
-                    int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], ngram_lp);
-                    curr_score += ngram_lp*log10_to_ln;
+                    int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], curr_score);
                     curr_score += cit->second;
 
                     if ((curr_score+params.prob_beam)<best_score) {
@@ -487,9 +486,7 @@ segment_sent(const std::vector<std::string>& words,
                     int c = hit->second;
 
                     flt_type curr_score = tok.m_lp+cat_gen_lp;
-                    flt_type ngram_lp = 0.0;
-                    int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], ngram_lp);
-                    curr_score += ngram_lp*log10_to_ln;
+                    int ngram_node_idx = ngram.score(tok.m_cng_node, indexmap[c], curr_score);
 
                     best_score = max(best_score, curr_score);
                     worst_score = min(worst_score, curr_score);
@@ -528,17 +525,16 @@ segment_sent(const std::vector<std::string>& words,
         Token& tok = *(*tit);
         Token* new_tok = new Token(tok, -1);
         new_tok->m_lp = tok.m_lp+get_cat_gen_lp(&tok, params.max_order-1);
-        flt_type ngram_lp = 0.0;
-        new_tok->m_cng_node = ngram.score(tok.m_cng_node, ngram.sentence_end_symbol_idx, ngram_lp);
-        new_tok->m_lp += ngram_lp*log10_to_ln;
+        new_tok->m_cng_node = ngram.score(tok.m_cng_node, ngram.sentence_end_symbol_idx, new_tok->m_lp);
         tokens.back().push_back(new_tok);
         pointers.push_back(new_tok);
     }
 }
 
 flt_type
-collect_stats(const vector<string>& sent,
-        const Ngram& ngram,
+collect_stats(
+        const vector<string>& sent,
+        const LNNgram& ngram,
         const vector<int>& indexmap,
         const Categories& categories,
         const TrainingParameters& params,
@@ -616,13 +612,15 @@ collect_stats(const vector<string>& sent,
     return total_lp;
 }
 
-bool descending_int_flt_sort(const pair<int, flt_type>& i,
+bool descending_int_flt_sort(
+        const pair<int, flt_type>& i,
         const pair<int, flt_type>& j)
 {
     return (i.second>j.second);
 }
 
-void limit_num_categories(map<string, CategoryProbs>& probs,
+void limit_num_categories(
+        map<string, CategoryProbs>& probs,
         int num_categories)
 {
     for (auto wit = probs.begin(); wit!=probs.end(); ++wit) {
@@ -636,7 +634,8 @@ void limit_num_categories(map<string, CategoryProbs>& probs,
     }
 }
 
-void histogram_prune(vector<Token*>& tokens,
+void histogram_prune(
+        vector<Token*>& tokens,
         int num_tokens,
         flt_type worst_score,
         flt_type best_score)
@@ -684,7 +683,8 @@ void histogram_prune(vector<Token*>& tokens,
 }
 
 int
-get_word_counts(string corpusfname,
+get_word_counts(
+        string corpusfname,
         map<string, int>& counts)
 {
     SimpleFileInput corpusf(corpusfname);

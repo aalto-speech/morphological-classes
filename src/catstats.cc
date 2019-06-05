@@ -14,7 +14,8 @@
 using namespace std;
 
 bool
-process_sent(string line,
+process_sent(
+        string line,
         const set<string>& vocab,
         const TrainingParameters& params,
         vector<string>& sent)
@@ -37,9 +38,10 @@ process_sent(string line,
 }
 
 void
-catstats(string corpusfname,
+catstats(
+        string corpusfname,
         const set<string>& vocab,
-        const Ngram& cngram,
+        const LNNgram& cngram,
         const vector<int>& indexmap,
         const Categories& categories,
         const TrainingParameters& params,
@@ -79,9 +81,10 @@ catstats(string corpusfname,
 }
 
 flt_type
-catstats_thr(string corpusfname,
+catstats_thr(
+        string corpusfname,
         const set<string>& vocab,
-        const Ngram& cngram,
+        const LNNgram& cngram,
         const vector<int>& indexmap,
         const Categories& categories,
         const TrainingParameters& params,
@@ -185,7 +188,7 @@ int main(int argc, char* argv[])
     wcs.read_category_mem_probs(cmempfname);
 
     cerr << "Reading category n-gram model.." << endl;
-    Ngram cngram;
+    LNNgram cngram;
     cngram.read_arpa(cngramfname);
     params.max_order = cngram.max_order;
     if (config["max-order"].specified) params.max_order = config["max-order"].get_int();

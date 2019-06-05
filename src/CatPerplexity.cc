@@ -26,7 +26,7 @@ bool process_sent(string line, vector<string>& sent)
     }
 }
 
-CategoryHistory::CategoryHistory(const Ngram& ngram)
+CategoryHistory::CategoryHistory(const LNNgram& ngram)
 {
     m_history_length = ngram.max_order-1;
 }
@@ -40,7 +40,7 @@ CategoryHistory::update(const CategoryProbs* probs)
     }
 }
 
-HistoryToken::HistoryToken(const Ngram& ngram)
+HistoryToken::HistoryToken(const LNNgram& ngram)
 {
     m_ll = 0.0;
     m_ngram_node = ngram.sentence_start_node;
@@ -52,7 +52,8 @@ bool operator<(const HistoryToken& lhs, const HistoryToken& rhs)
 }
 
 vector<HistoryToken>
-propagate_history(const Ngram& ngram,
+propagate_history(
+        const LNNgram& ngram,
         const CategoryHistory& history,
         const vector<int>& intmap,
         bool root_unk_states,
@@ -103,7 +104,8 @@ propagate_history(const Ngram& ngram,
 }
 
 double
-likelihood(const LNNgram& ngram,
+likelihood(
+        const LNNgram& ngram,
         const Categories& wcs,
         const vector<int>& intmap,
         unsigned long int& num_words,
@@ -152,14 +154,13 @@ likelihood(const LNNgram& ngram,
     }
     else {
         double total_ll = -FLT_MAX;
-        for (auto tit = tokens.begin(); tit!=tokens.end(); ++tit) {
+        for (auto tit = tokens.begin(); tit!=tokens.end(); ++tit)
             for (auto cit = cmemit->second.begin(); cit!=cmemit->second.end(); ++cit) {
                 double ll = tit->m_ll;
                 ngram.score(tit->m_ngram_node, intmap[cit->first], ll);
                 ll += cit->second;
                 total_ll = add_log_domain_probs(total_ll, ll);
             }
-        }
         num_words++;
         history.update(&(cgenit->second));
         return total_ll;

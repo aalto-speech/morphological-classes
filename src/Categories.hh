@@ -119,7 +119,7 @@ public:
 
 void segment_sent(
         const std::vector<std::string>& sent,
-        const Ngram& ngram,
+        const LNNgram& ngram,
         const std::vector<int>& indexmap,
         const Categories& categories,
         const TrainingParameters& params,
@@ -132,7 +132,7 @@ void segment_sent(
 
 flt_type collect_stats(
         const std::vector<std::string>& sent,
-        const Ngram& ngram,
+        const LNNgram& ngram,
         const std::vector<int>& indexmap,
         const Categories& categories,
         const TrainingParameters& params,
