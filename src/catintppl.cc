@@ -15,7 +15,10 @@
 using namespace std;
 
 bool
-process_sent(string line,
+process_sent(
+        const LNNgram& lm,
+        const Categories& wcs,
+        string line,
         vector<string>& sent)
 {
     sent.clear();
@@ -23,52 +26,28 @@ process_sent(string line,
     string word;
     while (ss >> word) {
         if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL) continue;
-        sent.push_back(word);
+        bool unk =
+                word==UNK_SYMBOL || word==CAP_UNK_SYMBOL || lm.vocabulary_lookup.find(word)==lm.vocabulary_lookup.end();
+        if (!unk) {
+            auto cgenit = wcs.m_category_gen_probs.find(word);
+            auto cmemit = wcs.m_category_mem_probs.find(word);
+            if (cgenit==wcs.m_category_gen_probs.end() || cgenit->second.size()==0)
+                unk = true;
+            else if (cmemit==wcs.m_category_mem_probs.end() || cmemit->second.size()==0)
+                unk = true;
+        }
+        sent.push_back(unk ? UNK_SYMBOL : word);
     }
     if (sent.size()==0) return false;
     sent.push_back(SENTENCE_END_SYMBOL);
     return true;
 }
 
-double
-catintppl(string corpusfname,
-        const LNNgram& lm,
-        const LNNgram& cngram,
-        const vector<int>& indexmap,
-        const Categories& categories,
-        double word_iw,
-        double cat_iw,
-        unsigned long int& num_vocab_words,
-        unsigned long int& num_oov_words,
-        unsigned long int& num_sents,
-        bool root_unk_states = false,
-        int max_tokens = 100,
-        double beam = 20.0)
-{
-    SimpleFileInput corpusf(corpusfname);
-    double total_ll = 0.0;
-    string line;
-    while (corpusf.getline(line)) {
-        vector<string> sent;
-        if (!process_sent(line, sent)) continue;
-        CatPerplexity::CategoryHistory history(cngram);
-        for (int i = 0; i<(int) sent.size(); i++)
-            total_ll +=
-                    CatPerplexity::likelihood(cngram, categories, indexmap,
-                            num_vocab_words, num_oov_words,
-                            sent[i], history,
-                            false, max_tokens, beam);
-        num_sents++;
-    }
-
-    return total_ll;
-}
-
 int main(int argc, char* argv[])
 {
 
     conf::Config config;
-    config("usage: catintppl [OPTION...] CAT_ARPA CGENPROBS CMEMPROBS INPUT\n")
+    config("usage: catintppl [OPTION...] WORD_ARPA CAT_ARPA CGENPROBS CMEMPROBS INPUT\n")
             ('i', "weight=FLOAT", "arg", "0.5", "Interpolation weight [0.0,1.0] for the word ARPA model")
             ('r', "unk-root-node", "", "",
                     "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
@@ -116,12 +95,40 @@ int main(int argc, char* argv[])
     unsigned long int num_vocab_words = 0;
     unsigned long int num_oov_words = 0;
     unsigned long int num_sents = 0;
-    double total_ll = catintppl(infname,
-            lm,
-            cngram, indexmap, wcs,
-            word_iw, cat_iw,
-            num_vocab_words, num_oov_words, num_sents,
-            root_unk_states, max_tokens, prob_beam);
+
+    SimpleFileInput corpusf(infname);
+    double total_ll = 0.0;
+    string line;
+    while (corpusf.getline(line)) {
+        vector<string> sent;
+        if (!process_sent(lm, wcs, line, sent)) continue;
+        CatPerplexity::CategoryHistory history(cngram);
+        int curr_lm_node = lm.sentence_start_node;
+        for (int i = 0; i<(int) sent.size(); i++) {
+            if (sent[i]==UNK_SYMBOL) {
+                if (root_unk_states)
+                    curr_lm_node = lm.root_node;
+                else
+                    curr_lm_node = lm.advance(curr_lm_node, lm.unk_symbol_idx);
+                CatPerplexity::likelihood(cngram, wcs, indexmap,
+                        num_vocab_words, num_oov_words,
+                        sent[i], history,
+                        false, max_tokens, prob_beam);
+            }
+            else {
+                double ngram_lp = word_iw;
+                curr_lm_node = lm.score(curr_lm_node, lm.vocabulary_lookup.at(sent[i]), ngram_lp);
+
+                double cat_lp = cat_iw+CatPerplexity::likelihood(cngram, wcs, indexmap,
+                        num_vocab_words, num_oov_words,
+                        sent[i], history,
+                        false, max_tokens, prob_beam);
+
+                total_ll += add_log_domain_probs(ngram_lp, cat_lp);
+            }
+        }
+        num_sents++;
+    }
 
     cout << "Number of sentences processed: " << num_sents << endl;
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
@@ -130,7 +137,7 @@ int main(int argc, char* argv[])
     cerr << "Total log likelihood (ln): " << total_ll << endl;
     cerr << "Total log likelihood (log10): " << total_ll/2.302585092994046 << endl;
 
-    double ppl = exp(-1.0/double(num_vocab_words+num_sents) * total_ll);
+    double ppl = exp(-1.0/double(num_vocab_words+num_sents)*total_ll);
     cerr << "Perplexity: " << ppl << endl;
 
     exit(EXIT_SUCCESS);
