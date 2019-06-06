@@ -127,9 +127,11 @@ int main(int argc, char* argv[])
     cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
     cout << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+num_sents << endl;
     cout << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
-    cout << "Likelihood: " << total_ll << endl;
-    double ppl = exp(-1.0/double(num_vocab_words+num_sents)*total_ll);
-    cout << "Perplexity: " << ppl << endl;
+    cerr << "Total log likelihood (ln): " << total_ll << endl;
+    cerr << "Total log likelihood (log10): " << total_ll/2.302585092994046 << endl;
+
+    double ppl = exp(-1.0/double(num_vocab_words+num_sents) * total_ll);
+    cerr << "Perplexity: " << ppl << endl;
 
     exit(EXIT_SUCCESS);
 }

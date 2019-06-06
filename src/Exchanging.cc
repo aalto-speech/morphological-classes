@@ -22,7 +22,8 @@ Exchanging::Exchanging(
 {
 }
 
-Exchanging::Exchanging(int num_classes,
+Exchanging::Exchanging(
+        int num_classes,
         string corpus_fname,
         string vocab_fname)
         :Merging(num_classes)
@@ -32,7 +33,8 @@ Exchanging::Exchanging(int num_classes,
 }
 
 void
-Exchanging::initialize_classes_by_freq(string corpus_fname,
+Exchanging::initialize_classes_by_freq(
+        string corpus_fname,
         string vocab_fname)
 {
     cerr << "Initializing classes by frequency order from corpus " << corpus_fname << endl;
@@ -120,7 +122,8 @@ get_count(const map<int, int>& ctxt,
 }
 
 double
-Exchanging::evaluate_exchange(int word,
+Exchanging::evaluate_exchange(
+        int word,
         int curr_class,
         int tentative_class) const
 {
@@ -191,7 +194,8 @@ Exchanging::evaluate_exchange(int word,
 }
 
 void
-Exchanging::do_exchange(int word,
+Exchanging::do_exchange(
+        int word,
         int prev_class,
         int new_class)
 {
@@ -238,7 +242,8 @@ Exchanging::do_exchange(int word,
 }
 
 double
-Exchanging::iterate_exchange(int max_iter,
+Exchanging::iterate_exchange(
+        int max_iter,
         int max_seconds,
         int ll_print_interval,
         int model_write_interval,

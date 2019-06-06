@@ -13,8 +13,8 @@
 
 typedef float flt_type;
 
-#define MIN_LOG_PROB -1000.0
-#define LP_PRUNE_LIMIT -50.0
+static flt_type MIN_LOG_PROB = -1000.0;
+static flt_type LP_PRUNE_LIMIT = -50.0;
 
 #define SENTENCE_BEGIN_SYMBOL "<s>"
 #define SENTENCE_END_SYMBOL "</s>"

@@ -155,5 +155,5 @@ int main(int argc, char* argv[])
         cerr << "Word-normalized perplexity: " << wnppl << endl;
     }
 
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
