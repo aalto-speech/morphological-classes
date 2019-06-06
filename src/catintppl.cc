@@ -111,14 +111,7 @@ int main(int argc, char* argv[])
     cerr << "Reading category n-gram model.." << endl;
     LNNgram cngram;
     cngram.read_arpa(cngramfname);
-
-    // The class indexes are stored as strings in the n-gram class
-    vector<int> indexmap(wcs.num_categories());
-    for (int i = 0; i<(int) indexmap.size(); i++)
-        if (cngram.vocabulary_lookup.find(int2str(i))!=cngram.vocabulary_lookup.end())
-            indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
-        else
-            cerr << "warning, category not found in the n-gram: " << i << endl;
+    vector<int> indexmap = get_class_index_map(wcs.num_categories(), cngram);
 
     unsigned long int num_vocab_words = 0;
     unsigned long int num_oov_words = 0;

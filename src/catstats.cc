@@ -190,14 +190,10 @@ int main(int argc, char* argv[])
     cerr << "Reading category n-gram model.." << endl;
     LNNgram cngram;
     cngram.read_arpa(cngramfname);
+    vector<int> indexmap = get_class_index_map(wcs.num_categories(), cngram);
+
     params.max_order = cngram.max_order;
     if (config["max-order"].specified) params.max_order = config["max-order"].get_int();
-
-    // The class indexes are stored as strings in the n-gram class
-    vector<int> indexmap(wcs.num_categories());
-    for (int i = 0; i<(int) indexmap.size(); i++)
-        if (cngram.vocabulary_lookup.find(int2str(i))!=cngram.vocabulary_lookup.end())
-            indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
 
     set<string> vocab;
     wcs.get_words(vocab, params.tagging!=NO);

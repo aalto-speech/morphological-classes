@@ -6,12 +6,12 @@
 #include <cstdio>
 #include <map>
 #include <sstream>
+#include <vector>
 
 #include "io.hh"
+#include "Ngram.hh"
 
 typedef float flt_type;
-typedef std::map<int, std::map<int, std::map<int, flt_type> > >
-ngram_t;
 
 #define MIN_LOG_PROB -1000.0
 #define LP_PRUNE_LIMIT -50.0
@@ -59,7 +59,8 @@ static std::string int2str(int a)
 }
 
 static int
-read_class_memberships(std::string fname,
+read_class_memberships(
+        std::string fname,
         std::map<std::string, std::pair<int, flt_type>>& class_memberships)
 {
     SimpleFileInput wcf(fname);
@@ -76,6 +77,21 @@ read_class_memberships(std::string fname,
         max_class = std::max(max_class, clss);
     }
     return max_class+1;
+}
+
+// The class indexes are stored as strings in the n-gram class
+static std::vector<int>
+get_class_index_map(
+        int num_classes,
+        Ngram& cngram)
+{
+    std::vector<int> indexmap(num_classes);
+    for (int i = 0; i<(int) indexmap.size(); i++)
+        if (cngram.vocabulary_lookup.find(int2str(i))!=cngram.vocabulary_lookup.end())
+            indexmap[i] = cngram.vocabulary_lookup[int2str(i)];
+        else
+            std::cerr << "warning, class not found in the n-gram: " << i << std::endl;
+    return indexmap;
 }
 
 #endif /* PROJECT_DEFS */

@@ -76,13 +76,7 @@ int main(int argc, char* argv[])
     cerr << "Reading class n-gram model.." << endl;
     LNNgram class_ng;
     class_ng.read_arpa(classngramfname);
-
-    // The class indexes are stored as strings in the n-gram class
-    vector<int> indexmap(num_classes);
-    for (int i = 0; i<(int) indexmap.size(); i++)
-        if (class_ng.vocabulary_lookup.find(int2str(i))!=class_ng.vocabulary_lookup.end())
-            indexmap[i] = class_ng.vocabulary_lookup[int2str(i)];
-        else indexmap[i] = -1;
+    vector<int> indexmap = get_class_index_map(num_classes, class_ng);
 
     cerr << "Scoring sentences.." << endl;
     SimpleFileInput infile(infname);

@@ -32,14 +32,9 @@ int main(int argc, char* argv[])
     int num_classes = read_class_memberships(classmfname, class_memberships);
 
     cerr << "Reading class n-gram model.." << endl;
-    LNNgram ng;
-    ng.read_arpa(ngramfname);
-
-    // The class indexes are stored as strings in the n-gram class
-    vector<int> indexmap(num_classes);
-    for (int i = 0; i<(int) indexmap.size(); i++)
-        if (ng.vocabulary_lookup.find(int2str(i))!=ng.vocabulary_lookup.end())
-            indexmap[i] = ng.vocabulary_lookup[int2str(i)];
+    LNNgram cngram;
+    cngram.read_arpa(ngramfname);
+    vector<int> indexmap = get_class_index_map(num_classes, cngram);
 
     cerr << "Scoring sentences.." << endl;
     SimpleFileInput infile(infname);
@@ -75,23 +70,23 @@ int main(int argc, char* argv[])
 
         double sent_ll = 0.0;
 
-        int curr_node = ng.sentence_start_node;
+        int curr_node = cngram.sentence_start_node;
         for (int i = 0; i<(int) words.size(); i++) {
             if (words[i]==UNK_SYMBOL) {
-                if (root_unk_states) curr_node = ng.root_node;
-                else curr_node = ng.advance(curr_node, ng.unk_symbol_idx);
+                if (root_unk_states) curr_node = cngram.root_node;
+                else curr_node = cngram.advance(curr_node, cngram.unk_symbol_idx);
                 continue;
             }
 
             pair<int, flt_type> word_class = class_memberships.at(words[i]);
             sent_ll += word_class.second;
             double ngram_score = 0.0;
-            curr_node = ng.score(curr_node, indexmap[word_class.first], ngram_score);
+            curr_node = cngram.score(curr_node, indexmap[word_class.first], ngram_score);
             sent_ll += ngram_score;
         }
 
         double ngram_score = 0.0;
-        curr_node = ng.score(curr_node, ng.sentence_end_symbol_idx, ngram_score);
+        curr_node = cngram.score(curr_node, cngram.sentence_end_symbol_idx, ngram_score);
         sent_ll += ngram_score;
 
         total_ll += sent_ll;
