@@ -5,6 +5,9 @@ import sys
 import argparse
 from collections import defaultdict
 
+from omorfi_parse import TAG_SEPARATOR
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Construct super class definitions for Omorfi classes')
@@ -25,7 +28,7 @@ if __name__ == "__main__":
             raise Exception("Problem in class indexing: %s" % line)
         expected_idx += 1
 
-        omorfi_tags = omorfi_class.split("_")
+        omorfi_tags = omorfi_class.split(TAG_SEPARATOR)
         super_classes[omorfi_tags[0]].add(str(idx))
 
     sclassf = open(args.super_classes, "w")
