@@ -19,7 +19,8 @@ Merging::Merging(int num_classes)
 {
 }
 
-Merging::Merging(int num_classes,
+Merging::Merging(
+        int num_classes,
         const map<string, int>& word_classes,
         string corpus_fname)
         :m_num_classes(num_classes+2),
@@ -36,7 +37,7 @@ Merging::read_corpus(string fname)
     m_word_counts.resize(m_vocabulary.size());
     m_word_bigram_counts.resize(m_vocabulary.size());
     m_word_rev_bigram_counts.resize(m_vocabulary.size());
-    SimpleFileInput corpusf2(fname);
+    SimpleFileInput corpusf(fname);
 
     int ss_idx = m_vocabulary_lookup[SENTENCE_BEGIN_SYMBOL];
     int se_idx = m_vocabulary_lookup[SENTENCE_END_SYMBOL];
@@ -47,7 +48,7 @@ Merging::read_corpus(string fname)
     unsigned long int num_tokens = 0;
     unsigned long int num_iv_tokens = 0;
     unsigned long int num_unk_tokens = 0;
-    while (corpusf2.getline(line)) {
+    while (corpusf.getline(line)) {
         vector<int> sent;
         stringstream ss(line);
         string token;
@@ -259,7 +260,8 @@ Merging::log_likelihood() const
 }
 
 double
-Merging::evaluate_merge(int class1,
+Merging::evaluate_merge(
+        int class1,
         int class2) const
 {
     double cbg_ll_diff = 0.0;
@@ -303,7 +305,8 @@ Merging::evaluate_merge(int class1,
 }
 
 void
-Merging::do_merge(int class1,
+Merging::do_merge(
+        int class1,
         int class2)
 {
     for (auto wit = m_classes.at(class2).begin(); wit!=m_classes.at(class2).end(); ++wit)

@@ -51,13 +51,11 @@ Exchanging::initialize_classes_by_freq(
     m_classes[UNK_CLASS].insert(unk_idx);
 
     set<string> constrained_vocab;
-    if (vocab_fname.length())
-    {
+    if (vocab_fname.length()) {
         cerr << "Reading vocabulary from " << vocab_fname << endl;
         SimpleFileInput vocabf(vocab_fname);
         string line;
-        while (vocabf.getline(line))
-        {
+        while (vocabf.getline(line)) {
             stringstream ss(line);
             string token;
             while (ss >> token) constrained_vocab.insert(token);
@@ -67,8 +65,7 @@ Exchanging::initialize_classes_by_freq(
     string line;
     SimpleFileInput corpusf(corpus_fname);
     map<string, int> word_counts;
-    while (corpusf.getline(line))
-    {
+    while (corpusf.getline(line)) {
         vector<int> sent;
         stringstream ss(line);
         string token;
@@ -76,8 +73,7 @@ Exchanging::initialize_classes_by_freq(
     }
 
     multimap<int, string> sorted_words;
-    for (auto wit = word_counts.begin(); wit!=word_counts.end(); ++wit)
-    {
+    for (auto wit = word_counts.begin(); wit!=word_counts.end(); ++wit) {
         string word = wit->first;
         if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL || word==UNK_SYMBOL) continue;
         if (vocab_fname.length()>0 && constrained_vocab.find(word)==constrained_vocab.end())
@@ -86,8 +82,7 @@ Exchanging::initialize_classes_by_freq(
     }
 
     unsigned int class_idx_helper = m_num_special_classes;
-    for (auto swit = sorted_words.rbegin(); swit!=sorted_words.rend(); ++swit)
-    {
+    for (auto swit = sorted_words.rbegin(); swit!=sorted_words.rend(); ++swit) {
         int widx = insert_word_to_vocab(swit->second);
         if (m_word_classes[widx]!=-1) continue;
 
@@ -138,8 +133,7 @@ Exchanging::evaluate_exchange(
     ll_diff += 2*(m_class_counts[tentative_class])*log(m_class_counts[tentative_class]);
     ll_diff -= 2*(m_class_counts[tentative_class]+wc)*log(m_class_counts[tentative_class]+wc);
 
-    for (auto wcit = wc_counts.begin(); wcit!=wc_counts.end(); ++wcit)
-    {
+    for (auto wcit = wc_counts.begin(); wcit!=wc_counts.end(); ++wcit) {
         if (wcit->first==curr_class) continue;
         if (wcit->first==tentative_class) continue;
 
@@ -152,8 +146,7 @@ Exchanging::evaluate_exchange(
         evaluate_ll_diff(ll_diff, curr_count, new_count);
     }
 
-    for (auto wcit = cw_counts.begin(); wcit!=cw_counts.end(); ++wcit)
-    {
+    for (auto wcit = cw_counts.begin(); wcit!=cw_counts.end(); ++wcit) {
         if (wcit->first==curr_class) continue;
         if (wcit->first==tentative_class) continue;
 
@@ -204,8 +197,7 @@ Exchanging::do_exchange(
     m_class_counts[new_class] += wc;
 
     map<int, int>& bctxt = m_word_bigram_counts[word];
-    for (auto wit = bctxt.begin(); wit!=bctxt.end(); ++wit)
-    {
+    for (auto wit = bctxt.begin(); wit!=bctxt.end(); ++wit) {
         if (wit->first==word) continue;
         int tgt_class = m_word_classes[wit->first];
         m_class_bigram_counts[prev_class][tgt_class] -= wit->second;
@@ -215,8 +207,7 @@ Exchanging::do_exchange(
     }
 
     map<int, int>& rbctxt = m_word_rev_bigram_counts[word];
-    for (auto wit = rbctxt.begin(); wit!=rbctxt.end(); ++wit)
-    {
+    for (auto wit = rbctxt.begin(); wit!=rbctxt.end(); ++wit) {
         if (wit->first==word) continue;
         int src_class = m_word_classes[wit->first];
         m_class_bigram_counts[src_class][prev_class] -= wit->second;
@@ -226,8 +217,7 @@ Exchanging::do_exchange(
     }
 
     auto wit = bctxt.find(word);
-    if (wit!=bctxt.end())
-    {
+    if (wit!=bctxt.end()) {
         m_class_bigram_counts[prev_class][prev_class] -= wit->second;
         m_class_bigram_counts[new_class][new_class] += wit->second;
         m_class_word_counts[word][prev_class] -= wit->second;
@@ -255,10 +245,8 @@ Exchanging::iterate_exchange(
     int tmp_model_idx = 1;
 
     int curr_iter = 0;
-    while (true)
-    {
-        for (int widx = 0; widx<(int) m_vocabulary.size(); widx++)
-        {
+    while (true) {
+        for (int widx = 0; widx<(int) m_vocabulary.size(); widx++) {
 
             if (m_word_classes[widx]==START_CLASS ||
                     m_word_classes[widx]==UNK_CLASS)
@@ -269,30 +257,25 @@ Exchanging::iterate_exchange(
             int best_class = -1;
             double best_ll_diff = -1e20;
 
-            if (num_threads>1)
-            {
+            if (num_threads>1) {
                 exchange_thr(num_threads,
                         widx,
                         curr_class,
                         best_class,
                         best_ll_diff);
             }
-            else
-            {
-                for (int cidx = m_num_special_classes; cidx<(int) m_classes.size(); cidx++)
-                {
+            else {
+                for (int cidx = m_num_special_classes; cidx<(int) m_classes.size(); cidx++) {
                     if (cidx==curr_class) continue;
                     double ll_diff = evaluate_exchange(widx, curr_class, cidx);
-                    if (ll_diff>best_ll_diff)
-                    {
+                    if (ll_diff>best_ll_diff) {
                         best_ll_diff = ll_diff;
                         best_class = cidx;
                     }
                 }
             }
 
-            if (best_class==-1 || best_ll_diff==-1e20)
-            {
+            if (best_class==-1 || best_ll_diff==-1e20) {
                 cerr << "problem in word: " << m_vocabulary[widx] << endl;
                 exit(1);
             }
@@ -301,21 +284,18 @@ Exchanging::iterate_exchange(
                 do_exchange(widx, curr_class, best_class);
 
             if ((ll_print_interval>0 && widx%ll_print_interval==0)
-                    || widx+1==(int) m_vocabulary.size())
-            {
+                    || widx+1==(int) m_vocabulary.size()) {
                 double ll = log_likelihood();
                 cerr << "log likelihood: " << ll << endl;
             }
 
-            if (widx%1000==0)
-            {
+            if (widx%1000==0) {
                 time_t curr_time = time(0);
 
                 if (curr_time-start_time>max_seconds)
                     return log_likelihood();
 
-                if (model_write_interval>0 && curr_time-last_model_write_time>model_write_interval)
-                {
+                if (model_write_interval>0 && curr_time-last_model_write_time>model_write_interval) {
                     string temp_base = model_base+".temp"+int2str(tmp_model_idx);
                     write_class_mem_probs(temp_base+".cmemprobs.gz");
                     last_model_write_time = curr_time;
@@ -330,7 +310,8 @@ Exchanging::iterate_exchange(
 }
 
 double
-Exchanging::iterate_exchange(vector<vector<int>> super_classes,
+Exchanging::iterate_exchange(
+        vector<vector<int>> super_classes,
         map<int, int> super_class_lookup,
         int max_iter,
         int max_seconds,
@@ -345,10 +326,8 @@ Exchanging::iterate_exchange(vector<vector<int>> super_classes,
     int tmp_model_idx = 1;
 
     int curr_iter = 0;
-    while (true)
-    {
-        for (int widx = 0; widx<(int) m_vocabulary.size(); widx++)
-        {
+    while (true) {
+        for (int widx = 0; widx<(int) m_vocabulary.size(); widx++) {
 
             if (m_word_classes[widx]==START_CLASS ||
                     m_word_classes[widx]==UNK_CLASS)
@@ -363,19 +342,16 @@ Exchanging::iterate_exchange(vector<vector<int>> super_classes,
 
             int best_class = -1;
             double best_ll_diff = -1e20;
-            for (auto cit = super_class.begin(); cit!=super_class.end(); ++cit)
-            {
+            for (auto cit = super_class.begin(); cit!=super_class.end(); ++cit) {
                 if (*cit==curr_class) continue;
                 double ll_diff = evaluate_exchange(widx, curr_class, *cit);
-                if (ll_diff>best_ll_diff)
-                {
+                if (ll_diff>best_ll_diff) {
                     best_ll_diff = ll_diff;
                     best_class = *cit;
                 }
             }
 
-            if (best_class==-1 || best_ll_diff==-1e20)
-            {
+            if (best_class==-1 || best_ll_diff==-1e20) {
                 cerr << "problem in word: " << m_vocabulary[widx] << endl;
                 exit(1);
             }
@@ -384,21 +360,18 @@ Exchanging::iterate_exchange(vector<vector<int>> super_classes,
                 do_exchange(widx, curr_class, best_class);
 
             if ((ll_print_interval>0 && widx%ll_print_interval==0)
-                    || widx+1==(int) m_vocabulary.size())
-            {
+                    || widx+1==(int) m_vocabulary.size()) {
                 double ll = log_likelihood();
                 cerr << "log likelihood: " << ll << endl;
             }
 
-            if (widx%1000==0)
-            {
+            if (widx%1000==0) {
                 curr_time = time(0);
 
                 if (curr_time-start_time>max_seconds)
                     return log_likelihood();
 
-                if (model_write_interval>0 && curr_time-last_model_write_time>model_write_interval)
-                {
+                if (model_write_interval>0 && curr_time-last_model_write_time>model_write_interval) {
                     string temp_base = model_base+".temp"+int2str(tmp_model_idx);
                     write_class_mem_probs(temp_base+".cmemprobs.gz");
                     last_model_write_time = curr_time;
@@ -410,25 +383,22 @@ Exchanging::iterate_exchange(vector<vector<int>> super_classes,
         curr_iter++;
         if (max_iter>0 && curr_iter>=max_iter) return log_likelihood();
     }
-
-    return log_likelihood();
 }
 
 void
-Exchanging::exchange_thr_worker(int num_threads,
+Exchanging::exchange_thr_worker(
+        int num_threads,
         int thread_index,
         int word_index,
         int curr_class,
         int& best_class,
         double& best_ll_diff)
 {
-    for (int cidx = m_num_special_classes; cidx<(int) m_classes.size(); cidx++)
-    {
+    for (int cidx = m_num_special_classes; cidx<(int) m_classes.size(); cidx++) {
         if (cidx==curr_class) continue;
         if (cidx%num_threads!=thread_index) continue;
         double ll_diff = evaluate_exchange(word_index, curr_class, cidx);
-        if (ll_diff>best_ll_diff)
-        {
+        if (ll_diff>best_ll_diff) {
             best_ll_diff = ll_diff;
             best_class = cidx;
         }
@@ -446,8 +416,7 @@ Exchanging::exchange_thr(
     vector<double> thr_ll_diffs(num_threads, -1e20);
     vector<int> thr_best_classes(num_threads, -1);
     vector<std::thread*>workers;
-    for (int t = 0; t<num_threads; t++)
-    {
+    for (int t = 0; t<num_threads; t++) {
         std::thread* worker = new std::thread(&Exchanging::exchange_thr_worker, this,
                 num_threads, t,
                 word_index, curr_class,
@@ -455,11 +424,9 @@ Exchanging::exchange_thr(
                 std::ref(thr_ll_diffs[t]));
         workers.push_back(worker);
     }
-    for (int t = 0; t<num_threads; t++)
-    {
+    for (int t = 0; t<num_threads; t++) {
         workers[t]->join();
-        if (thr_ll_diffs[t]>best_ll_diff)
-        {
+        if (thr_ll_diffs[t]>best_ll_diff) {
             best_ll_diff = thr_ll_diffs[t];
             best_class = thr_best_classes[t];
         }

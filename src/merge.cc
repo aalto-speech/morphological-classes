@@ -17,7 +17,8 @@
 
 using namespace std;
 
-void read_super_classes(string scfname,
+void read_super_classes(
+        string scfname,
         map<int, int>& class_idx_mapping,
         vector<vector<int>>& super_classes,
         map<int, int>& super_class_lookup)
