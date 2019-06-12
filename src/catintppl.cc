@@ -5,43 +5,12 @@
 #include <thread>
 #include <functional>
 
+#include "str.hh"
 #include "defs.hh"
-#include "io.hh"
 #include "conf.hh"
-#include "Categories.hh"
-#include "CatPerplexity.hh"
-#include "Ngram.hh"
+#include "ModelWrappers.hh"
 
 using namespace std;
-
-bool
-process_sent(
-        const LNNgram& lm,
-        const Categories& wcs,
-        string line,
-        vector<string>& sent)
-{
-    sent.clear();
-    stringstream ss(line);
-    string word;
-    while (ss >> word) {
-        if (word==SENTENCE_BEGIN_SYMBOL || word==SENTENCE_END_SYMBOL) continue;
-        bool unk =
-                word==UNK_SYMBOL || word==CAP_UNK_SYMBOL || lm.vocabulary_lookup.find(word)==lm.vocabulary_lookup.end();
-        if (!unk) {
-            auto cgenit = wcs.m_category_gen_probs.find(word);
-            auto cmemit = wcs.m_category_mem_probs.find(word);
-            if (cgenit==wcs.m_category_gen_probs.end() || cgenit->second.size()==0)
-                unk = true;
-            else if (cmemit==wcs.m_category_mem_probs.end() || cmemit->second.size()==0)
-                unk = true;
-        }
-        sent.push_back(unk ? UNK_SYMBOL : word);
-    }
-    if (sent.size()==0) return false;
-    sent.push_back(SENTENCE_END_SYMBOL);
-    return true;
-}
 
 int main(int argc, char* argv[])
 {
@@ -78,67 +47,71 @@ int main(int argc, char* argv[])
     double word_iw = log(iw);
     double cat_iw = log(1.0-iw);
 
-    LNNgram lm;
-    lm.read_arpa(arpafname);
+    WordNgram wlm(arpafname, config["unk-root-node"].specified);
+    CategoryNgram clm(
+            cngramfname, cgenpfname, cmempfname,
+            config["unk-root-node"].specified,
+            config["num-tokens"].get_int(),
+            config["prob-beam"].get_float());
 
-    Categories wcs;
-    cerr << "Reading category generation probs.." << endl;
-    wcs.read_category_gen_probs(cgenpfname);
-    cerr << "Reading category membership probs.." << endl;
-    wcs.read_category_mem_probs(cmempfname);
-
-    cerr << "Reading category n-gram model.." << endl;
-    LNNgram cngram;
-    cngram.read_arpa(cngramfname);
-    vector<int> indexmap = get_class_index_map(wcs.num_categories(), cngram);
-
-    unsigned long int num_vocab_words = 0;
-    unsigned long int num_oov_words = 0;
-    unsigned long int num_sents = 0;
-
-    SimpleFileInput corpusf(infname);
-    double total_ll = 0.0;
+    SimpleFileInput infile(infname);
     string line;
-    while (corpusf.getline(line)) {
-        vector<string> sent;
-        if (!process_sent(lm, wcs, line, sent)) continue;
-        CatPerplexity::CategoryHistory history(cngram);
-        int curr_lm_node = lm.sentence_start_node;
-        for (int i = 0; i<(int) sent.size(); i++) {
-            if (sent[i]==UNK_SYMBOL) {
-                if (root_unk_states)
-                    curr_lm_node = lm.root_node;
-                else
-                    curr_lm_node = lm.advance(curr_lm_node, lm.unk_symbol_idx);
-                CatPerplexity::likelihood(cngram, wcs, indexmap,
-                        num_vocab_words, num_oov_words,
-                        sent[i], history,
-                        false, max_tokens, prob_beam);
+    long int num_words = 0;
+    long int num_sents = 0;
+    long int num_oovs = 0;
+    double total_ll = 0.0;
+    int linei = 0;
+    while (infile.getline(line)) {
+
+        line = str::cleaned(line);
+        if (line.length()==0) continue;
+        if (++linei%10000==0) cerr << "sentence " << linei << endl;
+
+        stringstream ss(line);
+        vector<string> words;
+        string word;
+        while (ss >> word) {
+            if (word==SENTENCE_BEGIN_SYMBOL) continue;
+            if (word==SENTENCE_END_SYMBOL) continue;
+            words.push_back(word);
+        }
+
+        double sent_ll = 0.0;
+        wlm.start_sentence();
+        clm.start_sentence();
+        for (auto wit = words.begin(); wit!=words.end(); ++wit) {
+            if (wlm.word_in_vocabulary(*wit) && clm.word_in_vocabulary(*wit)) {
+                sent_ll += add_log_domain_probs(
+                        word_iw+wlm.likelihood(*wit),
+                        cat_iw+clm.likelihood(*wit));
+                num_words++;
             }
             else {
-                double ngram_lp = word_iw;
-                curr_lm_node = lm.score(curr_lm_node, lm.vocabulary_lookup.at(sent[i]), ngram_lp);
-
-                double cat_lp = cat_iw+CatPerplexity::likelihood(cngram, wcs, indexmap,
-                        num_vocab_words, num_oov_words,
-                        sent[i], history,
-                        false, max_tokens, prob_beam);
-
-                total_ll += add_log_domain_probs(ngram_lp, cat_lp);
+                wlm.likelihood(UNK_SYMBOL);
+                clm.likelihood(UNK_SYMBOL);
+                num_oovs++;
             }
         }
+        sent_ll += add_log_domain_probs(
+                word_iw+wlm.sentence_end_likelihood(),
+                cat_iw+clm.sentence_end_likelihood());
+        num_words++;
+
+        total_ll += sent_ll;
         num_sents++;
     }
 
-    cerr << "Number of sentences processed: " << num_sents << endl;
-    cerr << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
-    cerr << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+num_sents << endl;
-    cerr << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
+    cerr << endl;
+    cerr << "Number of sentences: " << num_sents << endl;
+    cerr << "Number of in-vocabulary words excluding sentence ends: " << num_words-num_sents << endl;
+    cerr << "Number of in-vocabulary words including sentence ends: " << num_words << endl;
+    cerr << "Number of OOV words: " << num_oovs << endl;
     cerr << "Total log likelihood (ln): " << total_ll << endl;
     cerr << "Total log likelihood (log10): " << total_ll/2.302585092994046 << endl;
 
-    double ppl = exp(-1.0/double(num_vocab_words+num_sents)*total_ll);
+    double ppl = exp(-1.0/double(num_words) * total_ll);
     cerr << "Perplexity: " << ppl << endl;
+
 
     exit(EXIT_SUCCESS);
 }
