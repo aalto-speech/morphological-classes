@@ -25,7 +25,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if args.class_memberships.endswith(".gz"):
-        vocabf = gzip.open(args.class_memberships, "r")
+        vocabf = gzip.open(args.class_memberships, "rt")
     else:
         vocabf = open(args.class_memberships)
 
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     for line in vocabf:
         line = line.strip()
         tokens = line.split()
-        if len(tokens) != 2:
+        if len(tokens) != 3:
             print("Problem in line: %s" % line, file=sys.stderr)
             continue
         vocab[tokens[0]] = int(tokens[1])
