@@ -1,6 +1,3 @@
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
 #include <sstream>
 
 #include "str.hh"

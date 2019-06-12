@@ -1,9 +1,8 @@
-#include <fstream>
-#include <iostream>
 #include <sstream>
 
 #include "str.hh"
 #include "defs.hh"
+#include "io.hh"
 #include "conf.hh"
 #include "ModelWrappers.hh"
 
