@@ -88,10 +88,10 @@ int main(int argc, char* argv[])
             num_vocab_words, num_oov_words, num_sents,
             root_unk_states, max_tokens, prob_beam);
 
-    cout << "Number of sentences processed: " << num_sents << endl;
-    cout << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
-    cout << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+num_sents << endl;
-    cout << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
+    cerr << "Number of sentences processed: " << num_sents << endl;
+    cerr << "Number of in-vocabulary word tokens without sentence ends: " << num_vocab_words << endl;
+    cerr << "Number of in-vocabulary word tokens with sentence ends: " << num_vocab_words+num_sents << endl;
+    cerr << "Number of out-of-vocabulary word tokens: " << num_oov_words << endl;
     cerr << "Total log likelihood (ln): " << total_ll << endl;
     cerr << "Total log likelihood (log10): " << total_ll/2.302585092994046 << endl;
 
