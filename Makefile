@@ -24,7 +24,8 @@ srcs = util/conf.cc\
 	src/CatPerplexity.cc\
 	src/Exchanging.cc\
 	src/Merging.cc\
-	src/Splitting.cc
+	src/Splitting.cc\
+	src/ModelWrappers.cc
 objs = $(srcs:.cc=.o)
 
 test_progs = runtests

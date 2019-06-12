@@ -5,16 +5,15 @@
 #include "str.hh"
 #include "defs.hh"
 #include "conf.hh"
-#include "Ngram.hh"
+#include "ModelWrappers.hh"
 
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-
     conf::Config config;
     config("usage: ngramppl [OPTION...] ARPAFILE INPUT\n")
-            ('r', "use-root-node", "", "",
+            ('r', "unk-root-node", "", "",
                     "Pass through root node in contexts with unks, DEFAULT: advance with unk symbol")
             ('w', "num-words=INT", "arg", "", "Number of words for computing word-normalized perplexity")
             ('h', "help", "", "", "display help");
@@ -24,10 +23,7 @@ int main(int argc, char* argv[])
     string arpafname = config.arguments[0];
     string infname = config.arguments[1];
 
-    bool root_unk_states = config["use-root-node"].specified;
-
-    LNNgram lm;
-    lm.read_arpa(arpafname);
+    WordNgram lm(arpafname, config["unk-root-node"].specified);
 
     SimpleFileInput infile(infname);
     string line;
@@ -50,25 +46,21 @@ int main(int argc, char* argv[])
             if (word==SENTENCE_END_SYMBOL) continue;
             words.push_back(word);
         }
-        words.push_back(lm.sentence_end_symbol);
 
         double sent_ll = 0.0;
-        int node_id = lm.sentence_start_node;
+        lm.start_sentence();
         for (auto wit = words.begin(); wit!=words.end(); ++wit) {
-            double score = 0.0;
-            if (lm.vocabulary_lookup.find(*wit)!=lm.vocabulary_lookup.end()
-                    && lm.vocabulary_lookup.at(*wit)!=lm.unk_symbol_idx) {
-                int sym = lm.vocabulary_lookup[*wit];
-                node_id = lm.score(node_id, sym, score);
-                sent_ll += score;
+            if (lm.word_in_vocabulary(*wit)) {
+                sent_ll += lm.likelihood(*wit);
                 num_words++;
             }
             else {
-                if (root_unk_states) node_id = lm.root_node; // SRILM
-                else node_id = lm.advance(node_id, lm.unk_symbol_idx); // VariKN style UNKs
+                lm.likelihood(*wit);
                 num_oov++;
             }
         }
+        sent_ll += lm.sentence_end_likelihood();
+        num_words++;
 
         total_ll += sent_ll;
         num_sents++;
