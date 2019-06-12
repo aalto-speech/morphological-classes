@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     string line;
     long int num_words = 0;
     long int num_sents = 0;
-    long int num_oov = 0;
+    long int num_oovs = 0;
     double total_ll = 0.0;
     int linei = 0;
     while (infile.getline(line)) {
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
             }
             else {
                 lm.likelihood(*wit);
-                num_oov++;
+                num_oovs++;
             }
         }
         sent_ll += lm.sentence_end_likelihood();
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
     cerr << "Number of sentences: " << num_sents << endl;
     cerr << "Number of in-vocabulary words exluding sentence ends: " << num_words-num_sents << endl;
     cerr << "Number of in-vocabulary words including sentence ends: " << num_words << endl;
-    cerr << "Number of OOV words: " << num_oov << endl;
+    cerr << "Number of OOV words: " << num_oovs << endl;
     cerr << "Total log likelihood (ln): " << total_ll << endl;
     cerr << "Total log likelihood (log10): " << total_ll/2.302585092994046 << endl;
 

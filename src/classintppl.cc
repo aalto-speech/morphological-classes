@@ -6,36 +6,9 @@
 #include "str.hh"
 #include "defs.hh"
 #include "conf.hh"
-#include "Ngram.hh"
+#include "ModelWrappers.hh"
 
 using namespace std;
-
-void preprocess_sent(string line,
-        const Ngram& lm,
-        const map<string, pair<int, flt_type>>& class_memberships,
-        vector<string>& words,
-        long int& num_words,
-        long int& num_oovs)
-{
-    stringstream ss(line);
-    words.clear();
-    string word;
-    while (ss >> word) {
-        if (word==SENTENCE_BEGIN_SYMBOL) continue;
-        if (word==SENTENCE_END_SYMBOL) continue;
-        if (lm.vocabulary_lookup.find(word)==lm.vocabulary_lookup.end()
-                || class_memberships.find(word)==class_memberships.end()
-                || word==UNK_SYMBOL || word==CAP_UNK_SYMBOL) {
-            words.push_back(UNK_SYMBOL);
-            num_oovs++;
-        }
-        else {
-            words.push_back(word);
-            num_words++;
-        }
-    }
-    num_words++;
-}
 
 int main(int argc, char* argv[])
 {
@@ -50,12 +23,10 @@ int main(int argc, char* argv[])
     config.default_parse(argc, argv);
     if (config.arguments.size()!=4) config.print_help(stderr, 1);
 
-    string arpafname = config.arguments[0];
-    string classngramfname = config.arguments[1];
-    string classmfname = config.arguments[2];
+    string arpa_fname = config.arguments[0];
+    string class_ngram_fname = config.arguments[1];
+    string class_m_fname = config.arguments[2];
     string infname = config.arguments[3];
-
-    bool root_unk_states = config["unk-root-node"].specified;
 
     double iw = config["weight"].get_float();
     if (iw<0.0 || iw>1.0) {
@@ -66,19 +37,9 @@ int main(int argc, char* argv[])
     double word_iw = log(iw);
     double class_iw = log(1.0-iw);
 
-    LNNgram lm;
-    lm.read_arpa(arpafname);
+    WordNgram wlm(arpa_fname, config["unk-root-node"].specified);
+    ClassNgram clm(class_ngram_fname, class_m_fname, config["unk-root-node"].specified);
 
-    map<string, pair<int, flt_type>> class_memberships;
-    cerr << "Reading class memberships.." << endl;
-    int num_classes = read_class_memberships(classmfname, class_memberships);
-
-    cerr << "Reading class n-gram model.." << endl;
-    LNNgram class_ng;
-    class_ng.read_arpa(classngramfname);
-    vector<int> indexmap = get_class_index_map(num_classes, class_ng);
-
-    cerr << "Scoring sentences.." << endl;
     SimpleFileInput infile(infname);
     string line;
     long int num_words = 0;
@@ -92,49 +53,36 @@ int main(int argc, char* argv[])
         if (line.length()==0) continue;
         if (++linei%10000==0) cerr << "sentence " << linei << endl;
 
-        double sent_ll = 0.0;
-
+        stringstream ss(line);
         vector<string> words;
-        preprocess_sent(line, lm, class_memberships, words, num_words, num_oovs);
-
-        int curr_lm_node = lm.sentence_start_node;
-        int curr_class_lm_node = class_ng.sentence_start_node;
-
-        for (int i = 0; i<(int) words.size(); i++) {
-            if (words[i]==UNK_SYMBOL) {
-                if (root_unk_states) {
-                    curr_lm_node = lm.root_node;
-                    curr_class_lm_node = class_ng.root_node;
-                }
-                else {
-                    curr_lm_node = lm.advance(curr_lm_node, lm.unk_symbol_idx);
-                    curr_class_lm_node = class_ng.advance(curr_class_lm_node, class_ng.unk_symbol_idx);
-                }
-            }
-            else {
-                double ngram_score = 0.0;
-                curr_lm_node = lm.score(curr_lm_node, lm.vocabulary_lookup.at(words[i]), ngram_score);
-                ngram_score += word_iw;
-
-                pair<int, flt_type> word_class = class_memberships.at(words[i]);
-                double class_score = 0.0;
-                curr_class_lm_node = class_ng.score(curr_class_lm_node, indexmap[word_class.first], class_score);
-                class_score += word_class.second;
-                class_score += class_iw;
-
-                sent_ll += add_log_domain_probs(ngram_score, class_score);
-            }
+        string word;
+        while (ss >> word) {
+            if (word==SENTENCE_BEGIN_SYMBOL) continue;
+            if (word==SENTENCE_END_SYMBOL) continue;
+            words.push_back(word);
         }
 
-        double ngram_score = 0.0;
-        curr_lm_node = lm.score(curr_lm_node, lm.sentence_end_symbol_idx, ngram_score);
-        ngram_score += word_iw;
+        double sent_ll = 0.0;
+        wlm.start_sentence();
+        clm.start_sentence();
+        for (auto wit = words.begin(); wit!=words.end(); ++wit) {
+            if (wlm.word_in_vocabulary(*wit) && clm.word_in_vocabulary(*wit)) {
+                sent_ll += add_log_domain_probs(
+                        word_iw+wlm.likelihood(*wit),
+                        class_iw+clm.likelihood(*wit));
+                num_words++;
+            }
+            else {
+                wlm.likelihood(*wit);
+                clm.likelihood(*wit);
+                num_oovs++;
+            }
+        }
+        sent_ll += add_log_domain_probs(
+                word_iw+wlm.sentence_end_likelihood(),
+                class_iw+clm.sentence_end_likelihood());
+        num_words++;
 
-        double class_score = 0.0;
-        curr_class_lm_node = class_ng.score(curr_class_lm_node, class_ng.sentence_end_symbol_idx, class_score);
-        class_score += class_iw;
-
-        sent_ll += add_log_domain_probs(ngram_score, class_score);
         total_ll += sent_ll;
         num_sents++;
     }
