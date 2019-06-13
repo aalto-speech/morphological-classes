@@ -3,12 +3,10 @@
 #include <set>
 #include <vector>
 #include <sstream>
-#include <iostream>
 #include <thread>
 #include <cstdlib>
 #include <ctime>
 #include <cfloat>
-#include <cassert>
 
 #include "io.hh"
 #include "defs.hh"
@@ -31,14 +29,18 @@ void read_super_classes(
     string line;
     while (classf.getline(line)) {
         if (!line.length()) continue;
+
+        vector<int> curr_super_class;
+
         stringstream liness(line);
         string token;
-        vector<int> curr_super_class;
         while (std::getline(liness, token, ',')) {
             int class_idx = str2int(token);
-            class_idx = class_idx_mapping[class_idx];
-            curr_super_class.push_back(class_idx);
-            super_class_lookup[class_idx] = super_classes.size();
+            if (class_idx_mapping.find(class_idx) != class_idx_mapping.end()) {
+                class_idx = class_idx_mapping[class_idx];
+                curr_super_class.push_back(class_idx);
+                super_class_lookup[class_idx] = super_classes.size();
+            }
         }
         super_classes.push_back(curr_super_class);
     }
@@ -55,7 +57,8 @@ struct MergeEvalTask {
 };
 
 void
-merge_thr_worker(const Merging& merging,
+merge_thr_worker(
+        const Merging& merging,
         int num_threads,
         int thread_index,
         const vector<MergeEvalTask>& evals,
@@ -75,7 +78,8 @@ merge_thr_worker(const Merging& merging,
     }
 }
 
-void merge_classes(Merging& merging,
+void merge_classes(
+        Merging& merging,
         vector<vector<int>>& super_classes,
         map<int, int>& super_class_lookup,
         int target_num_classes,
@@ -93,7 +97,8 @@ void merge_classes(Merging& merging,
             vector<int>& super_class = super_classes[sci];
             if (super_class.size()<2) continue;
 
-            int evals_per_super_class = std::max(1, (int) round(double(super_class.size())/double(merging.num_classes())
+            int evals_per_super_class
+                = std::max(1, (int)round(double(super_class.size())/double(merging.num_classes())
                     *evals_per_iteration));
 
             for (int i = 0; i<evals_per_super_class; i++) {
@@ -123,7 +128,8 @@ void merge_classes(Merging& merging,
         MergeEvalTask best_task;
         vector<std::thread*>workers;
         for (int t = 0; t<num_threads; t++) {
-            std::thread* worker = new std::thread(&merge_thr_worker,
+            std::thread* worker = new std::thread(
+                    &merge_thr_worker,
                     std::ref(merging),
                     num_threads, t,
                     std::ref(eval_tasks),
@@ -138,7 +144,6 @@ void merge_classes(Merging& merging,
 
         merging.do_merge(best_task.c1idx, best_task.c2idx);
         int msci = super_class_lookup[best_task.c2idx];
-        assert(*(super_classes[msci].begin()+best_task.idx_to_remove)==best_task.idx_to_remove);
         super_classes[msci].erase(super_classes[msci].begin()+best_task.idx_to_remove);
         cerr << merging.num_classes() << "\t" << merging.log_likelihood() << endl;
 
@@ -177,22 +182,30 @@ int main(int argc, char* argv[])
 
         vector<vector<int>> super_classes;
         map<int, int> super_class_lookup;
-        read_super_classes(super_class_fname, class_idx_mapping,
-                super_classes, super_class_lookup);
+        read_super_classes(
+                super_class_fname,
+                class_idx_mapping,
+                super_classes,
+                super_class_lookup);
 
         time_t t1, t2;
         t1 = time(0);
         cerr << "log likelihood: " << mrg.log_likelihood() << endl;
 
-        merge_classes(mrg, super_classes, super_class_lookup,
-                num_classes, num_merge_evals, num_threads,
-                model_fname, model_write_interval);
+        merge_classes(
+                mrg,
+                super_classes,
+                super_class_lookup,
+                num_classes,
+                num_merge_evals,
+                num_threads,
+                model_fname,
+                model_write_interval);
 
         t2 = time(0);
         cerr << "Train run time: " << t2-t1 << " seconds" << endl;
 
         mrg.write_class_mem_probs(model_fname+".cmemprobs.gz");
-
     }
     catch (string& e) {
         cerr << e << endl;

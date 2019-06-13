@@ -23,7 +23,8 @@ struct SplitEvalTask {
   vector<int> ordered_words;
 };
 
-void write_super_classes(string scfname,
+void write_super_classes(
+        string scfname,
         vector<set<int>>& super_classes,
         map<int, int>& super_class_lookup)
 {
@@ -40,7 +41,8 @@ void write_super_classes(string scfname,
     }
 }
 
-void find_candidate_classes(Splitting& spl,
+void find_candidate_classes(
+        Splitting& spl,
         vector<int>& classes_to_evaluate,
         int num_classes)
 {
@@ -63,7 +65,8 @@ void find_candidate_classes(Splitting& spl,
     }
 }
 
-void split_classes(Splitting& spl,
+void split_classes(
+        Splitting& spl,
         int target_num_classes,
         int num_eval_classes,
         double ll_threshold,
