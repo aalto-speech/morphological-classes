@@ -73,8 +73,12 @@ read_class_memberships(
         int clss;
         flt_type prob;
         ss >> word >> clss >> prob;
-        class_memberships[word] = std::make_pair(clss, prob);
-        max_class = std::max(max_class, clss);
+        if (!ss.fail()) {
+            class_memberships[word] = std::make_pair(clss, prob);
+            max_class = std::max(max_class, clss);
+        } else {
+            std::cerr << "warning, could not read class memberships on line: " << line << std::endl;
+        }
     }
     return max_class+1;
 }
