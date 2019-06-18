@@ -64,7 +64,27 @@ if __name__ == '__main__':
     originalVocab, originalWordClasses = readClasses(args.ORIGINAL_CMEMPROBS)
     newVocab, newWordClasses = readClasses(args.NEW_CMEMPROBS)
 
-    if (originalVocab != newVocab):
+    if originalVocab != newVocab:
         raise Exception("The vocabularies do not match.")
 
+    superClassWords = list()
+    newSuperClasses = list()
+    for i in range(len(superClasses)):
+        superClassWords.append(set())
+        newSuperClasses.append(set())
+    for word, wordClass in originalWordClasses.items():
+#        print(word, wordClass, superClassLookup[wordClass])
+        superClassWords[superClassLookup[wordClass]].add(word)
+
+    assertClasses = set()
+    for i in range(len(superClassWords)):
+        for word in superClassWords[i]:
+            newSuperClasses[i].add(newWordClasses[word])
+            assertClasses.add(newWordClasses[word])
+
+    for i in range(len(newSuperClasses)):
+        print(len(newSuperClasses[i]))
+        print(newSuperClasses[i].intersection(newSuperClasses[0]))
+    print("")
+    print(len(assertClasses))
 

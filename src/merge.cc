@@ -1,3 +1,4 @@
+#include <cassert>
 #include <string>
 #include <map>
 #include <set>
@@ -144,6 +145,7 @@ void merge_classes(
 
         merging.do_merge(best_task.c1idx, best_task.c2idx);
         int msci = super_class_lookup[best_task.c2idx];
+        assert(*(super_classes[msci].begin()+best_task.idx_to_remove) == best_task.c2idx);
         super_classes[msci].erase(super_classes[msci].begin()+best_task.idx_to_remove);
         cerr << merging.num_classes() << "\t" << merging.log_likelihood() << endl;
 
