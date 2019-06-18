@@ -53,6 +53,7 @@ if __name__ == '__main__':
         line = line.strip()
         if not len(line): continue
         classIdxs = list(map(lambda x: int(x), line.split(",")))
+#        classIdxs = line.split(",")
         superClassIdx = len(superClasses)
         superClasses.append(classIdxs)
         for classIdx in classIdxs:
@@ -73,7 +74,6 @@ if __name__ == '__main__':
         superClassWords.append(set())
         newSuperClasses.append(set())
     for word, wordClass in originalWordClasses.items():
-#        print(word, wordClass, superClassLookup[wordClass])
         superClassWords[superClassLookup[wordClass]].add(word)
 
     assertClasses = set()
@@ -82,9 +82,12 @@ if __name__ == '__main__':
             newSuperClasses[i].add(newWordClasses[word])
             assertClasses.add(newWordClasses[word])
 
+    numSuperclassClasses = 0
     for i in range(len(newSuperClasses)):
-        print(len(newSuperClasses[i]))
-        print(newSuperClasses[i].intersection(newSuperClasses[0]))
-    print("")
-    print(len(assertClasses))
+        numSuperclassClasses += len(newSuperClasses[i])
+    if len(assertClasses) != numSuperclassClasses:
+        raise Exception("The updated class memberships do not match with the original superclasses")
 
+    for i in range(len(newSuperClasses)):
+        classes = map(lambda x: str(x), list(newSuperClasses[i]))
+        print(",".join(classes))
