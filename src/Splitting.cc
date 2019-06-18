@@ -16,7 +16,8 @@ Splitting::Splitting()
 {
 }
 
-Splitting::Splitting(int num_classes,
+Splitting::Splitting(
+        int num_classes,
         const std::map<std::string, int>& word_classes,
         string corpus_fname)
         :Exchanging(num_classes, word_classes, corpus_fname)
@@ -24,7 +25,8 @@ Splitting::Splitting(int num_classes,
 }
 
 void
-Splitting::freq_split(const set<int>& words,
+Splitting::freq_split(
+        const set<int>& words,
         set<int>& class1_words,
         set<int>& class2_words,
         vector<int>& vowords) const
@@ -43,7 +45,8 @@ Splitting::freq_split(const set<int>& words,
 }
 
 int
-Splitting::do_split(int class_idx,
+Splitting::do_split(
+        int class_idx,
         const set<int>& class1_words,
         const set<int>& class2_words)
 {
@@ -132,7 +135,8 @@ Splitting::do_split(int class_idx,
 }
 
 int
-Splitting::iterate_exchange_local(int class1_idx,
+Splitting::iterate_exchange_local(
+        int class1_idx,
         int class2_idx,
         vector<int>& owords,
         int num_iterations)

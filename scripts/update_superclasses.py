@@ -15,6 +15,7 @@ def openFile(fname):
     else:
         return open(fname)
 
+
 def readClasses(fname):
     print("reading class membership file %s" % fname, file=sys.stderr)
     vocab = set()
