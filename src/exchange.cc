@@ -10,7 +10,8 @@
 
 using namespace std;
 
-void read_super_classes(string scfname,
+void read_super_classes(
+        string scfname,
         map<int, int>& class_idx_mapping,
         vector<vector<int>>& super_classes,
         map<int, int>& super_class_lookup)
@@ -98,9 +99,13 @@ int main(int argc, char* argv[])
         if (config["super-classes"].specified) {
             vector<vector<int>> super_classes;
             map<int, int> super_class_lookup;
-            read_super_classes(config["super-classes"].get_str(), class_idx_mapping,
-                    super_classes, super_class_lookup);
-            exc->iterate_exchange(super_classes, super_class_lookup,
+            read_super_classes(
+                    config["super-classes"].get_str(),
+                    class_idx_mapping,
+                    super_classes,
+                    super_class_lookup);
+            exc->iterate_exchange(
+                    super_classes, super_class_lookup,
                     max_iter, max_seconds, ll_print_interval,
                     model_write_interval,
                     model_fname);

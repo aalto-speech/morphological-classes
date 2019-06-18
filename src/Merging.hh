@@ -25,7 +25,7 @@ public:
     std::map<int, int> read_class_initialization(std::string class_fname);
     void set_class_counts();
     double log_likelihood() const;
-    int num_classes() const { return m_num_classes; }
+    int num_classes() const { return m_num_classes - m_num_special_classes; }
     double evaluate_merge(
             int class1,
             int class2) const;
