@@ -28,6 +28,7 @@ srcs = util/conf.cc\
 	src/ModelWrappers.cc
 objs = $(srcs:.cc=.o)
 
+ifndef NO_UNIT_TESTS
 test_progs = runtests
 test_progs_srcs = $(test_progs:=.cc)
 test_progs_objs = $(test_progs:=.o)
@@ -37,6 +38,7 @@ test_srcs = test/ppltest.cc\
 	test/mergetest.cc\
 	test/splittest.cc
 test_objs = $(test_srcs:.cc=.o)
+endif
 
 ##################################################
 

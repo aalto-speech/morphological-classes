@@ -7,6 +7,19 @@ The default settings use trigram statistics over the class sequences in the fina
 For further refining the classes, the model can be constrained to allow only one class per word.
 In that case class merging and splitting operations and also exchange algorithm can be run using bigram statistics.
 
+### Compilation
+
+The project can be compiled using standard GNU compilation toolchain, i.e. `g++` and `make`.  
+In Windows, the MinGW package may be used.
+For compiling the executables and unit tests, copy Makefile.local.example to Makefile.local and run make  
+`cp Makefile.local.example Makefile.local`  
+`make`  
+The zlib library and headers are required. On linux systems, these are often included in packages `zlib1g` and `zlib1g-dev`.  
+In addition, for running the unit tests, Boost unit testing libraries must be installed.  
+On linux systems, these are often included in packages `libboost-test` and `libboost-test-dev`.
+The compilation may be tuned by modifying the Makefile.local file.  
+If you do not need to run the unit tests, set the environment variable NO_UNIT_TESTS to some value.
+
 ### Model formulation for the expectation-maximization training
 
 The form of the model is:  
