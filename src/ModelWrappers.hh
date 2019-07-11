@@ -14,6 +14,9 @@ public:
     virtual void start_sentence() = 0;
     virtual double likelihood(std::string word) = 0;
     virtual double sentence_end_likelihood() = 0;
+    void evaluate(std::string corpus_fname,
+                  std::string *probs_fname=nullptr,
+                  int *ppl_num_words=nullptr);
 };
 
 class WordNgram : public LanguageModel {
@@ -70,6 +73,24 @@ private:
     CatPerplexity::CategoryHistory *m_history;
     int m_max_tokens;
     int m_beam;
+};
+
+class InterpolatedLM : public LanguageModel {
+public:
+    InterpolatedLM(
+            LanguageModel *lm1,
+            LanguageModel *lm2,
+            double interpolation_weight);
+    bool word_in_vocabulary(std::string word) override;
+    void start_sentence() override;
+    double likelihood(std::string word) override;
+    double sentence_end_likelihood() override;
+private:
+    LanguageModel *m_lm1;
+    LanguageModel *m_lm2;
+    double m_interpolation_weight;
+    double m_first_log_iw;
+    double m_second_log_iw;
 };
 
 #endif /* MODEL_WRAPPERS */

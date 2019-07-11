@@ -1,9 +1,86 @@
 #include "ModelWrappers.hh"
+#include "str.hh"
 
 using namespace std;
 
+
+void
+LanguageModel::evaluate(
+        string corpus_filename,
+        string *probs_filename,
+        int *ppl_num_words)
+{
+    SimpleFileOutput *prob_file = nullptr;
+    if (probs_filename != nullptr)
+        prob_file = new SimpleFileOutput(*probs_filename);
+
+    SimpleFileInput infile(corpus_filename);
+    string line;
+    long int num_words = 0;
+    long int num_sents = 0;
+    long int num_oovs = 0;
+    double total_ll = 0.0;
+    while (infile.getline(line)) {
+
+        line = str::cleaned(line);
+        if (line.length()==0) continue;
+
+        stringstream ss(line);
+        vector<string> words;
+        string word;
+        while (ss >> word) {
+            if (word==SENTENCE_BEGIN_SYMBOL) continue;
+            if (word==SENTENCE_END_SYMBOL) continue;
+            words.push_back(word);
+        }
+
+        double sent_ll = 0.0;
+        this->start_sentence();
+        for (auto wit = words.begin(); wit!=words.end(); ++wit) {
+            if (prob_file && wit != words.begin()) *prob_file << " ";
+            if (this->word_in_vocabulary(*wit)) {
+                double word_ll = this->likelihood(*wit);
+                sent_ll += word_ll;
+                if (prob_file) *prob_file << word_ll;
+                num_words++;
+            }
+            else {
+                this->likelihood(UNK_SYMBOL);
+                if (prob_file) *prob_file << "<unk>";
+                num_oovs++;
+            }
+        }
+        double sentence_end_ll = this->sentence_end_likelihood();
+        sent_ll += sentence_end_ll;
+        if (prob_file) *prob_file << " " << sentence_end_ll << "\n";
+        num_words++;
+
+        total_ll += sent_ll;
+        num_sents++;
+    }
+
+    cerr << endl;
+    cerr << "Number of sentences: " << num_sents << endl;
+    cerr << "Number of in-vocabulary words exluding sentence ends: " << num_words-num_sents << endl;
+    cerr << "Number of in-vocabulary words including sentence ends: " << num_words << endl;
+    cerr << "Number of OOV words: " << num_oovs << endl;
+    cerr << "Total log likelihood (ln): " << total_ll << endl;
+    cerr << "Total log likelihood (log10): " << total_ll/2.302585092994046 << endl;
+
+    double ppl = exp(-1.0/double(num_words) * total_ll);
+    cerr << "Perplexity: " << ppl << endl;
+
+    if (ppl_num_words != nullptr) {
+        double wnppl = exp(-1.0/double(*ppl_num_words) * total_ll);
+        cerr << "Word-normalized perplexity: " << wnppl << endl;
+    }
+
+    if (prob_file != nullptr) delete prob_file;
+}
+
+
 WordNgram::WordNgram(
-        std::string arpa_filename,
+        string arpa_filename,
         bool unk_root_node)
 {
     m_ln_arpa_model.read_arpa(arpa_filename);
@@ -12,7 +89,7 @@ WordNgram::WordNgram(
 }
 
 bool
-WordNgram::word_in_vocabulary(std::string word)
+WordNgram::word_in_vocabulary(string word)
 {
     if (word==UNK_SYMBOL) return false;
     if (word==CAP_UNK_SYMBOL) return false;
@@ -26,7 +103,7 @@ WordNgram::start_sentence()
 }
 
 double
-WordNgram::likelihood(std::string word)
+WordNgram::likelihood(string word)
 {
     double ln_log_prob = 0.0;
     if (word_in_vocabulary(word)) {
@@ -52,8 +129,8 @@ WordNgram::sentence_end_likelihood()
 
 
 ClassNgram::ClassNgram(
-        std::string arpa_filename,
-        std::string cmemprobs_filename,
+        string arpa_filename,
+        string cmemprobs_filename,
         bool unk_root_node)
 {
     m_ln_arpa_model.read_arpa(arpa_filename);
@@ -64,7 +141,7 @@ ClassNgram::ClassNgram(
 }
 
 bool
-ClassNgram::word_in_vocabulary(std::string word)
+ClassNgram::word_in_vocabulary(string word)
 {
     if (word==UNK_SYMBOL) return false;
     if (word==CAP_UNK_SYMBOL) return false;
@@ -78,7 +155,7 @@ ClassNgram::start_sentence()
 }
 
 double
-ClassNgram::likelihood(std::string word)
+ClassNgram::likelihood(string word)
 {
     double ln_log_prob = 0.0;
     if (word_in_vocabulary(word)) {
@@ -107,9 +184,9 @@ ClassNgram::sentence_end_likelihood()
 
 
 CategoryNgram::CategoryNgram(
-        std::string arpa_filename,
-        std::string cgenprobs_filename,
-        std::string cmemprobs_filename,
+        string arpa_filename,
+        string cgenprobs_filename,
+        string cmemprobs_filename,
         bool unk_root_node,
         int max_tokens,
         double beam)
@@ -131,7 +208,7 @@ CategoryNgram::~CategoryNgram()
 }
 
 bool
-CategoryNgram::word_in_vocabulary(std::string word)
+CategoryNgram::word_in_vocabulary(string word)
 {
     if (word==UNK_SYMBOL) return false;
     if (word==CAP_UNK_SYMBOL) return false;
@@ -152,7 +229,7 @@ CategoryNgram::start_sentence()
 }
 
 double
-CategoryNgram::likelihood(std::string word)
+CategoryNgram::likelihood(string word)
 {
     double ln_log_prob = 0.0;
     static unsigned long int num_vocab_words;
@@ -193,4 +270,49 @@ CategoryNgram::sentence_end_likelihood()
             SENTENCE_END_SYMBOL, *m_history,
             m_unk_root_node, m_max_tokens, m_beam);
 
+}
+
+
+InterpolatedLM::InterpolatedLM(
+        LanguageModel *lm1,
+        LanguageModel *lm2,
+        double interpolation_weight) :
+        m_lm1(lm1), m_lm2(lm2), m_interpolation_weight(interpolation_weight)
+{
+    if (interpolation_weight<0.0 || interpolation_weight>1.0) {
+        cerr << "Invalid interpolation weight: " << interpolation_weight << endl;
+        exit(EXIT_FAILURE);
+    }
+    m_first_log_iw = log(interpolation_weight);
+    m_second_log_iw = log(1.0-interpolation_weight);
+    start_sentence();
+}
+
+bool
+InterpolatedLM::word_in_vocabulary(string word)
+{
+    return m_lm1->word_in_vocabulary(word) && m_lm2->word_in_vocabulary(word);
+}
+
+void
+InterpolatedLM::start_sentence()
+{
+    m_lm1->start_sentence();
+    m_lm2->start_sentence();
+}
+
+double
+InterpolatedLM::likelihood(string word)
+{
+    return add_log_domain_probs(
+            m_first_log_iw + m_lm1->likelihood(word),
+            m_second_log_iw + m_lm2->likelihood(word));
+}
+
+double
+InterpolatedLM::sentence_end_likelihood()
+{
+    return add_log_domain_probs(
+            m_first_log_iw + m_lm1->sentence_end_likelihood(),
+            m_second_log_iw + m_lm2->sentence_end_likelihood());
 }
