@@ -13,6 +13,7 @@ locale.setlocale(locale.LC_ALL, 'fi_FI.utf8')
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Prints a vocabulary of capitalized words for Omorfi analysis")
+    parser.add_argument("-l", "--max_word_length", help="Maximum length for the words.", type=int, action="store")
     parser.add_argument("-v", "--vocabulary",
                         help="Utf-8 encoded vocabulary file. \
                               Only the words present in the vocabulary file and the corpus are printed")
@@ -30,6 +31,7 @@ if __name__ == "__main__":
         line = line.strip()
         words = line.split()
         for word in words:
+            if args.max_word_length and len(word) > args.max_word_length: continue
             if len(vocab) and word not in vocab: continue
             read_words.add(word.capitalize())
 
