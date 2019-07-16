@@ -6,7 +6,7 @@ import gzip
 import argparse
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Converts a text corpus to corresponding class sequences.')
+    parser = argparse.ArgumentParser(description='Creates a corpus for training a word-based model using the class model vocabulary.')
     parser.add_argument('class_memberships', action="store",
                         help='Class membership file written by exchange (.gz supported)')
     parser.add_argument('--cap_unk', action="store_true", default=False,
@@ -45,7 +45,7 @@ if __name__ == '__main__':
             if word == "<s>": continue
             if word == "</s>": continue
             if word in vocab:
-                sent.append(str(vocab[word]))
+                sent.append(word)
             else:
                 sent.append(unk)
 
