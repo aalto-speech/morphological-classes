@@ -53,7 +53,6 @@ LanguageModel::evaluate(
         double sentence_end_ll = this->sentence_end_likelihood();
         sent_ll += sentence_end_ll;
         if (prob_file) *prob_file << " " << sentence_end_ll << "\n";
-        num_words++;
 
         total_ll += sent_ll;
         num_sents++;
@@ -61,13 +60,14 @@ LanguageModel::evaluate(
 
     cerr << endl;
     cerr << "Number of sentences: " << num_sents << endl;
-    cerr << "Number of in-vocabulary words exluding sentence ends: " << num_words-num_sents << endl;
-    cerr << "Number of in-vocabulary words including sentence ends: " << num_words << endl;
+    cerr << "Number of in-vocabulary words exluding sentence ends: " << num_words << endl;
+    cerr << "Number of in-vocabulary words including sentence ends: " << num_words+num_sents << endl;
     cerr << "Number of OOV words: " << num_oovs << endl;
+    cerr << "OOV rate: " << double(num_oovs) / (double(num_oovs)+double(num_words)) * 100.0 << " %" << endl;
     cerr << "Total log likelihood (ln): " << total_ll << endl;
     cerr << "Total log likelihood (log10): " << total_ll/2.302585092994046 << endl;
 
-    double ppl = exp(-1.0/double(num_words) * total_ll);
+    double ppl = exp(-1.0/double(num_words+num_sents) * total_ll);
     cerr << "Perplexity: " << ppl << endl;
 
     if (ppl_num_words != nullptr) {
