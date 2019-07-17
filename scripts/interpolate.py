@@ -6,7 +6,6 @@ import math
 import gzip
 import argparse
 from operator import itemgetter
-from numpy import arange
 
 
 def openFile(fname):
@@ -46,7 +45,7 @@ if __name__ == '__main__':
         second_log_iw = math.log(1.0 - args.weight)
         totalLLs[(first_log_iw, second_log_iw)] = 0.0
     elif args.optimize_weights:
-        iws = arange(0.05, 1.00, 0.05)
+        iws = [x * 0.05 for x in range(1,20)]
         for iw in iws:
             first_log_iw = math.log(iw)
             second_log_iw = math.log(1.0 - iw)
