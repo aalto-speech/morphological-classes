@@ -22,6 +22,9 @@ def add_log_domain_probs(a, b):
         delta = -delta
     return b + math.log1p(math.exp(delta))
 
+unkSymbol = "<unk>"
+smallLP = -1000.0
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Interpolates log likelihoods in two probability files.')
@@ -35,6 +38,8 @@ if __name__ == '__main__':
                         help='Finds the best interpolation weight in steps of 0.05')
     parser.add_argument('-n', '--num_words', action="store", type=int,
                         help='Number of words for computing word-normalized perplexity')
+    parser.add_argument('-u', '--allow_unks', action="store_true", default=False,
+                        help='Score words included only in the other model, probability assigned by the other model will be 0.0')
     args = parser.parse_args()
 
     totalLLs = dict()
@@ -70,16 +75,18 @@ if __name__ == '__main__':
         if not len(probs1): continue
 
         for i in range(len(probs1)):
-            if probs1[i] == "<unk>":
+            if probs1[i] == unkSymbol and probs2[i] == unkSymbol:
                 numUnks += 1
-            elif probs2[i] == "<unk>":
+            elif not args.allow_unks and probs1[i] == unkSymbol:
+                numUnks += 1
+            elif not args.allow_unks and probs2[i] == unkSymbol:
                 numUnks += 1
             else:
                 numWords += 1
+                score1 = float(probs1[i]) if probs1[i] != unkSymbol else smallLP
+                score2 = float(probs2[i]) if probs2[i] != unkSymbol else smallLP
                 for weights in totalLLs.keys():
-                    interpolated_prob = add_log_domain_probs(
-                        weights[0] + float(probs1[i]),
-                        weights[1] + float(probs2[i]))
+                    interpolated_prob = add_log_domain_probs(weights[0] + score1, weights[1] + score2)
                     totalLLs[weights] += interpolated_prob
     best_weights, totalLL = max(totalLLs.items(), key=itemgetter(1))
 
@@ -99,3 +106,4 @@ if __name__ == '__main__':
     if args.num_words:
         wnppl = math.exp(-1.0 / float(args.num_words) * totalLL)
         print("Word-normalized perplexity: %f" % wnppl, file=sys.stderr)
+
