@@ -4,8 +4,8 @@
 import sys
 import math
 import gzip
+import itertools
 import argparse
-from operator import itemgetter
 
 
 unkSymbol = "<unk>"
@@ -75,8 +75,44 @@ def read_probs(prob_fnames, allow_unks=False):
     return allProbs, numUnks, numSents
 
 
+def _add_next_weights(combinations, remaining, accuracy=20):
+    updated_combinations = []
+    for c in combinations:
+        new_range = list(map(lambda x: [x], range(1,accuracy-sum(c)-remaining)))
+        prod = list(map(lambda x: x[0] + x[1], list(itertools.product([c], new_range))))
+        updated_combinations.extend(prod)
+    return updated_combinations
+
+
+def get_weight_combinations(allProbs, accuracy=20):
+    numWeights = len(allProbs[0])-1
+    combinations = list(map(lambda x: [x], range(1,accuracy-numWeights+1)))
+    for i in range(1,numWeights):
+        combinations = _add_next_weights(combinations, numWeights-i-1, accuracy)
+
+    combinations = list(map(lambda x: (x + [accuracy-sum(x)]), combinations))
+    for combination in combinations:
+        if sum(combination) != accuracy:
+            raise Exception("Problem combination: %s" % (repr(combination)))
+    float_weights = list(map(lambda x: [float(i) / float(accuracy) for i in x], combinations))
+
+    return float_weights
+
+
 def find_optimal_weights(allProbs):
-    pass
+    print("computing weight combinations..", file=sys.stderr, flush=True)
+    weight_combinations = get_weight_combinations(allProbs)
+    best_ll = None
+    best_weights = None
+    print("finding optimal weights..", file=sys.stderr, flush=True)
+    for weight_combination in weight_combinations:
+        weight_combination = list(map(lambda x: math.log(x), weight_combination))
+        curr_ll = compute_likelihood(allProbs, weight_combination)
+        if not best_ll or curr_ll > best_ll:
+            best_ll = curr_ll
+            best_weights = weight_combination
+
+    return best_weights, best_ll
 
 
 def compute_likelihood(allProbs, weights):
@@ -95,7 +131,8 @@ def print_result(numSents, numUnks, numWords, best_weights, totalLL):
     print("Number of in-vocabulary words including sentence ends: %i" % numWords, file=sys.stderr)
     print("Number of OOV words: %i" % numUnks, file=sys.stderr)
     print("OOV rate: %f %%" % (100.0 * float(numUnks) / float(numUnks + numWords - numSents)), file=sys.stderr)
-    print("Interpolation weights: %f, %f" % (math.exp(best_weights[0]), math.exp(best_weights[1])), file=sys.stderr)
+    weight_str = ", ".join([("%f" % math.exp(w)) for w in best_weights])
+    print("Interpolation weights: %s" % weight_str, file=sys.stderr)
     print("Total log likelihood (ln): %s" % ('{:.5e}'.format(totalLL)), file=sys.stderr)
     print("Total log likelihood (log10): %s" % ('{:.5e}'.format(totalLL / 2.302585092994046)), file=sys.stderr)
     ppl = math.exp(-1.0 / float(numWords) * totalLL)
@@ -124,12 +161,14 @@ if __name__ == '__main__':
         if abs(sum(weights) - 1.0) > 0.00001:
             raise Exception("Interpolation weights do not sum to 1, total was: %f" % sum(weights))
         weights = list(map(lambda x: math.log(x), weights))
-        allProbs, numUnks, numSents = read_probs(args.input_prob_files)
-        print(weights)
+        print("reading probabilities from files..", file=sys.stderr, flush=True)
+        allProbs, numUnks, numSents = read_probs(args.input_prob_files, args.allow_unks)
+        print("computing likelihood..", file=sys.stderr, flush=True)
         totalLL = compute_likelihood(allProbs, weights)
         print_result(numSents, numUnks, len(allProbs), weights, totalLL)
     elif args.optimize_weights:
-        allProbs, numUnks, numSents = read_probs(args.input_prob_files)
+        print("reading probabilities from files..", file=sys.stderr, flush=True)
+        allProbs, numUnks, numSents = read_probs(args.input_prob_files, args.allow_unks)
         weights, totalLL = find_optimal_weights(allProbs)
         print_result(numSents, numUnks, len(allProbs), weights, totalLL)
     else:
