@@ -75,6 +75,22 @@ private:
     int m_beam;
 };
 
+class SubwordNgram : public LanguageModel {
+public:
+    SubwordNgram(std::string model_filename, std::string word_segs_filename);
+    bool word_in_vocabulary(std::string word) override;
+    void start_sentence() override;
+    double likelihood(std::string word) override;
+    double sentence_end_likelihood() override;
+private:
+    void read_word_segs(std::string word_segs_fname);
+    int m_current_node_id;
+    int m_root_node;
+    int m_sentence_start_node;
+    LNNgram m_ln_arpa_model;
+    std::map<std::string, std::vector<int> > m_word_segs;
+};
+
 class InterpolatedLM : public LanguageModel {
 public:
     InterpolatedLM(

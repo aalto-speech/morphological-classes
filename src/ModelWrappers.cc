@@ -273,6 +273,97 @@ CategoryNgram::sentence_end_likelihood()
 }
 
 
+SubwordNgram::SubwordNgram(
+        string arpa_filename,
+        string word_segs_filename)
+{
+    m_ln_arpa_model.read_arpa(arpa_filename);
+    read_word_segs(word_segs_filename);
+
+    int m_root_node = m_ln_arpa_model.root_node;
+    int m_sentence_start_node = m_ln_arpa_model.sentence_start_node;
+    auto wb_symbol = m_ln_arpa_model.vocabulary_lookup.find("<w>");
+    if (wb_symbol != m_ln_arpa_model.vocabulary_lookup.end()) {
+        m_root_node = m_ln_arpa_model.advance(m_root_node, wb_symbol->second);
+        m_sentence_start_node = m_ln_arpa_model.advance(m_sentence_start_node, wb_symbol->second);
+    }
+
+    start_sentence();
+}
+
+bool
+SubwordNgram::word_in_vocabulary(string word)
+{
+    if (word==UNK_SYMBOL) return false;
+    if (word==CAP_UNK_SYMBOL) return false;
+    return m_word_segs.find(word)!=m_word_segs.end();
+}
+
+void
+SubwordNgram::start_sentence()
+{
+    m_current_node_id = m_sentence_start_node;
+}
+
+double
+SubwordNgram::likelihood(string word)
+{
+    if (word_in_vocabulary(word)) {
+        double ln_log_prob = 0.0;
+        for (auto swit = m_word_segs.at(word).begin(); swit != m_word_segs.at(word).end(); ++swit)
+            m_current_node_id = m_ln_arpa_model.score(m_current_node_id, *swit, ln_log_prob);
+        return ln_log_prob;
+    }
+    else {
+        m_current_node_id = m_root_node;
+        return 0.0;
+    }
+}
+
+double
+SubwordNgram::sentence_end_likelihood()
+{
+    return likelihood(m_ln_arpa_model.sentence_end_symbol);
+}
+
+void
+SubwordNgram::read_word_segs(string word_segs_fname)
+{
+    cerr << "Reading word segmentations: " << word_segs_fname << endl;
+    ifstream segf(word_segs_fname);
+    if (!segf) throw string("Problem opening word segmentations.");
+
+    string line;
+    auto wb_symbol = m_ln_arpa_model.vocabulary_lookup.find("<w>");
+    while (getline(segf, line)) {
+        if (line.length() == 0) continue;
+        string word, subword, concatenated;
+        vector<string> sw_tokens;
+        stringstream ss(line);
+        ss >> word;
+        while (ss >> subword) {
+            sw_tokens.push_back(subword);
+            concatenated += subword;
+        }
+        if (concatenated != word || sw_tokens.size() == 0)
+            throw "Erroneous segmentation: " + concatenated;
+
+        vector<int> swids;
+        for (auto swit=sw_tokens.begin(); swit != sw_tokens.end(); ++swit) {
+            auto swlit = m_ln_arpa_model.vocabulary_lookup.find(*swit);
+            if (swlit==m_ln_arpa_model.vocabulary_lookup.end())
+                throw "Subword " + *swit + " not found in the subword n-gram";
+            swids.push_back(swlit->second);
+        }
+
+        if (wb_symbol != m_ln_arpa_model.vocabulary_lookup.end())
+            swids.push_back(wb_symbol->second);
+
+        m_word_segs[word] = swids;
+    }
+}
+
+
 InterpolatedLM::InterpolatedLM(
         LanguageModel *lm1,
         LanguageModel *lm2,
