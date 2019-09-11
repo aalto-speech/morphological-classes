@@ -33,7 +33,7 @@ LanguageModel::evaluate(
             //if (word==SENTENCE_END_SYMBOL) continue;
             words.push_back(word);
         }
-        if (words.back() != SENTENCE_END_SYMBOL) words.push_back(SENTENCE_END_SYMBOL);
+        if (words.size() == 0 || words.back() != SENTENCE_END_SYMBOL) words.push_back(SENTENCE_END_SYMBOL);
 
         double sent_ll = 0.0;
         this->start_sentence();
