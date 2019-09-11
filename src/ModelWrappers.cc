@@ -30,9 +30,10 @@ LanguageModel::evaluate(
         string word;
         while (ss >> word) {
             if (word==SENTENCE_BEGIN_SYMBOL) continue;
-            if (word==SENTENCE_END_SYMBOL) continue;
+            //if (word==SENTENCE_END_SYMBOL) continue;
             words.push_back(word);
         }
+        if (words.back() != SENTENCE_END_SYMBOL) words.push_back(SENTENCE_END_SYMBOL);
 
         double sent_ll = 0.0;
         this->start_sentence();
@@ -50,9 +51,7 @@ LanguageModel::evaluate(
                 num_oovs++;
             }
         }
-        double sentence_end_ll = this->sentence_end_likelihood();
-        sent_ll += sentence_end_ll;
-        if (prob_file) *prob_file << " " << sentence_end_ll << "\n";
+        *prob_file << "\n";
 
         total_ll += sent_ll;
         num_sents++;
@@ -60,8 +59,8 @@ LanguageModel::evaluate(
 
     cerr << endl;
     cerr << "Number of sentences: " << num_sents << endl;
-    cerr << "Number of in-vocabulary words exluding sentence ends: " << num_words << endl;
-    cerr << "Number of in-vocabulary words including sentence ends: " << num_words+num_sents << endl;
+    cerr << "Number of in-vocabulary words exluding sentence ends: " << num_words-num_sents << endl;
+    cerr << "Number of in-vocabulary words including sentence ends: " << num_words << endl;
     cerr << "Number of OOV words: " << num_oovs << endl;
     cerr << "OOV rate: " << double(num_oovs) / (double(num_oovs)+double(num_words)) * 100.0 << " %" << endl;
     cerr << "Total log likelihood (ln): " << total_ll << endl;
@@ -106,7 +105,11 @@ double
 WordNgram::likelihood(string word)
 {
     double ln_log_prob = 0.0;
-    if (word_in_vocabulary(word)) {
+    if (word==SENTENCE_END_SYMBOL) {
+        ln_log_prob = sentence_end_likelihood();
+        start_sentence();
+    }
+    else if (word_in_vocabulary(word)) {
         int sym = m_ln_arpa_model.vocabulary_lookup[word];
         m_current_node_id = m_ln_arpa_model.score(m_current_node_id, sym, ln_log_prob);
     }
@@ -124,9 +127,10 @@ WordNgram::likelihood(string word)
 double
 WordNgram::sentence_end_likelihood()
 {
-    return likelihood(m_ln_arpa_model.sentence_end_symbol);
+    double ln_log_prob = 0.0;
+    m_current_node_id = m_ln_arpa_model.score(m_current_node_id, m_ln_arpa_model.sentence_end_symbol_idx, ln_log_prob);
+    return ln_log_prob;
 }
-
 
 ClassNgram::ClassNgram(
         string arpa_filename,
@@ -158,7 +162,11 @@ double
 ClassNgram::likelihood(string word)
 {
     double ln_log_prob = 0.0;
-    if (word_in_vocabulary(word)) {
+    if (word==SENTENCE_END_SYMBOL) {
+        ln_log_prob = sentence_end_likelihood();
+        start_sentence();
+    }
+    else if (word_in_vocabulary(word)) {
         pair<int, flt_type> word_class = m_class_memberships.at(word);
         ln_log_prob = word_class.second;
         m_current_node_id = m_ln_arpa_model.score(m_current_node_id, m_indexmap[word_class.first], ln_log_prob);
@@ -234,7 +242,11 @@ CategoryNgram::likelihood(string word)
     double ln_log_prob = 0.0;
     static unsigned long int num_vocab_words;
     static unsigned long int num_oov_words;
-    if (word_in_vocabulary(word)) {
+    if (word==SENTENCE_END_SYMBOL) {
+        ln_log_prob = sentence_end_likelihood();
+        start_sentence();
+    }
+    else if (word_in_vocabulary(word)) {
         ln_log_prob =
             CatPerplexity::likelihood(
                     m_ln_arpa_model,
@@ -243,7 +255,6 @@ CategoryNgram::likelihood(string word)
                     num_vocab_words, num_oov_words,
                     word, *m_history,
                     m_unk_root_node, m_max_tokens, m_beam);
-
     }
     else {
         CatPerplexity::likelihood(
@@ -296,7 +307,7 @@ SubwordNgram::word_in_vocabulary(string word)
 {
     if (word==UNK_SYMBOL) return false;
     if (word==CAP_UNK_SYMBOL) return false;
-    return m_word_segs.find(word)!=m_word_segs.end();
+    return ((word==SENTENCE_END_SYMBOL) || m_word_segs.find(word)!=m_word_segs.end());
 }
 
 void
@@ -308,22 +319,27 @@ SubwordNgram::start_sentence()
 double
 SubwordNgram::likelihood(string word)
 {
-    if (word_in_vocabulary(word)) {
-        double ln_log_prob = 0.0;
+    double ln_log_prob = 0.0;
+    if (word==SENTENCE_END_SYMBOL) {
+        ln_log_prob = sentence_end_likelihood();
+        start_sentence();
+    }
+    else if (word_in_vocabulary(word)) {
         for (auto swit = m_word_segs.at(word).begin(); swit != m_word_segs.at(word).end(); ++swit)
             m_current_node_id = m_ln_arpa_model.score(m_current_node_id, *swit, ln_log_prob);
-        return ln_log_prob;
     }
     else {
         m_current_node_id = m_root_node;
-        return 0.0;
     }
+    return ln_log_prob;
 }
 
 double
 SubwordNgram::sentence_end_likelihood()
 {
-    return likelihood(m_ln_arpa_model.sentence_end_symbol);
+    double ln_log_prob = 0.0;
+    m_current_node_id = m_ln_arpa_model.score(m_current_node_id, m_ln_arpa_model.sentence_end_symbol_idx, ln_log_prob);
+    return ln_log_prob;
 }
 
 void
