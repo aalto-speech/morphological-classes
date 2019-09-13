@@ -149,6 +149,7 @@ ClassNgram::word_in_vocabulary(string word)
 {
     if (word==UNK_SYMBOL) return false;
     if (word==CAP_UNK_SYMBOL) return false;
+    if (word==SENTENCE_END_SYMBOL) return true;
     return m_class_memberships.find(word)!=m_class_memberships.end();
 }
 
@@ -220,6 +221,7 @@ CategoryNgram::word_in_vocabulary(string word)
 {
     if (word==UNK_SYMBOL) return false;
     if (word==CAP_UNK_SYMBOL) return false;
+    if (word==SENTENCE_END_SYMBOL) return true;
     auto cgenit = m_word_categories.m_category_gen_probs.find(word);
     auto cmemit = m_word_categories.m_category_mem_probs.find(word);
     if (cgenit==m_word_categories.m_category_gen_probs.end() || cgenit->second.size()==0)
