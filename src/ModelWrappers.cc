@@ -51,7 +51,7 @@ LanguageModel::evaluate(
                 num_oovs++;
             }
         }
-        *prob_file << "\n";
+        if (prob_file) *prob_file << "\n";
 
         total_ll += sent_ll;
         num_sents++;
