@@ -16,12 +16,17 @@ int main(int argc, char* argv[])
     string word_segs_fname = config.arguments[1];
     string infname = config.arguments[2];
 
-    SubwordNgram lm(arpa_fname, word_segs_fname);
-    string prob_file = config["prob-file"].specified ? config["prob-file"].get_str() : "";
-    lm.evaluate(
-            infname,
-            config["prob-file"].specified ? &prob_file : nullptr,
-            nullptr);
+    try {
+        SubwordNgram lm(arpa_fname, word_segs_fname);
+        string prob_file = config["prob-file"].specified ? config["prob-file"].get_str() : "";
+        lm.evaluate(
+                infname,
+                config["prob-file"].specified ? &prob_file : nullptr,
+                nullptr);
+    } catch (string e) {
+        cerr << e << endl;
+        exit(EXIT_FAILURE);
+    }
 
     exit(EXIT_SUCCESS);
 }

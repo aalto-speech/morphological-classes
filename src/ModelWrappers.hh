@@ -83,7 +83,7 @@ public:
     double likelihood(std::string word) override;
     double sentence_end_likelihood() override;
 private:
-    void read_word_segs(std::string word_segs_fname);
+    void read_word_segs(std::string word_segs_fname, bool only_sws=false);
     int m_current_node_id;
     int m_root_node;
     int m_sentence_start_node;

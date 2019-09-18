@@ -20,10 +20,11 @@ LanguageModel::evaluate(
     long int num_sents = 0;
     long int num_oovs = 0;
     double total_ll = 0.0;
+    long int empty_lines_count = 0;
     while (infile.getline(line)) {
 
         line = str::cleaned(line);
-        if (line.length()==0) continue;
+        if (line.length()==0) empty_lines_count++;
 
         stringstream ss(line);
         vector<string> words;
@@ -58,6 +59,8 @@ LanguageModel::evaluate(
     }
 
     cerr << endl;
+    if (empty_lines_count > 0)
+        cerr << "Warning, the file contained " << empty_lines_count << " empty lines" << endl;
     cerr << "Number of sentences: " << num_sents << endl;
     cerr << "Number of in-vocabulary words exluding sentence ends: " << num_words-num_sents << endl;
     cerr << "Number of in-vocabulary words including sentence ends: " << num_words << endl;
@@ -291,10 +294,10 @@ SubwordNgram::SubwordNgram(
         string word_segs_filename)
 {
     m_ln_arpa_model.read_arpa(arpa_filename);
-    read_word_segs(word_segs_filename);
+    read_word_segs(word_segs_filename, true);
 
-    int m_root_node = m_ln_arpa_model.root_node;
-    int m_sentence_start_node = m_ln_arpa_model.sentence_start_node;
+    m_root_node = m_ln_arpa_model.root_node;
+    m_sentence_start_node = m_ln_arpa_model.sentence_start_node;
     auto wb_symbol = m_ln_arpa_model.vocabulary_lookup.find("<w>");
     if (wb_symbol != m_ln_arpa_model.vocabulary_lookup.end()) {
         m_root_node = m_ln_arpa_model.advance(m_root_node, wb_symbol->second);
@@ -345,7 +348,7 @@ SubwordNgram::sentence_end_likelihood()
 }
 
 void
-SubwordNgram::read_word_segs(string word_segs_fname)
+SubwordNgram::read_word_segs(string word_segs_fname, bool only_sws)
 {
     cerr << "Reading word segmentations: " << word_segs_fname << endl;
     ifstream segf(word_segs_fname);
@@ -358,26 +361,40 @@ SubwordNgram::read_word_segs(string word_segs_fname)
         string word, subword, concatenated;
         vector<string> sw_tokens;
         stringstream ss(line);
-        ss >> word;
-        while (ss >> subword) {
-            sw_tokens.push_back(subword);
-            concatenated += subword;
+
+        if (only_sws) {
+            word = "";
+            while (ss >> subword) {
+                sw_tokens.push_back(subword);
+                word += subword;
+            }
+        } else {
+            ss >> word;
+            while (ss >> subword) {
+                sw_tokens.push_back(subword);
+                concatenated += subword;
+            }
+            if (concatenated != word || sw_tokens.size() == 0)
+                throw "Erroneous segmentation: " + concatenated;
         }
-        if (concatenated != word || sw_tokens.size() == 0)
-            throw "Erroneous segmentation: " + concatenated;
 
         vector<int> swids;
+        bool word_ok = true;
         for (auto swit=sw_tokens.begin(); swit != sw_tokens.end(); ++swit) {
             auto swlit = m_ln_arpa_model.vocabulary_lookup.find(*swit);
-            if (swlit==m_ln_arpa_model.vocabulary_lookup.end())
-                throw "Subword " + *swit + " not found in the subword n-gram";
-            swids.push_back(swlit->second);
+            if (swlit==m_ln_arpa_model.vocabulary_lookup.end()) {
+                cerr << "Skipping word: " << word << endl;
+                cerr << "Subword " + *swit + " not found in the subword n-gram" << endl;
+                word_ok = false;
+            } else
+                swids.push_back(swlit->second);
         }
 
-        if (wb_symbol != m_ln_arpa_model.vocabulary_lookup.end())
-            swids.push_back(wb_symbol->second);
-
-        m_word_segs[word] = swids;
+        if (word_ok) {
+            if (wb_symbol != m_ln_arpa_model.vocabulary_lookup.end())
+                swids.push_back(wb_symbol->second);
+            m_word_segs[word] = swids;
+        }
     }
 }
 

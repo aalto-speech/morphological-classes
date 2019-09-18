@@ -11,6 +11,7 @@ progs = init\
 	classintppl\
 	catppl\
 	catintppl\
+	swngramppl\
 	exchange\
 	merge\
 	split
