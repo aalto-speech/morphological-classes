@@ -15,6 +15,7 @@ classppl
 classintppl
 catppl
 catintppl
+swngramppl
 runtests
 .nfs*
 *~
