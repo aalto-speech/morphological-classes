@@ -1,4 +1,4 @@
-# Package for training word classes
+# Morphological word class training
 
 This project contains software for training word classes from a text corpus.
 For instance morphologically motivated classes can be learned using an expectation-maximization training scheme if the classes are initialized using a morphological analyzer.
@@ -35,7 +35,12 @@ So there are three parameter types:
 * class membership probabilities `p(w|c)`  
 * class n-gram probabilities `p(c_i|c_{i-n-1} .. c{i-1})`  
 
-### Training word classes for Finnish using Omorfi initialization
+### Training morphologically motivated word classes
+
+Below are example training commands for corpora in Finnish or Estonian.
+In these examples the unknown word forms are tagged by the model with multiple classes per word.
+
+#### Word classes for Finnish using Omorfi initialization
 
 The initialization scripts under `omorfi` directory have been developed for the following Omorfi version  
 `omorfi-analyse-text.sh -V`  
@@ -50,6 +55,28 @@ Example training commands for a Utf-8 encoded training corpus `train.txt.gz` and
 
 The expectation-maximization training can then be run as follows  
 `scripts/trainer.py scripts/trainer.cfg words.omorfi.init train.txt.gz eval.txt.gz`
+
+
+#### Word classes for Estonian using Estnltk initialization
+
+The initialization scripts under `estnltk` directory have been developed for the Estnltk version 1.4.1  
+
+Example training commands for a Utf-8 encoded training corpus `train.txt.gz`  
+`estnltk/estnltk_init_words.py train.txt.gz words.estnltk.init words.estnltk.classes`  
+`estnltk/estnltk_superclasses.py words.estnltk.classes words.estnltk.superclasses`
+
+
+#### Refining morphological classes
+
+The morphological classes trained from morphological analyses can be used to improve the classifications especially with smaller text corpora.
+Below are the example commands for further processing the Finnish classes by first merging to 300 classes, then splitting to 1000 classes and finally running
+the exchange algorithm with a constraint that exchanges are allowed only within the superclass created during the merge phase.
+
+`merge train.txt.gz em.cmemprobs.gz words.omorfi.superclasses merge300 -c 300 -t 4`  
+`split train.txt.gz merge300.cmemprobs.gz merge300.split1000 -c 1000`  
+`zcat merge300.cmemprobs.gz |cut -f2 |cut -f1 -d' ' |sort -n |uniq >merge.classes`  
+`scripts/update_superclasses.py merge300.cmemprobs.gz merge300.split1000.cmemprobs.gz`  
+`exchange train.txt.gz exchange.1000.morphological -i merge300.split1000.cmemprobs.gz -t 4 -a 15`
 
 
 ## Programs in the package
